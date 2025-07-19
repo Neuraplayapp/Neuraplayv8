@@ -11,6 +11,7 @@ import LetterHuntGame from '../components/games/LetterHuntGame';
 import AIGame from '../components/AIGame';
 import AIAssistant from '../components/AIAssistant';
 import StarbloomAdventureGame from '../components/games/StarbloomAdventureGame';
+import FuzzlingAdvancedGame from '../components/games/FuzzlingAdvancedGame';
 
 const PlaygroundPage: React.FC = () => {
   const { user } = useUser();
@@ -108,6 +109,16 @@ const PlaygroundPage: React.FC = () => {
       difficulty: 'Medium',
       skills: ['Memory', 'Attention', 'Executive Function', 'Moral Reasoning'],
       component: StarbloomAdventureGame
+    },
+    {
+      id: 'fuzzling-advanced',
+      title: "Fuzzling's Advanced Playpen",
+      description: 'Drop and merge berries in this advanced physics-based puzzle game with meta-progression!',
+      icon: <Sparkles className="w-8 h-8" />,
+      color: 'from-pink-400 to-purple-600',
+      difficulty: 'Hard',
+      skills: ['Physics', 'Strategy', 'Pattern Recognition', 'Meta-Progression'],
+      component: FuzzlingAdvancedGame
     }
   ];
 
