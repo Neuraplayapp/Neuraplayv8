@@ -10,6 +10,7 @@ import CountingAdventureGame from '../components/games/CountingAdventureGame';
 import LetterHuntGame from '../components/games/LetterHuntGame';
 import AIGame from '../components/AIGame';
 import AIAssistant from '../components/AIAssistant';
+import StarbloomAdventureGame from '../components/games/StarbloomAdventureGame';
 
 const PlaygroundPage: React.FC = () => {
   const { user } = useUser();
@@ -97,6 +98,16 @@ const PlaygroundPage: React.FC = () => {
       difficulty: 'Easy',
       skills: ['Creativity', 'Language', 'Imagination'],
       component: AIGame
+    },
+    {
+      id: 'starbloom-adventure',
+      title: 'Starbloom Forest Adventure',
+      description: 'Embark on a magical journey through Starbloom Forest with memory challenges and moral choices!',
+      icon: <Brain className="w-8 h-8" />,
+      color: 'from-green-400 to-blue-600',
+      difficulty: 'Medium',
+      skills: ['Memory', 'Attention', 'Executive Function', 'Moral Reasoning'],
+      component: StarbloomAdventureGame
     }
   ];
 
