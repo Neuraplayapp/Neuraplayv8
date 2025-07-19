@@ -58,9 +58,9 @@ exports.handler = async (event, context) => {
         apiUrl = 'https://api.together.xyz/v1/chat/completions';
         break;
       case 'image':
-        modelId = 'stabilityai/stable-diffusion-xl-base-1.0';
-        modelType = 'diffusion';
-        apiUrl = `https://api-inference.huggingface.co/models/${modelId}`;
+        modelId = 'black-forest-labs/FLUX.1-schnell-Free';
+        modelType = 'together';
+        apiUrl = 'https://api.together.xyz/v1/images/generations';
         break;
       case 'voice':
         modelId = 'facebook/fastspeech2-en-ljspeech';
@@ -81,14 +81,14 @@ exports.handler = async (event, context) => {
     const HF_TOKEN = process.env.HF_TOKEN;
     const TOGETHER_TOKEN = process.env.together_token;
     
-    // Use TogetherAI token for text tasks, HF token for image/voice
-    const tokenToUse = (task_type === 'summarization' || task_type === 'text' || task_type === 'chat' || task_type === 'conversation' || task_type === 'story' || task_type === 'report') 
+    // Use TogetherAI token for text and image tasks, HF token for voice
+    const tokenToUse = (task_type === 'summarization' || task_type === 'text' || task_type === 'chat' || task_type === 'conversation' || task_type === 'story' || task_type === 'report' || task_type === 'image') 
       ? TOGETHER_TOKEN 
       : HF_TOKEN;
     
     console.log('Token check:', tokenToUse ? 'Token exists' : 'No token found');
     console.log('Token length:', tokenToUse ? tokenToUse.length : 0);
-    console.log('Using token for:', task_type, 'Token type:', (task_type === 'summarization' || task_type === 'text' || task_type === 'chat' || task_type === 'conversation' || task_type === 'story' || task_type === 'report') ? 'TogetherAI' : 'HuggingFace');
+    console.log('Using token for:', task_type, 'Token type:', (task_type === 'summarization' || task_type === 'text' || task_type === 'chat' || task_type === 'conversation' || task_type === 'story' || task_type === 'report' || task_type === 'image') ? 'TogetherAI' : 'HuggingFace');
     
     if (!tokenToUse || tokenToUse === 'your_token_here' || tokenToUse.length < 1) {
       // Return a fallback response instead of an error
@@ -184,11 +184,10 @@ exports.handler = async (event, context) => {
       console.log('Image generation prompt:', enhancedPrompt);
       
       requestBody = JSON.stringify({
-        inputs: enhancedPrompt,
-        options: {
-          wait_for_model: true,
-          use_cache: false
-        }
+        model: modelId,
+        prompt: enhancedPrompt,
+        n: 1,
+        size: "1024x1024"
       });
       
       console.log('Image generation request body:', requestBody);
@@ -401,22 +400,27 @@ exports.handler = async (event, context) => {
     } else if (task_type === 'image') {
       try {
         console.log('Processing image generation response...');
-        const buffer = await response.arrayBuffer();
-        console.log('Image buffer size:', buffer.byteLength);
-        const base64 = Buffer.from(buffer).toString('base64');
-        console.log('Base64 image length:', base64.length);
+        const result = await response.json();
+        console.log('TogetherAI image result:', result);
         
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            data: base64,
-            contentType: 'image/png'
-          })
-        };
+        if (result.data && result.data[0] && result.data[0].b64_json) {
+          const base64 = result.data[0].b64_json;
+          console.log('Base64 image length:', base64.length);
+          
+          return {
+            statusCode: 200,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: base64,
+              contentType: 'image/png'
+            })
+          };
+        } else {
+          throw new Error('Invalid response format from TogetherAI');
+        }
       } catch (error) {
         console.error('Image generation processing error:', error);
         return {
