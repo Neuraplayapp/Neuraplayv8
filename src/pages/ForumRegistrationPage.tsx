@@ -11,17 +11,12 @@ const ForumRegistrationPage: React.FC = () => {
     age: 5,
     username: '',
     email: '',
-    avatar: 'https://placehold.co/100x100/c084fc/ffffff?text=NP'
+    avatar: '/assets/placeholder.png'
   });
-
-  const avatars = [
-    'https://placehold.co/100x100/c084fc/ffffff?text=NP',
-    'https://placehold.co/100x100/7dd3fc/ffffff?text=NP',
-    'https://placehold.co/100x100/f472b6/ffffff?text=NP',
-    'https://placehold.co/100x100/fbbf24/ffffff?text=NP',
-    'https://placehold.co/100x100/4ade80/ffffff?text=NP',
-    'https://placehold.co/100x100/f87171/ffffff?text=NP'
-  ];
+  const [avatarPrompt, setAvatarPrompt] = useState('');
+  const [generatingAvatar, setGeneratingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!formData.role || !formData.username.trim() || !formData.email.trim()) {
@@ -51,6 +46,41 @@ const ForumRegistrationPage: React.FC = () => {
     setUser(newUser);
     navigate('/forum');
   };
+
+  const handleGenerateAvatar = async () => {
+    if (!avatarPrompt.trim()) {
+      setAvatarError('Please enter a description for your avatar.');
+      return;
+    }
+    setGeneratingAvatar(true);
+    setAvatarError('');
+    try {
+      const response = await fetch('/.netlify/functions/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_type: 'image',
+          input_data: `Cartoon avatar, ${avatarPrompt}, child-friendly, bright colors, round face, smiling, high quality, detailed, 4k`
+        })
+      });
+      const result = await response.json();
+      if (result.data) {
+        const imageBlob = `data:${result.contentType};base64,${result.data}`;
+        setGeneratedAvatars(prev => [...prev, imageBlob]);
+        setFormData({ ...formData, avatar: imageBlob });
+      } else {
+        setAvatarError('Failed to generate avatar. Please try again.');
+      }
+    } catch (error) {
+      setAvatarError('Error generating avatar. Please try again.');
+    } finally {
+      setGeneratingAvatar(false);
+    }
+  };
+
+  const avatars = [
+    ...generatedAvatars
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-50 py-24 px-6 flex items-center justify-center">
@@ -115,10 +145,40 @@ const ForumRegistrationPage: React.FC = () => {
 
             <div>
               <h4 className="font-bold mb-3 text-slate-900">Choose your hero avatar</h4>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={avatarPrompt}
+                  onChange={e => setAvatarPrompt(e.target.value)}
+                  placeholder="Describe your avatar (e.g. brave robot, magical cat)"
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-300"
+                  disabled={generatingAvatar}
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateAvatar}
+                  disabled={generatingAvatar || !avatarPrompt.trim()}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {generatingAvatar ? 'Generating...' : 'Generate AI Avatar'}
+                </button>
+              </div>
+              {avatarError && <div className="text-red-500 text-sm mb-2">{avatarError}</div>}
+              {/* Avatar Preview */}
+              {formData.avatar && (
+                <div className="flex justify-center mb-4">
+                  <img
+                    src={formData.avatar}
+                    alt="Avatar Preview"
+                    className="w-24 h-24 rounded-full border-4 border-violet-200 shadow-lg"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-6 gap-3">
                 {avatars.map(avatar => (
                   <button
                     key={avatar}
+                    type="button"
                     onClick={() => setFormData({ ...formData, avatar })}
                     className={`w-16 h-16 rounded-full transition-all ${
                       formData.avatar === avatar

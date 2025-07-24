@@ -16,8 +16,8 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-200">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <Link to="/" className="text-3xl font-black text-violet-600 tracking-tighter flex items-center gap-2">
-          <Brain className="w-8 h-8" />
+        <Link to="/" className="text-3xl font-black tracking-tighter flex items-center gap-2 bg-gradient-to-r from-purple-400 to-purple-700 bg-clip-text text-transparent drop-shadow-lg text-hero-shadow">
+          <Brain className="w-8 h-8 text-purple-500 drop-shadow-lg" />
           NEURAPLAY
         </Link>
         
@@ -67,7 +67,7 @@ const Header: React.FC = () => {
           ) : (
             <Link 
               to="/registration" 
-              className="bg-violet-600 text-white font-bold px-6 py-3 rounded-full hover:bg-violet-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="bg-gradient-to-r from-purple-400 to-purple-700 text-white font-bold px-6 py-3 rounded-full hover:from-purple-500 hover:to-purple-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
             >
               Begin the Journey
             </Link>

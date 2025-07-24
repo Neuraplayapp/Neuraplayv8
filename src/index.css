@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body, html {
+  font-family: theme('fontFamily.sans'), Arial, sans-serif;
+  color: #334155; /* Tailwind's text-slate-700 */
+}
+
+.text-main {
+  color: #334155 !important;
+  font-family: theme('fontFamily.sans'), Arial, sans-serif !important;
+}
+
+/* Remove .text-hero-shadow. Add .text-ground-shadow for a cast shadow under text. */
+.text-ground-shadow {
+  position: relative;
+  display: inline-block;
+}
+.text-ground-shadow::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.3em;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 0.5em;
+  background: radial-gradient(ellipse at center, rgba(80,0,120,0.25) 0%, rgba(80,0,120,0.10) 60%, transparent 100%);
+  filter: blur(2px);
+  z-index: 0;
+  pointer-events: none;
+}

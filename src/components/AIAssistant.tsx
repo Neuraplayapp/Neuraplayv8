@@ -13,9 +13,10 @@ const AIAssistant: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+  const [promptCount, setPromptCount] = useState(0);
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    if (!inputMessage.trim() || isLoading || promptCount >= 10) return;
 
     const userMessage = {
       text: inputMessage,
@@ -26,6 +27,7 @@ const AIAssistant: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setPromptCount(count => count + 1);
 
     try {
       // Check if this is an image request
@@ -59,7 +61,19 @@ const AIAssistant: React.FC = () => {
       // Add system message
       messagesForLlama.push({
         role: 'system',
-        content: 'You are a helpful AI learning assistant for children. Provide educational guidance, explain concepts clearly, and be encouraging and supportive.'
+        content: `You are "Synapse," a helpful and encouraging AI learning assistant from Neuraplay, designed for children aged 3-12.
+
+**Your Core Directives:**
+1.  **Persona:** You are always cheerful, patient, and supportive. Your language is simple, child-friendly, and easy to understand.
+2.  **Safety:** You MUST refuse to discuss or generate any content related to violence, weapons, self-harm, adult themes (NSFW), drugs, alcohol, or any illegal or unsafe topics. If asked about these, you must politely decline with a response like, "That's a topic for grown-ups, but I can help you with learning about animals, numbers, or stories!"
+3.  **Scope:** Your knowledge is strictly limited to educational topics: math, science, reading, art, social skills, and creativity. You should not express personal opinions, consciousness, or feelings.
+4.  **Goal:** Your primary goal is to make learning fun and to build a child's confidence.
+
+---
+[User's Question Goes Here]
+---
+
+**REMINDER OF YOUR DIRECTIVES:** Remember, you are "Synapse" from Neuraplay. Your response must be 100% safe, positive, encouraging, and within your educational scope for a young child. Do not break character.`
       });
       
       // Add conversation history
@@ -337,19 +351,22 @@ const AIAssistant: React.FC = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask me anything about learning..."
+                placeholder={promptCount >= 10 ? "Daily prompt limit reached" : "Ask me anything about learning..."}
                 className="flex-1 p-3 border border-slate-300 rounded-full focus:border-violet-500 focus:ring-2 focus:ring-violet-200 text-sm"
-                disabled={isLoading}
+                disabled={isLoading || promptCount >= 10}
               />
               <button
                 onClick={sendMessage}
-                disabled={!inputMessage.trim() || isLoading}
+                disabled={!inputMessage.trim() || isLoading || promptCount >= 10}
                 className="bg-violet-600 text-white p-3 rounded-full hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <Send className="w-4 h-4" />
               </button>
             </div>
           </div>
+          {promptCount >= 10 && (
+            <div className="text-center text-red-500 text-xs mt-2">You have reached your daily limit of 10 prompts. Please come back tomorrow!</div>
+          )}
         </div>
       )}
     </>

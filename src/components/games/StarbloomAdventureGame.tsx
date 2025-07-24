@@ -889,10 +889,8 @@ Format: ["choice1", "choice2", "choice3"]`;
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900" 
          style={{ backgroundImage: `url(${dynamicBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-      
       {/* Audio element for background music */}
       <audio ref={audioRef} preload="auto" />
-      
       {/* Music controls */}
       <div className="absolute top-6 right-6 z-10">
         <button
@@ -902,22 +900,20 @@ Format: ["choice1", "choice2", "choice3"]`;
           {isMusicPlaying ? <Volume2 className="w-6 h-6 text-white" /> : <VolumeX className="w-6 h-6 text-white" />}
         </button>
       </div>
-
       {/* Game content */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="container mx-auto px-2 py-8 max-w-[1800px]">
+        <div className="max-w-[1600px] mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-2xl">
+            <h1 className="text-6xl font-extrabold text-white mb-4 drop-shadow-2xl">
               Starbloom Forest Adventure
             </h1>
-            <p className="text-white text-xl drop-shadow-lg font-bold">
+            <p className="text-white text-2xl drop-shadow-lg font-bold">
               Embark on a journey of discovery and choice
             </p>
           </div>
-
           {/* Game area */}
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
             {/* Image area */}
             <div className="relative">
               {currentImage ? (
@@ -925,95 +921,73 @@ Format: ["choice1", "choice2", "choice3"]`;
                   <img 
                     src={currentImage} 
                     alt="Adventure scene" 
-                    className="w-full h-96 object-cover"
+                    className="w-full h-[600px] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 </div>
               ) : (
-                <div className="w-full h-96 bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-3xl shadow-2xl border border-white/20 flex items-center justify-center backdrop-blur-sm">
+                <div className="w-full h-[600px] bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-3xl shadow-2xl border border-white/20 flex items-center justify-center backdrop-blur-sm">
                   <div className="text-center">
-                    <div className="text-8xl mb-6 opacity-60">🌲</div>
-                    <p className="text-white/80 font-medium text-lg">Enchanted Forest</p>
+                    <div className="text-9xl mb-6 opacity-60">🌲</div>
+                    <p className="text-white/80 font-medium text-2xl">Enchanted Forest</p>
                   </div>
                 </div>
               )}
             </div>
-
             {/* Story and choices */}
-            <div className="bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-gray-200">
+            <div className="bg-white/95 backdrop-blur-md rounded-3xl p-12 shadow-2xl border-2 border-gray-200 min-h-[600px] flex flex-col justify-between">
               {isLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mx-auto mb-6"></div>
-                  <p className="text-gray-600 text-lg font-medium">Crafting your adventure...</p>
+                <div className="text-center py-20">
+                  <div className="animate-spin rounded-full h-20 w-20 border-4 border-purple-500 border-t-transparent mx-auto mb-8"></div>
+                  <p className="text-gray-600 text-2xl font-medium">Crafting your adventure...</p>
                 </div>
               ) : (
                 <>
-                  <div className="mb-8">
-                    <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-white font-bold text-sm">{currentScene + 1}</span>
+                  <div className="mb-10">
+                    <div className="flex items-center mb-6">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-4">
+                        <span className="text-white font-bold text-lg">{currentScene + 1}</span>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
+                      <h3 className="text-3xl font-extrabold text-gray-900 uppercase tracking-wide">
                         Scene {currentScene + 1}
                       </h3>
                     </div>
-                    <div className="prose prose-lg leading-relaxed">
-                      <p className="text-lg font-bold bg-white/95 backdrop-blur-sm p-6 rounded-xl border-2 border-gray-200 shadow-lg text-gray-900">
+                    <div className="prose prose-xl leading-relaxed">
+                      <p className="text-2xl font-bold bg-white/95 backdrop-blur-sm p-8 rounded-xl border-2 border-gray-200 shadow-lg text-gray-900">
                         {currentSceneText || 'Welcome to the Starbloom Forest! Your magical adventure begins...'}
                       </p>
                     </div>
-                    
-
                   </div>
-
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {currentScene < 5 ? (
-                      // Use generated choices or fallback
                       (generatedChoices.length > 0 ? generatedChoices : [
                         { text: 'Help others first', nextScene: currentScene + 1, prompt: 'Continue helping others', moral: 'Empathy', neuropsychologicalConcept: 'Dynamic Concept' },
                         { text: 'Think carefully', nextScene: currentScene + 1, prompt: 'Continue with planning', moral: 'Strategy', neuropsychologicalConcept: 'Dynamic Concept' },
                         { text: 'Follow your heart', nextScene: currentScene + 1, prompt: 'Continue with emotion', moral: 'Emotional Intelligence', neuropsychologicalConcept: 'Dynamic Concept' }
                       ]).map((choice, index) => (
-                                                                        <button
+                        <button
                           key={index}
                           onClick={() => handleChoice(choice)}
-                          className="w-full p-6 text-left bg-white hover:bg-purple-50 rounded-2xl border-2 border-gray-200 hover:border-purple-400 transition-all duration-300 font-bold text-gray-900 group shadow-lg hover:shadow-xl transform hover:scale-105"
+                          className="w-full p-8 text-left bg-white hover:bg-purple-50 rounded-2xl border-2 border-gray-200 hover:border-purple-400 transition-all duration-300 font-bold text-gray-900 group shadow-lg hover:shadow-xl transform hover:scale-105 text-xl"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold">{choice.text}</span>
-                            <ArrowRight className="w-6 h-6 text-purple-600 group-hover:text-purple-700 transition-colors duration-300" />
+                            <span className="text-xl font-bold">{choice.text}</span>
+                            <ArrowRight className="w-7 h-7 text-purple-600 group-hover:text-purple-700 transition-colors duration-300" />
                           </div>
                         </button>
                       ))
                     ) : (
-                                                                  <button
+                      <button
                         onClick={completeGame}
-                        className="w-full p-6 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-green-500"
+                        className="w-full p-8 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-green-500"
                       >
                         Complete Your Journey
                       </button>
                     )}
                   </div>
-          </>
-        )}
+                </>
+              )}
             </div>
-          </div>
-
-          {/* Progress indicator */}
-          <div className="mt-12 text-center">
-            <div className="flex justify-center space-x-3 mb-4">
-              {Array.from({ length: 5 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                    i <= currentScene ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg' : 'bg-white/30'
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-white text-sm font-bold uppercase tracking-wide">
-              Journey Progress: {currentScene + 1} of 5
-            </p>
           </div>
         </div>
       </div>

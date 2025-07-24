@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Minimize2, Maximize2, Music, Volume2, VolumeX } from 'lucide-react';
+import Box2DFactory from 'box2d-wasm';
 
 interface FuzzlingGameProps {
   onClose: () => void;
@@ -11,6 +12,7 @@ let Box2D: any;
 const SCALE = 30; // 30 pixels = 1 meter in Box2D
 
 const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
+  console.log('FuzzlingGame component mounted');
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentView, setCurrentView] = useState<'main-menu' | 'game' | 'post-game'>('main-menu');
@@ -82,15 +84,15 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   };
 
   const purchaseColor = (color: string, cost: number) => {
-    if (metaState.stardust >= cost && !metaState.cosmetics.availableColors[color].unlocked) {
+    if (metaState.stardust >= cost && !(metaState.cosmetics.availableColors as any)[color].unlocked) {
       setMetaState(prev => ({
         ...prev,
         stardust: prev.stardust - cost,
         cosmetics: {
           ...prev.cosmetics,
           availableColors: {
-            ...prev.cosmetics.availableColors,
-            [color]: { ...prev.cosmetics.availableColors[color], unlocked: true }
+            ...(prev.cosmetics.availableColors as any),
+            [color]: { ...(prev.cosmetics.availableColors as any)[color], unlocked: true }
           }
         }
       }));
@@ -99,7 +101,7 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   };
 
   const selectColor = (color: string) => {
-    if (metaState.cosmetics.availableColors[color].unlocked) {
+    if ((metaState.cosmetics.availableColors as any)[color].unlocked) {
       setMetaState(prev => ({
         ...prev,
         cosmetics: { ...prev.cosmetics, selectedColor: color }
@@ -108,395 +110,412 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
     }
   };
 
+  // Replace dynamic script loading with ES module import
   const launchGame = async (targetElement: HTMLElement) => {
-    // Load Box2D if not already loaded
-    if (!window.box2dwasm) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/box2d-wasm@7.0.0/dist/umd/box2d-wasm.js';
-      script.onload = async () => {
-        Box2D = await window.box2dwasm();
-        initializeGame(targetElement);
-      };
-      document.head.appendChild(script);
-    } else {
-      Box2D = await window.box2dwasm();
+    try {
+      console.log('Attempting to initialize Box2D');
+      if (!Box2D) {
+        Box2D = await Box2DFactory();
+        console.log('Box2D loaded:', Box2D);
+      }
       initializeGame(targetElement);
+    } catch (e) {
+      console.error('Box2D initialization error:', e);
     }
   };
 
   const initializeGame = (targetElement: HTMLElement) => {
-    const {
-      b2World, b2Vec2, b2BodyDef, b2_dynamicBody, b2PolygonShape,
-      b2ParticleSystemDef, b2ParticleGroupDef, b2CircleShape,
-      b2_waterParticle, b2_viscousParticle, b2_powderParticle
-    } = Box2D;
+    try {
+      console.log('Initializing game in container:', targetElement);
+      const {
+        b2World, b2Vec2, b2BodyDef, b2_dynamicBody, b2PolygonShape,
+        b2ParticleSystemDef, b2ParticleGroupDef, b2CircleShape,
+        b2_waterParticle, b2_viscousParticle, b2_powderParticle
+      } = Box2D;
 
-    // Clear the container and create canvas
-    targetElement.innerHTML = '';
-    canvas = document.createElement('canvas');
-    ctx = canvas.getContext('2d')!;
-    targetElement.appendChild(canvas);
+      // Clear the container and create canvas
+      targetElement.innerHTML = '';
+      canvas = document.createElement('canvas');
+      ctx = canvas.getContext('2d')!;
+      targetElement.appendChild(canvas);
+      console.log('Canvas created and appended:', canvas);
 
-    // Set canvas size with talent consideration
-    const containerRect = targetElement.getBoundingClientRect();
-    const gameWidth = containerRect.width * (metaState.talents.biggerPlaypen ? 1.05 : 1);
-    canvas.width = gameWidth;
-    canvas.height = containerRect.height;
+      // Set canvas size with talent consideration
+      const containerRect = targetElement.getBoundingClientRect();
+      const gameWidth = containerRect.width * (metaState.talents.biggerPlaypen ? 1.05 : 1);
+      canvas.width = gameWidth;
+      canvas.height = containerRect.height;
 
-    // World Setup
-    const gravity = new b2Vec2(0, 10);
-    world = new b2World(gravity);
+      // World Setup
+      const gravity = new b2Vec2(0, 10);
+      world = new b2World(gravity);
 
-    // Create Static Boundaries
-    const bd = new b2BodyDef();
-    const ground = world.CreateBody(bd);
-    const wallShape = new b2PolygonShape();
-    
-    // Floor
-    wallShape.SetAsBox(canvas.width / 2 / SCALE, 2);
-    ground.CreateFixture(wallShape, 0);
-    ground.SetTransform(new b2Vec2(canvas.width / 2 / SCALE, canvas.height / SCALE), 0);
-    
-    // Left Wall
-    wallShape.SetAsBox(1, canvas.height / 2 / SCALE);
-    ground.CreateFixture(wallShape, 0);
-    ground.SetTransform(new b2Vec2(0, canvas.height / 2 / SCALE), 0);
-    
-    // Right Wall
-    wallShape.SetAsBox(1, canvas.height / 2 / SCALE);
-    ground.CreateFixture(wallShape, 0);
-    ground.SetTransform(new b2Vec2(canvas.width / SCALE, canvas.height / 2 / SCALE), 0);
-
-    // ADVANCED PHYSICS: FLUID SYSTEM
-    const psd = new b2ParticleSystemDef();
-    psd.radius = 0.15; // Particle radius in meters
-    psd.dampingStrength = 0.2;
-    particleSystem = world.CreateParticleSystem(psd);
-    
-    // Create a blob of water
-    const waterShape = new b2PolygonShape();
-    waterShape.SetAsBox(6, 4, new b2Vec2(canvas.width / 2 / SCALE, 5), 0);
-    const pgd = new b2ParticleGroupDef();
-    pgd.shape = waterShape;
-    pgd.flags = b2_waterParticle; // This makes it behave like water
-    particleSystem.CreateParticleGroup(pgd);
-
-    // Game state
-    let localGameState = {
-      score: metaState.talents.cozyStart ? 50 : 0,
-      joy: 0,
-      level: 1,
-      gameOver: false,
-      nextBerryTier: 0,
-      canDrop: true,
-      passives: [],
-      abilities: {}
-    };
-
-    const BERRIES = [
-      { tier: 0, radius: 15, affinity: 'sun', color: '#ff5555', score: 1 },
-      { tier: 1, radius: 20, affinity: 'earth', color: '#50fa7b', score: 3 },
-      { tier: 2, radius: 28, affinity: 'moon', color: '#bd93f9', score: 6 },
-      { tier: 3, radius: 35, affinity: 'sun', color: '#ffb86c', score: 10 },
-      { tier: 4, radius: 45, affinity: 'earth', color: '#f1fa8c', score: 15 },
-      { tier: 5, radius: 58, affinity: 'moon', color: '#8be9fd', score: 21 },
-    ];
-
-    const DANGER_ZONE_Y = 150;
-
-    const checkLevelUp = () => {
-      const joyNeeded = JOY_PER_LEVEL[localGameState.level] || JOY_PER_LEVEL[JOY_PER_LEVEL.length - 1];
-      if (localGameState.joy >= joyNeeded) {
-        localGameState.joy -= joyNeeded;
-        localGameState.level++;
-        setGameState(prev => ({ ...prev, level: localGameState.level, showLevelUp: true }));
-        setTimeout(() => {
-          setGameState(prev => ({ ...prev, showLevelUp: false }));
-        }, 2000);
-      }
-    };
-
-    // Core Game Functions
-    let currentBerry: any = null;
-    let previewBerry: any = null;
-    let bodiesToDestroy: any[] = [];
-
-    function createBerry(x: number, y: number, tier: number, isStatic = false, overrideColor = null) {
-      const berryData = BERRIES[tier];
+      // Create Static Boundaries
       const bd = new b2BodyDef();
-      if (!isStatic) bd.set_type(b2_dynamicBody);
-      bd.set_position(new b2Vec2(x / SCALE, y / SCALE));
-      const body = world.CreateBody(bd);
+      const ground = world.CreateBody(bd);
+      const wallShape = new b2PolygonShape();
+      
+      // Floor
+      wallShape.SetAsBox(canvas.width / 2 / SCALE, 2);
+      ground.CreateFixture(wallShape, 0);
+      ground.SetTransform(new b2Vec2(canvas.width / 2 / SCALE, canvas.height / SCALE), 0);
+      
+      // Left Wall
+      wallShape.SetAsBox(1, canvas.height / 2 / SCALE);
+      ground.CreateFixture(wallShape, 0);
+      ground.SetTransform(new b2Vec2(0, canvas.height / 2 / SCALE), 0);
+      
+      // Right Wall
+      wallShape.SetAsBox(1, canvas.height / 2 / SCALE);
+      ground.CreateFixture(wallShape, 0);
+      ground.SetTransform(new b2Vec2(canvas.width / SCALE, canvas.height / 2 / SCALE), 0);
 
-      const shape = new b2CircleShape();
-      shape.set_m_radius(berryData.radius / SCALE);
-      const fixture = body.CreateFixture(shape, 1.0);
+      // ADVANCED PHYSICS: FLUID SYSTEM
+      const psd = new b2ParticleSystemDef();
+      psd.radius = 0.15; // Particle radius in meters
+      psd.dampingStrength = 0.2;
+      particleSystem = world.CreateParticleSystem(psd);
       
-      // Apply dusty fuzzling effect
-      if (metaState.selectedFuzzling === 'dusty') {
-        fixture.SetFriction(0.1);
-      }
-      
-      // Attach custom properties
-      body.userData = {
-        type: 'berry',
-        tier: tier,
-        affinity: berryData.affinity,
-        color: overrideColor || berryData.color,
-        radius: berryData.radius,
-        scoreValue: berryData.score
+      // Create a blob of water
+      const waterShape = new b2PolygonShape();
+      waterShape.SetAsBox(6, 4, new b2Vec2(canvas.width / 2 / SCALE, 5), 0);
+      const pgd = new b2ParticleGroupDef();
+      pgd.shape = waterShape;
+      pgd.flags = b2_waterParticle; // This makes it behave like water
+      particleSystem.CreateParticleGroup(pgd);
+
+      // Game state
+      let localGameState = {
+        score: metaState.talents.cozyStart ? 50 : 0,
+        joy: 0,
+        level: 1,
+        gameOver: false,
+        nextBerryTier: 0,
+        canDrop: true,
+        passives: [],
+        abilities: {}
       };
-      
-      return body;
-    }
 
-    function spawnNextBerry() {
-      if (localGameState.gameOver) return;
-      
-      // Affinity Attunement Talent Logic
-      if (metaState.talents.affinityAttunement && Math.random() < 0.33) {
-        const preferredAffinity = metaState.selectedFuzzling === 'sunny' ? 'sun' : 'earth';
-        const affinityBerries = BERRIES.filter(b => b.affinity === preferredAffinity && b.tier < 3);
-        const berryData = affinityBerries[Math.floor(Math.random() * affinityBerries.length)];
-        localGameState.nextBerryTier = BERRIES.indexOf(berryData);
-      } else {
-        localGameState.nextBerryTier = Math.floor(Math.random() * 3);
+      const BERRIES = [
+        { tier: 0, radius: 15, affinity: 'sun', color: '#ff5555', score: 1 },
+        { tier: 1, radius: 20, affinity: 'earth', color: '#50fa7b', score: 3 },
+        { tier: 2, radius: 28, affinity: 'moon', color: '#bd93f9', score: 6 },
+        { tier: 3, radius: 35, affinity: 'sun', color: '#ffb86c', score: 10 },
+        { tier: 4, radius: 45, affinity: 'earth', color: '#f1fa8c', score: 15 },
+        { tier: 5, radius: 58, affinity: 'moon', color: '#8be9fd', score: 21 },
+      ];
+
+      const DANGER_ZONE_Y = 150;
+
+      const checkLevelUp = () => {
+        const joyNeeded = JOY_PER_LEVEL[localGameState.level] || JOY_PER_LEVEL[JOY_PER_LEVEL.length - 1];
+        if (localGameState.joy >= joyNeeded) {
+          localGameState.joy -= joyNeeded;
+          localGameState.level++;
+          setGameState(prev => ({ ...prev, level: localGameState.level, showLevelUp: true }));
+          setTimeout(() => {
+            setGameState(prev => ({ ...prev, showLevelUp: false }));
+          }, 2000);
+        }
+      };
+
+      // Core Game Functions
+      let currentBerry: any = null;
+      let previewBerry: any = null;
+      let bodiesToDestroy: any[] = [];
+
+      function createBerry(x: number, y: number, tier: number, isStatic = false, overrideColor = null) {
+        const berryData = BERRIES[tier];
+        const bd = new b2BodyDef();
+        if (!isStatic) bd.set_type(b2_dynamicBody);
+        bd.set_position(new b2Vec2(x / SCALE, y / SCALE));
+        const body = world.CreateBody(bd);
+
+        const shape = new b2CircleShape();
+        shape.set_m_radius(berryData.radius / SCALE);
+        const fixture = body.CreateFixture(shape, 1.0);
+        
+        // Apply dusty fuzzling effect
+        if (metaState.selectedFuzzling === 'dusty') {
+          fixture.SetFriction(0.1);
+        }
+        
+        // Attach custom properties
+        body.userData = {
+          type: 'berry',
+          tier: tier,
+          affinity: berryData.affinity,
+          color: overrideColor || berryData.color,
+          radius: berryData.radius,
+          scoreValue: berryData.score
+        };
+        
+        return body;
       }
-      
-      previewBerry = createBerry(canvas.width / 2, 70, localGameState.nextBerryTier, true, metaState.cosmetics.selectedColor);
-    }
 
-    function dropBerry(x: number) {
-      if (!localGameState.canDrop || localGameState.gameOver) return;
-      localGameState.canDrop = false;
-
-      if (previewBerry) {
-        world.DestroyBody(previewBerry);
+      function spawnNextBerry() {
+        if (localGameState.gameOver) return;
+        
+        // Affinity Attunement Talent Logic
+        if (metaState.talents.affinityAttunement && Math.random() < 0.33) {
+          const preferredAffinity = metaState.selectedFuzzling === 'sunny' ? 'sun' : 'earth';
+          const affinityBerries = BERRIES.filter(b => b.affinity === preferredAffinity && b.tier < 3);
+          const berryData = affinityBerries[Math.floor(Math.random() * affinityBerries.length)];
+          localGameState.nextBerryTier = BERRIES.indexOf(berryData);
+        } else {
+          localGameState.nextBerryTier = Math.floor(Math.random() * 3);
+        }
+        
+        previewBerry = createBerry(canvas.width / 2, 70, localGameState.nextBerryTier, true, metaState.cosmetics.selectedColor);
       }
-      
-      currentBerry = createBerry(x, 70, localGameState.nextBerryTier);
-      previewBerry = null;
 
-      setTimeout(() => {
-        localGameState.canDrop = true;
-        spawnNextBerry();
-      }, 500);
-    }
+      function dropBerry(x: number) {
+        if (!localGameState.canDrop || localGameState.gameOver) return;
+        localGameState.canDrop = false;
 
-    // ADVANCED PHYSICS: EXPLOSION FUNCTION
-    function createExplosion(x: number, y: number, radius: number, strength: number) {
-      const explosionCenter = new b2Vec2(x / SCALE, y / SCALE);
-      
-      // Apply impulse to rigid bodies
-      for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
-        if (body.GetType() === b2_dynamicBody) {
-          const bodyPos = body.GetPosition();
-          const distanceVec = new b2Vec2(bodyPos.x - explosionCenter.x, bodyPos.y - explosionCenter.y);
-          const distance = distanceVec.Length();
+        if (previewBerry) {
+          world.DestroyBody(previewBerry);
+        }
+        
+        currentBerry = createBerry(x, 70, localGameState.nextBerryTier);
+        previewBerry = null;
 
-          if (distance < radius) {
-            distanceVec.Normalize();
-            distanceVec.set_x(distanceVec.x * strength * (1 - distance / radius));
-            distanceVec.set_y(distanceVec.y * strength * (1 - distance / radius));
-            body.ApplyLinearImpulse(distanceVec, bodyPos, true);
+        setTimeout(() => {
+          localGameState.canDrop = true;
+          spawnNextBerry();
+        }, 500);
+      }
+
+      // ADVANCED PHYSICS: EXPLOSION FUNCTION
+      function createExplosion(x: number, y: number, radius: number, strength: number) {
+        const explosionCenter = new b2Vec2(x / SCALE, y / SCALE);
+        
+        // Apply impulse to rigid bodies
+        for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
+          if (body.GetType() === b2_dynamicBody) {
+            const bodyPos = body.GetPosition();
+            const distanceVec = new b2Vec2(bodyPos.x - explosionCenter.x, bodyPos.y - explosionCenter.y);
+            const distance = distanceVec.Length();
+
+            if (distance < radius) {
+              distanceVec.Normalize();
+              distanceVec.set_x(distanceVec.x * strength * (1 - distance / radius));
+              distanceVec.set_y(distanceVec.y * strength * (1 - distance / radius));
+              body.ApplyLinearImpulse(distanceVec, bodyPos, true);
+            }
           }
         }
       }
-    }
 
-    function createFluidSplash(x: number, y: number, color: string) {
-      const { b2ParticleGroupDef, b2CircleShape, b2Vec2, b2_viscousParticle } = Box2D;
-      const shape = new b2CircleShape();
-      shape.set_m_radius(1.5);
-      shape.set_m_p(new b2Vec2(x / SCALE, y / SCALE));
-      
-      const pgd = new b2ParticleGroupDef();
-      pgd.shape = shape;
-      pgd.flags = b2_viscousParticle;
-      const group = particleSystem.CreateParticleGroup(pgd);
-      
-      setTimeout(() => particleSystem.DestroyParticleGroup(group), 1500);
-    }
-
-    // Collision Detection (simplified for Box2D)
-    function checkCollisions() {
-      const berries: any[] = [];
-      
-      // Collect all berries
-      for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
-        if (body.userData && body.userData.type === 'berry' && !body.isStatic) {
-          berries.push(body);
-        }
+      function createFluidSplash(x: number, y: number, color: string) {
+        const { b2ParticleGroupDef, b2CircleShape, b2Vec2, b2_viscousParticle } = Box2D;
+        const shape = new b2CircleShape();
+        shape.set_m_radius(1.5);
+        // Only pass a b2Vec2 to set_m_p, not color
+        shape.set_m_p(new Box2D.b2Vec2(x / SCALE, y / SCALE));
+        
+        const pgd = new b2ParticleGroupDef();
+        pgd.shape = shape;
+        pgd.flags = b2_viscousParticle;
+        const group = particleSystem.CreateParticleGroup(pgd);
+        
+        setTimeout(() => particleSystem.DestroyParticleGroup(group), 1500);
       }
 
-      // Check for collisions between same-tier berries
-      for (let i = 0; i < berries.length; i++) {
-        for (let j = i + 1; j < berries.length; j++) {
-          const berryA = berries[i];
-          const berryB = berries[j];
-          
-          if (berryA.userData.tier === berryB.userData.tier && berryA.userData.affinity === berryB.userData.affinity) {
-            const posA = berryA.GetPosition();
-            const posB = berryB.GetPosition();
-            const distance = Math.sqrt(
-              Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2)
-            );
-            
-            const combinedRadius = (berryA.userData.radius + berryB.userData.radius) / SCALE;
-            
-            if (distance < combinedRadius * 0.8) { // Collision threshold
-              const nextTier = berryA.userData.tier + 1;
-              if (nextTier < BERRIES.length) {
-                // Remove both berries
-                bodiesToDestroy.push(berryA, berryB);
+      // Collision Detection (simplified for Box2D)
+      function checkCollisions() {
+        const berries: any[] = [];
+        
+        // Collect all berries
+        for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
+          if (body.userData && body.userData.type === 'berry' && !body.isStatic) {
+            berries.push(body);
+          }
+        }
 
-                // Create the new, bigger berry at the midpoint
-                const newBerry = createBerry(
-                  (posA.x + posB.x) / 2 * SCALE,
-                  (posA.y + posB.y) / 2 * SCALE,
-                  nextTier
-                );
+        // Check for collisions between same-tier berries
+        for (let i = 0; i < berries.length; i++) {
+          for (let j = i + 1; j < berries.length; j++) {
+            const berryA = berries[i];
+            const berryB = berries[j];
+            
+            if (berryA.userData.tier === berryB.userData.tier && berryA.userData.affinity === berryB.userData.affinity) {
+              const posA = berryA.GetPosition();
+              const posB = berryB.GetPosition();
+              const distance = Math.sqrt(
+                Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2)
+              );
+              
+              const combinedRadius = (berryA.userData.radius + berryB.userData.radius) / SCALE;
+              
+              if (distance < combinedRadius * 0.8) { // Collision threshold
+                const nextTier = berryA.userData.tier + 1;
+                if (nextTier < BERRIES.length) {
+                  // Remove both berries
+                  bodiesToDestroy.push(berryA, berryB);
 
-                // Update Score and Joy
-                let joyGained = BERRIES[nextTier].score;
-                if (metaState.selectedFuzzling === 'sunny') joyGained *= 1.1;
-                localGameState.joy += joyGained;
-                localGameState.score += joyGained;
-                setGameState({ ...localGameState });
-                checkLevelUp();
-                
-                // Create explosion effect for higher tiers
-                if (nextTier >= 3) {
-                  createFluidSplash(
+                  // Create the new, bigger berry at the midpoint
+                  const newBerry = createBerry(
                     (posA.x + posB.x) / 2 * SCALE,
                     (posA.y + posB.y) / 2 * SCALE,
-                    berryA.userData.color
+                    nextTier
                   );
+
+                  // Update Score and Joy
+                  let joyGained = BERRIES[nextTier].score;
+                  if (metaState.selectedFuzzling === 'sunny') joyGained *= 1.1;
+                  localGameState.joy += joyGained;
+                  localGameState.score += joyGained;
+                  setGameState({
+                    score: localGameState.score,
+                    joy: localGameState.joy,
+                    level: localGameState.level,
+                    gameOver: localGameState.gameOver,
+                    showLevelUp: gameState.showLevelUp,
+                    showGameOver: gameState.showGameOver
+                  });
+                  checkLevelUp();
+                  
+                  // Create explosion effect for higher tiers
+                  if (nextTier >= 3) {
+                    createFluidSplash(
+                      (posA.x + posB.x) / 2 * SCALE,
+                      (posA.y + posB.y) / 2 * SCALE,
+                      berryA.userData.color
+                    );
+                  }
                 }
               }
             }
-          }
-          // Cross-Affinity Combo: Sun + Moon = Eclipse
-          else if ((berryA.userData.affinity === 'sun' && berryB.userData.affinity === 'moon') || 
-                   (berryA.userData.affinity === 'moon' && berryB.userData.affinity === 'sun')) {
-            const posA = berryA.GetPosition();
-            const posB = berryB.GetPosition();
-            const midX = (posA.x + posB.x) / 2 * SCALE;
-            const midY = (posA.y + posB.y) / 2 * SCALE;
-            createExplosion(midX, midY, 10, -30);
-            localGameState.score += 5;
-            setGameState({ ...localGameState });
-            bodiesToDestroy.push(berryA, berryB);
-          }
-        }
-      }
-    }
-
-    // Game Over Logic
-    function checkGameOver() {
-      if (localGameState.gameOver) return;
-      
-      for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
-        if (body.userData && body.userData.type === 'berry' && !body.isStatic) {
-          const pos = body.GetPosition();
-          const velocity = body.GetLinearVelocity();
-          
-          if (pos.y * SCALE < DANGER_ZONE_Y && Math.abs(velocity.y) < 0.1) {
-            localGameState.gameOver = true;
-            setGameState(prev => ({ ...prev, gameOver: true, showGameOver: true }));
-            break;
-          }
-        }
-      }
-    }
-
-    // Input Handling
-    canvas.addEventListener('mousemove', (event) => {
-      if (previewBerry && localGameState.canDrop) {
-        const rect = canvas.getBoundingClientRect();
-        let mouseX = event.clientX - rect.left;
-        const berryRadius = BERRIES[localGameState.nextBerryTier].radius;
-        mouseX = Math.max(mouseX, berryRadius);
-        mouseX = Math.min(mouseX, canvas.width - berryRadius);
-        
-        previewBerry.SetTransform(new b2Vec2(mouseX / SCALE, 70 / SCALE), 0);
-      }
-    });
-
-    canvas.addEventListener('click', (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      dropBerry(x);
-    });
-
-    // Right-click for explosion
-    canvas.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      createExplosion(x, y, 8, 30);
-    });
-
-    // Render Loop
-    function render() {
-      // Step the physics world
-      world.Step(1 / 60, 3, 3);
-      
-      // Check collisions and game over
-      checkCollisions();
-      checkGameOver();
-      
-      // Destroy bodies marked for destruction
-      bodiesToDestroy.forEach(body => world.DestroyBody(body));
-      bodiesToDestroy = [];
-      
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Render rigid bodies
-      ctx.strokeStyle = 'white';
-      for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
-        if (body.userData && body.userData.type === 'berry') {
-          const pos = body.GetPosition();
-          const angle = body.GetAngle();
-          ctx.save();
-          ctx.translate(pos.x * SCALE, pos.y * SCALE);
-          ctx.rotate(angle);
-          
-          for (let fixture = body.GetFixtureList(); fixture.a; fixture = fixture.GetNext()) {
-            const shape = fixture.GetShape();
-            if (shape instanceof b2CircleShape) {
-              ctx.beginPath();
-              ctx.arc(0, 0, shape.get_m_radius() * SCALE, 0, 2 * Math.PI);
-              ctx.fillStyle = body.userData.color;
-              ctx.fill();
-              ctx.stroke();
+            // Cross-Affinity Combo: Sun + Moon = Eclipse
+            else if ((berryA.userData.affinity === 'sun' && berryB.userData.affinity === 'moon') || 
+                     (berryA.userData.affinity === 'moon' && berryB.userData.affinity === 'sun')) {
+              const posA = berryA.GetPosition();
+              const posB = berryB.GetPosition();
+              const midX = (posA.x + posB.x) / 2 * SCALE;
+              const midY = (posA.y + posB.y) / 2 * SCALE;
+              createExplosion(midX, midY, 10, -30);
+              localGameState.score += 5;
+              setGameState({
+                score: localGameState.score,
+                joy: localGameState.joy,
+                level: localGameState.level,
+                gameOver: localGameState.gameOver,
+                showLevelUp: gameState.showLevelUp,
+                showGameOver: gameState.showGameOver
+              });
+              bodiesToDestroy.push(berryA, berryB);
             }
           }
-          ctx.restore();
         }
       }
 
-      // Render particles (fluids)
-      if (particleSystem) {
-        const particles = particleSystem.GetPositionBuffer();
-        ctx.fillStyle = `rgba(0, 150, 255, 0.7)`; // Water color
-        for (let i = 0; i < particles.length; i += 2) {
-          ctx.beginPath();
-          ctx.arc(particles[i] * SCALE, particles[i+1] * SCALE, 0.15 * SCALE, 0, 2 * Math.PI);
-          ctx.fill();
+      // Game Over Logic
+      function checkGameOver() {
+        if (localGameState.gameOver) return;
+        
+        for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
+          if (body.userData && body.userData.type === 'berry' && !body.isStatic) {
+            const pos = body.GetPosition();
+            const velocity = body.GetLinearVelocity();
+            
+            if (pos.y * SCALE < DANGER_ZONE_Y && Math.abs(velocity.y) < 0.1) {
+              localGameState.gameOver = true;
+              setGameState(prev => ({ ...prev, gameOver: true, showGameOver: true }));
+              break;
+            }
+          }
         }
       }
-      
-      requestAnimationFrame(render);
+
+      // Input Handling
+      canvas.addEventListener('mousemove', (event) => {
+        if (previewBerry && localGameState.canDrop) {
+          const rect = canvas.getBoundingClientRect();
+          let mouseX = event.clientX - rect.left;
+          const berryRadius = BERRIES[localGameState.nextBerryTier].radius;
+          mouseX = Math.max(mouseX, berryRadius);
+          mouseX = Math.min(mouseX, canvas.width - berryRadius);
+          
+          previewBerry.SetTransform(new b2Vec2(mouseX / SCALE, 70 / SCALE), 0);
+        }
+      });
+
+      canvas.addEventListener('click', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        dropBerry(x);
+      });
+
+      // Right-click for explosion
+      canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        createExplosion(x, y, 8, 30);
+      });
+
+      // Render Loop
+      function render() {
+        // Step the physics world
+        world.Step(1 / 60, 3, 3);
+        
+        // Check collisions and game over
+        checkCollisions();
+        checkGameOver();
+        
+        // Destroy bodies marked for destruction
+        bodiesToDestroy.forEach(body => world.DestroyBody(body));
+        bodiesToDestroy = [];
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Render rigid bodies
+        ctx.strokeStyle = 'white';
+        for (let body = world.GetBodyList(); body.a; body = body.GetNext()) {
+          if (body.userData && body.userData.type === 'berry') {
+            const pos = body.GetPosition();
+            const angle = body.GetAngle();
+            ctx.save();
+            ctx.translate(pos.x * SCALE, pos.y * SCALE);
+            ctx.rotate(angle);
+            
+            for (let fixture = body.GetFixtureList(); fixture.a; fixture = fixture.GetNext()) {
+              const shape = fixture.GetShape();
+              if (shape instanceof b2CircleShape) {
+                ctx.beginPath();
+                ctx.arc(0, 0, shape.get_m_radius() * SCALE, 0, 2 * Math.PI);
+                ctx.fillStyle = body.userData.color;
+                ctx.fill();
+                ctx.stroke();
+              }
+            }
+            ctx.restore();
+          }
+        }
+
+        // Render particles (fluids)
+        if (particleSystem) {
+          const particles = particleSystem.GetPositionBuffer();
+          ctx.fillStyle = `rgba(0, 150, 255, 0.7)`; // Water color
+          for (let i = 0; i < particles.length; i += 2) {
+            ctx.beginPath();
+            ctx.arc(particles[i] * SCALE, particles[i+1] * SCALE, 0.15 * SCALE, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+        
+        requestAnimationFrame(render);
+      }
+      console.log('Starting render loop');
+      spawnNextBerry();
+      render();
+      console.log('Advanced Fuzzling Game with Box2D Launched!');
+    } catch (error) {
+      console.error('Game initialization error:', error);
     }
-    
-    // Start the game
-    spawnNextBerry();
-    render();
-    
-    console.log("Advanced Fuzzling Game with Box2D Launched!");
   };
 
   const shutdownGame = () => {
@@ -547,12 +566,15 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   };
 
   useEffect(() => {
+    console.log('Current view:', currentView);
     if (currentView === 'game' && gameContainerRef.current) {
+      console.log('Launching game, container ref:', gameContainerRef.current);
       launchGame(gameContainerRef.current);
     }
 
     return () => {
       if (currentView === 'game') {
+        console.log('Shutting down game');
         shutdownGame();
       }
     };

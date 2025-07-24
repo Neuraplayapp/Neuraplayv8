@@ -30,6 +30,11 @@ export interface User {
     xpEarned: number;
   }>;
   hasPosted: boolean;
+  friends: string[]; // Array of user IDs
+  friendRequests: {
+    sent: string[]; // Array of user IDs
+    received: string[]; // Array of user IDs
+  };
 }
 
 interface UserContextType {
@@ -38,6 +43,8 @@ interface UserContextType {
   addXP: (amount: number) => void;
   addStars: (amount: number) => void;
   updateGameProgress: (gameId: string, progress: Partial<User['profile']['gameProgress'][string]>) => void;
+  updateFriends: (friends: string[]) => void;
+  updateFriendRequests: (friendRequests: { sent: string[]; received: string[] }) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -130,8 +137,20 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUserWithPersistence(updatedUser);
   };
 
+  const updateFriends = (friends: string[]) => {
+    if (!user) return;
+    const updatedUser = { ...user, friends };
+    setUserWithPersistence(updatedUser);
+  };
+
+  const updateFriendRequests = (friendRequests: { sent: string[]; received: string[] }) => {
+    if (!user) return;
+    const updatedUser = { ...user, friendRequests };
+    setUserWithPersistence(updatedUser);
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser: setUserWithPersistence, addXP, addStars, updateGameProgress }}>
+    <UserContext.Provider value={{ user, setUser: setUserWithPersistence, addXP, addStars, updateGameProgress, updateFriends, updateFriendRequests }}>
       {children}
     </UserContext.Provider>
   );

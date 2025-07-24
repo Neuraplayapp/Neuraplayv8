@@ -7,6 +7,7 @@ import ForumPage from './pages/ForumPage';
 import RegistrationPage from './pages/RegistrationPage';
 import ForumRegistrationPage from './pages/ForumRegistrationPage';
 import AIReportPage from './pages/AIReportPage';
+import ProfilePage from './pages/ProfilePage';
 import { UserProvider } from './contexts/UserContext';
 import { PostProvider } from './contexts/PostContext';
 import Footer from './components/Footer';
@@ -47,6 +48,7 @@ function App() {
                   <Route path="/registration" element={<RegistrationPage />} />
                   <Route path="/forum-registration" element={<ForumRegistrationPage />} />
                   <Route path="/ai-report" element={<AIReportPage />} />
+                  <Route path="/profile/:id" element={<ProfilePage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>

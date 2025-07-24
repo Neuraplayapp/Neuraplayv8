@@ -12,9 +12,14 @@ import AIGame from '../components/AIGame';
 import AIAssistant from '../components/AIAssistant';
 import StarbloomAdventureGame from '../components/games/StarbloomAdventureGame';
 import FuzzlingAdvancedGame from '../components/games/FuzzlingAdvancedGame';
+import BerryBlasterGame from '../components/games/BerryBlasterGame';
+import MountainClimberGame from '../components/games/MountainClimberGame';
+import HappyBuilderGame from '../components/games/HappyBuilderGame';
+import HappyBuilderTest from '../components/games/HappyBuilderTest';
+import ProfileCard from '../components/ProfileCard';
 
 const PlaygroundPage: React.FC = () => {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const [activeView, setActiveView] = useState('modules');
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -38,6 +43,37 @@ const PlaygroundPage: React.FC = () => {
       </div>
     );
   }
+
+  // Friend system handlers
+  const handleUpdateBio = (bio: string) => {
+    if (!user) return;
+    setUser({ ...user, profile: { ...user.profile, about: bio } });
+  };
+  const handleRemoveFriend = (friendId: string) => {
+    if (!user) return;
+    setUser({ ...user, friends: user.friends.filter((fid: string) => fid !== friendId) });
+  };
+  const handleAcceptFriend = (friendId: string) => {
+    if (!user) return;
+    setUser({
+      ...user,
+      friends: [...user.friends, friendId],
+      friendRequests: {
+        ...user.friendRequests,
+        received: user.friendRequests.received.filter((fid: string) => fid !== friendId)
+      }
+    });
+  };
+  const handleRejectFriend = (friendId: string) => {
+    if (!user) return;
+    setUser({
+      ...user,
+      friendRequests: {
+        ...user.friendRequests,
+        received: user.friendRequests.received.filter((fid: string) => fid !== friendId)
+      }
+    });
+  };
 
   const games = [
     {
@@ -119,7 +155,37 @@ const PlaygroundPage: React.FC = () => {
       difficulty: 'Hard',
       skills: ['Physics', 'Strategy', 'Pattern Recognition', 'Meta-Progression'],
       component: FuzzlingAdvancedGame
-    }
+    },
+    {
+      id: 'berry-blaster',
+      title: 'Berry Blaster',
+      description: 'Blast waves of colorful berries in this arcade shooter! Reflexes and aim required.',
+      icon: <Gamepad2 className="w-8 h-8" />,
+      color: 'from-indigo-400 to-indigo-600',
+      difficulty: 'Medium',
+      skills: ['Reflexes', 'Aiming', 'Hand-Eye Coordination'],
+      component: BerryBlasterGame
+    },
+    {
+      id: 'happy-builder',
+      title: 'Happy Builder',
+      description: 'Build, explore, and shape a 3D voxel world! Place and break blocks, jump, and roam a procedurally generated landscape.',
+      icon: <Trophy className="w-8 h-8" />,
+      color: 'from-yellow-400 to-yellow-600',
+      difficulty: 'Medium',
+      skills: ['Spatial Reasoning', 'Creativity', 'Exploration'],
+      component: HappyBuilderGame
+    },
+    {
+      id: 'happy-builder-test',
+      title: 'Happy Builder Test',
+      description: 'Test the Happy Builder game mechanics and features.',
+      icon: <Sparkles className="w-8 h-8" />,
+      color: 'from-purple-400 to-pink-600',
+      difficulty: 'Easy',
+      skills: ['Spatial Reasoning', 'Creativity', 'Exploration'],
+      component: HappyBuilderTest
+    },
   ];
 
   const playDescription = async (description: string, gameId: string) => {
@@ -373,8 +439,23 @@ const PlaygroundPage: React.FC = () => {
           {/* Sidebar */}
           <aside className="lg:w-80">
             <div className="sticky top-24 space-y-6">
-              {renderDashboard()}
-              
+              {user && (
+                <>
+                  <ProfileCard
+                    user={user}
+                    onUpdateBio={handleUpdateBio}
+                    onRemoveFriend={handleRemoveFriend}
+                    onAcceptFriend={handleAcceptFriend}
+                    onRejectFriend={handleRejectFriend}
+                  />
+                  <Link
+                    to={`/profile/${user.username}`}
+                    className="block w-full mt-2 bg-gradient-to-r from-purple-600 to-violet-500 text-white font-bold py-3 rounded-xl text-center shadow-lg hover:from-purple-700 hover:to-violet-600 transition-all text-lg"
+                  >
+                    My Profile
+                  </Link>
+                </>
+              )}
               <nav className="bg-white rounded-2xl shadow-lg border p-6">
                 <h3 className="font-bold text-lg text-slate-900 mb-4">Navigation</h3>
                 <div className="space-y-2">

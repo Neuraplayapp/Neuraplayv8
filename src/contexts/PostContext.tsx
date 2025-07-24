@@ -60,7 +60,7 @@ export const PostProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         title: 'My son finally understood sharing!',
         content: 'We used the "two baskets" game from the app, and something just clicked. He shared his toys without any prompting for the first time!',
         author: 'Sarah J.',
-        authorAvatar: 'https://placehold.co/100x100/c084fc/ffffff?text=S',
+        authorAvatar: '/assets/placeholder.png',
         channel: 'What I Learned Today',
         votes: 15,
         createdAt: '2025-01-02',
@@ -69,7 +69,7 @@ export const PostProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: '101',
             content: 'That\'s amazing! We are going to try that tonight.',
             author: 'Mike R.',
-            authorAvatar: 'https://placehold.co/100x100/7dd3fc/ffffff?text=M',
+            authorAvatar: '/assets/placeholder.png',
             votes: 5,
             createdAt: '2025-01-02'
           }
@@ -80,7 +80,7 @@ export const PostProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         title: 'The AI storyteller is incredible',
         content: 'It wove my daughter\'s favorite animal (a penguin) into a story about emotional regulation. She was captivated!',
         author: 'Mike R.',
-        authorAvatar: 'https://placehold.co/100x100/7dd3fc/ffffff?text=M',
+        authorAvatar: '/assets/placeholder.png',
         channel: 'Amazing Discoveries',
         votes: 22,
         createdAt: '2025-01-01',
@@ -90,16 +90,17 @@ export const PostProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const [channels] = useState([
-    "What I Learned Today",
-    "Insights", 
-    "Amazing Discoveries",
-    "Parenting Hacks",
-    "Emotional Wins",
-    "Cognitive Leaps",
-    "Creative Sparks",
-    "Ask the Experts",
-    "Success Stories",
-    "Resource Share"
+    "Stop & Go Adventure",
+    "Pattern Detective",
+    "Memory Galaxy",
+    "Number Quest",
+    "Letter Safari",
+    "AI Story Creator",
+    "Starbloom Forest Adventure",
+    "Fuzzling's Advanced Playpen",
+    "Berry Blaster",
+    "Happy Builder",
+    "General Discussion"
   ]);
 
   // Save posts to localStorage whenever posts change

@@ -1,17 +1,49 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { usePost } from '../contexts/PostContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronUp, ChevronDown, MessageCircle, Flag, UserPlus, Star } from 'lucide-react';
+import ProfileCard from '../components/ProfileCard';
 
 const ForumPage: React.FC = () => {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const { posts, channels, addPost, addReply, votePost } = usePost();
   const [selectedChannel, setSelectedChannel] = useState('What I Learned Today');
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
   const [showReplyForm, setShowReplyForm] = useState<{ [key: string]: boolean }>({});
+
+  // Friend system handlers
+  const handleUpdateBio = (bio: string) => {
+    if (!user) return;
+    setUser({ ...user, profile: { ...user.profile, about: bio } });
+  };
+  const handleRemoveFriend = (friendId: string) => {
+    if (!user) return;
+    setUser({ ...user, friends: user.friends.filter((fid: string) => fid !== friendId) });
+  };
+  const handleAcceptFriend = (friendId: string) => {
+    if (!user) return;
+    setUser({
+      ...user,
+      friends: [...user.friends, friendId],
+      friendRequests: {
+        ...user.friendRequests,
+        received: user.friendRequests.received.filter((fid: string) => fid !== friendId)
+      }
+    });
+  };
+  const handleRejectFriend = (friendId: string) => {
+    if (!user) return;
+    setUser({
+      ...user,
+      friendRequests: {
+        ...user.friendRequests,
+        received: user.friendRequests.received.filter((fid: string) => fid !== friendId)
+      }
+    });
+  };
 
   const handleSubmitPost = () => {
     if (!user || !newPostTitle.trim() || !newPostContent.trim()) return;
@@ -62,41 +94,38 @@ const ForumPage: React.FC = () => {
           {/* Sidebar */}
           <aside className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-              {/* User Auth/Profile */}
-              <div className="bg-white p-6 rounded-2xl border shadow-lg text-center">
-                {user ? (
-                  <div>
-                    <img 
-                      src={user.profile.avatar} 
-                      alt={user.username}
-                      className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-violet-200"
-                    />
-                    <h3 className="font-bold text-lg text-slate-900">{user.username}</h3>
-                    <div className="flex items-center justify-center gap-2 mt-2">
-                      <p className="text-violet-600 font-semibold">{user.profile.rank}</p>
-                      <div className="flex gap-1">
-                        {[...Array(Math.min(user.profile.stars, 5))].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-500 mt-4">Welcome back!</p>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="font-bold text-xl mb-2 text-violet-600">Ready for adventure?</h3>
-                    <p className="text-sm text-slate-500 mb-4">
-                      Create an account to post, vote, and make friends!
-                    </p>
-                    <Link 
-                      to="/forum-registration"
-                      className="block bg-violet-600 text-white font-bold py-3 px-6 rounded-full hover:bg-violet-700 transition-all"
-                    >
-                      Join the fun now!
-                    </Link>
-                  </div>
-                )}
-              </div>
+              {/* ProfileCard */}
+              {user && (
+                <>
+                  <ProfileCard
+                    user={user}
+                    onUpdateBio={handleUpdateBio}
+                    onRemoveFriend={handleRemoveFriend}
+                    onAcceptFriend={handleAcceptFriend}
+                    onRejectFriend={handleRejectFriend}
+                  />
+                  <Link
+                    to={`/profile/${user.username}`}
+                    className="block w-full mt-2 bg-gradient-to-r from-purple-600 to-violet-500 text-white font-bold py-3 rounded-xl text-center shadow-lg hover:from-purple-700 hover:to-violet-600 transition-all text-lg"
+                  >
+                    My Profile
+                  </Link>
+                </>
+              )}
+              {!user && (
+                <div className="bg-white p-6 rounded-2xl border shadow-lg text-center">
+                  <h3 className="font-bold text-xl mb-2 text-violet-600">Ready for adventure?</h3>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Create an account to post, vote, and make friends!
+                  </p>
+                  <Link 
+                    to="/forum-registration"
+                    className="block bg-violet-600 text-white font-bold py-3 px-6 rounded-full hover:bg-violet-700 transition-all"
+                  >
+                    Join the fun now!
+                  </Link>
+                </div>
+              )}
 
               {/* Channels */}
               <div className="bg-white p-6 rounded-2xl border shadow-lg">
@@ -192,12 +221,14 @@ const ForumPage: React.FC = () => {
                         {/* Post Meta */}
                         <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
                           <div className="flex items-center gap-3">
-                            <img 
-                              src={post.authorAvatar} 
-                              alt={post.author}
-                              className="w-8 h-8 rounded-full"
-                            />
-                            <span>Posted by: <strong>{post.author}</strong></span>
+                            <Link to={`/profile/${post.author}`} className="flex items-center gap-2 group">
+                              <img 
+                                src={post.authorAvatar} 
+                                alt={post.author}
+                                className="w-8 h-8 rounded-full border-2 border-purple-300 group-hover:border-violet-500 transition-all"
+                              />
+                              <span>Posted by: <strong className="text-violet-700 group-hover:underline">{post.author}</strong></span>
+                            </Link>
                           </div>
                           <div className="flex items-center gap-4">
                             <button
@@ -235,20 +266,20 @@ const ForumPage: React.FC = () => {
                         {post.replies.length > 0 && (
                           <div className="space-y-4 border-t pt-4">
                             {post.replies.map(reply => (
-                              <div key={reply.id} className="flex gap-3 ml-8 p-4 bg-slate-50 rounded-lg">
+                              <Link key={reply.id} to={`/profile/${reply.author}`} className="flex items-center gap-2 group">
                                 <img 
                                   src={reply.authorAvatar} 
                                   alt={reply.author}
-                                  className="w-8 h-8 rounded-full"
+                                  className="w-8 h-8 rounded-full border-2 border-purple-300 group-hover:border-violet-500 transition-all"
                                 />
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-2">
-                                    <strong className="text-sm">{reply.author}</strong>
+                                    <strong className="text-sm text-violet-700 group-hover:underline">{reply.author}</strong>
                                     <span className="text-xs text-slate-500">{reply.createdAt}</span>
                                   </div>
                                   <p className="text-slate-700">{reply.content}</p>
                                 </div>
-                              </div>
+                              </Link>
                             ))}
                           </div>
                         )}
