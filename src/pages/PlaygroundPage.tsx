@@ -1,7 +1,8 @@
 import React, { useState, useLayoutEffect, useRef, useMemo } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { gsap } from 'gsap';
-import { Gamepad2, BarChart, Users, Star, Brain, Sparkles, Trophy, Target, FileText } from 'lucide-react';
+import { Gamepad2, BarChart, Users, Star, Brain, Sparkles, Trophy, Target, FileText, CheckSquare } from 'lucide-react';
+import TaskManager from '../components/TaskManager';
 // Import your other components like GameModal and ALL your game components
 // import StackerGame from '../components/games/StackerGame';
 
@@ -9,6 +10,7 @@ const PlaygroundPage: React.FC = () => {
     const { user } = useUser();
     const [mainView, setMainView] = useState('play');
     const [playCategory, setPlayCategory] = useState('All');
+    const [isTaskManagerOpen, setIsTaskManagerOpen] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
     const games = useMemo(() => [
@@ -52,6 +54,12 @@ const PlaygroundPage: React.FC = () => {
         </>
     );
 
+    const renderTaskManager = () => (
+        <div className="w-full h-full">
+            <TaskManager onClose={() => setIsTaskManagerOpen(false)} />
+        </div>
+    );
+
     return (
         <div className="min-h-screen text-slate-200 pt-24 pb-12">
             <div className="container mx-auto px-6">
@@ -71,11 +79,12 @@ const PlaygroundPage: React.FC = () => {
                     </aside>
                     <main className="flex-1">
                         <div className={`${glassPanelStyle} p-2 flex items-center mb-6 rounded-xl`}>
-                            {['play', 'profile', 'social'].map(view => (
+                            {['play', 'profile', 'social', 'tasks'].map(view => (
                                 <button key={view} onClick={() => setMainView(view)} className={`flex-1 py-2 rounded-lg font-bold capitalize transition-colors flex items-center justify-center gap-2 ${mainView === view ? 'bg-white/20 text-white' : 'text-violet-300 hover:text-white'}`}>
                                     {view === 'play' && <Gamepad2 size={18}/>}
                                     {view === 'profile' && <BarChart size={18}/>}
                                     {view === 'social' && <Users size={18}/>}
+                                    {view === 'tasks' && <CheckSquare size={18}/>}
                                     {view}
                                 </button>
                             ))}
@@ -84,6 +93,7 @@ const PlaygroundPage: React.FC = () => {
                             {mainView === 'play' && renderGameGrid()}
                             {mainView === 'profile' && <div className="p-4 text-white"><h2 className="text-3xl font-bold">Profile & Progress</h2></div>}
                             {mainView === 'social' && <div className="p-4 text-white"><h2 className="text-3xl font-bold">Social & Friends</h2></div>}
+                            {mainView === 'tasks' && renderTaskManager()}
                         </div>
                     </main>
                 </div>
