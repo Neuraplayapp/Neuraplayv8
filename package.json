@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "box2d-wasm": "npm:liquidfun-wasm@^6.0.4-lf.1",
+    "cannon-es": "^0.20.0",
     "framer-motion": "^12.23.9",
     "gsap": "^3.13.0",
     "lucide-react": "^0.344.0",

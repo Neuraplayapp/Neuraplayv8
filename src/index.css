@@ -2,31 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-body, html {
-  font-family: theme('fontFamily.sans'), Arial, sans-serif;
-  color: #334155; /* Tailwind's text-slate-700 */
+/* --- Global Animated Background & Core Styles --- */
+body {
+  background-color: #0c0a1a; /* Dark violet fallback */
+  color: #e2e8f0; /* Default light text color (slate-200) */
 }
 
-.text-main {
-  color: #334155 !important;
-  font-family: theme('fontFamily.sans'), Arial, sans-serif !important;
+body, #root {
+  background-color: transparent;
 }
 
-/* Remove .text-hero-shadow. Add .text-ground-shadow for a cast shadow under text. */
-.text-ground-shadow {
-  position: relative;
-  display: inline-block;
+#app-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: -10;
+  background: repeating-linear-gradient(-45deg, #1e1b4b, #4c1d95, #3730a3, #5b21b6 50%);
+  background-size: 800% 800%;
+  animation: gradient-pan 30s ease infinite;
 }
-.text-ground-shadow::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -0.3em;
-  transform: translateX(-50%);
-  width: 90%;
-  height: 0.5em;
-  background: radial-gradient(ellipse at center, rgba(80,0,120,0.25) 0%, rgba(80,0,120,0.10) 60%, transparent 100%);
-  filter: blur(2px);
-  z-index: 0;
-  pointer-events: none;
+
+@keyframes gradient-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Base style for all glass panels */
+.glass-panel {
+  background-color: rgba(17, 24, 39, 0.5); /* bg-gray-900/50 */
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem; /* rounded-2xl */
 }
