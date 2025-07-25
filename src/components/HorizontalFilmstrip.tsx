@@ -18,7 +18,15 @@ const FullscreenPopper = ({ videoSrc, children }: { videoSrc: string; children: 
     );
 };
 
-const HomePage: React.FC = () => {
+interface HorizontalFilmstripProps {
+    className?: string;
+    height?: string;
+}
+
+const HorizontalFilmstrip: React.FC<HorizontalFilmstripProps> = ({ 
+    className = "h-screen", 
+    height = "h-screen" 
+}) => {
     // State and data from your original component
     const [activeFeature, setActiveFeature] = useState(0);
     const features = [
@@ -93,12 +101,6 @@ const HomePage: React.FC = () => {
         0% { background-position: 0% 50%; }
         100% { background-position: 100% 50%; }
       }
-      /* Vertical Parallax styles */
-      .parallax-container { height: 100vh; overflow-x: hidden; overflow-y: auto; perspective: 1px; }
-      .parallax-group { position: relative; height: 100vh; transform-style: preserve-3d; }
-      .parallax-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-        .layer-base { transform: translateZ(0); }
-        .layer-back { transform: translateZ(-1px) scale(2); }
     `;
 
     return (
@@ -106,16 +108,16 @@ const HomePage: React.FC = () => {
             <style>{globalStyles}</style>
             
             {/* The Pin Container holds the entire interactive filmstrip module */}
-            <div ref={pinContainerRef} className="h-screen w-screen overflow-hidden">
-                <div ref={trackRef} className="flex h-full w-[600vw]">
+            <div ref={pinContainerRef} className={`${className} w-screen overflow-hidden`}>
+                <div ref={trackRef} className={`flex ${height} w-[600vw]`}>
 
                     {/* --- SLIDE 1: INTERACTIVE HERO --- */}
                     <section className="hero-slide h-full w-screen flex-shrink-0 flex flex-col justify-between items-center text-center p-6 text-white relative bg-[#100320]">
                         <div className="hero-bg-layer absolute inset-[-5%] hero-rainbow-bg"></div>
                         <div className="hero-text-layer relative z-10 flex-grow flex flex-col justify-center items-center">
                             <h1 className="text-5xl md:text-8xl font-black leading-tight tracking-tighter mb-4 drop-shadow-lg">
-                            Your Child is a Genius
-                        </h1>
+                                Your Child is a Genius
+                            </h1>
                             <p className="text-xl md:text-2xl max-w-4xl mx-auto drop-shadow">
                                 Unlock the potential with scientifically-backed neuropsychological games.
                             </p>
@@ -165,33 +167,13 @@ const HomePage: React.FC = () => {
                             <div className="flex gap-4 justify-center">
                                 <Link to="/registration" className="bg-white text-violet-600 font-bold px-8 py-3 rounded-full hover:bg-slate-100 transition-transform hover:scale-105">Start Full Journey</Link>
                                 <Link to="/forum-registration" className="bg-violet-900/50 text-white font-bold px-8 py-3 rounded-full hover:bg-violet-900/80 transition-transform hover:scale-105">Join Community</Link>
-                        </div>
+                            </div>
                         </div>
                     </section>
-                    </div>
-                </div>
-
-            {/* --- VERTICAL PARALLAX SECTION AFTER THE PINNED MODULE --- */}
-            <div className="parallax-container bg-gray-800">
-                <div className="parallax-group">
-                    <div className="parallax-layer layer-back flex items-center justify-center">
-                        <h2 className="text-9xl font-black text-white/10">DISCOVERY</h2>
-                    </div>
-                    <div className="parallax-layer layer-base flex items-center justify-center">
-                        <div className="text-center text-white bg-black/30 p-12 rounded-xl backdrop-blur-sm">
-                            <h2 className="text-5xl font-bold">The Journey Continues</h2>
-                            <p className="mt-2">Content after the filmstrip appears here.</p>
-                        </div>
-                    </div>
-                </div>
-                 <div className="parallax-group">
-                    <div className="parallax-layer layer-base h-screen bg-white flex items-center justify-center">
-                         <h2 className="text-5xl font-bold text-slate-800">Final Page Content</h2>
-                    </div>
                 </div>
             </div>
         </>
     );
 };
 
-export default HomePage;
+export default HorizontalFilmstrip; 

@@ -7,10 +7,12 @@ import HomePage from './pages/HomePage';
 import PlaygroundPage from './pages/PlaygroundPage';
 import ForumPage from './pages/ForumPage';
 import RegistrationPage from './pages/RegistrationPage';
+import AIReportPage from './pages/AIReportPage';
 // ... other page imports
 
-// Import the AI Assistant
+// Import the AI Assistant and Header
 import AIAssistant from './components/AIAssistant';
+import Header from './components/Header';
 
 function App() {
   const { user } = useUser();
@@ -19,7 +21,8 @@ function App() {
     <>
       <div id="app-background"></div>
       
-      {/* Your Navbar would be rendered here */}
+      {/* Navigation Header */}
+      <Header />
 
       <main>
         <Routes>
@@ -27,6 +30,7 @@ function App() {
           <Route path="/playground" element={<PlaygroundPage />} />
           <Route path="/forum" element={<ForumPage />} />
           <Route path="/registration" element={<RegistrationPage />} />
+          <Route path="/ai-report" element={<AIReportPage />} />
           {/* ... etc */}
         </Routes>
       </main>
