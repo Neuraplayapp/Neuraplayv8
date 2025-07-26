@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Brain } from 'lucide-react';
+import ContactForm from './ContactForm';
 
 const LICENSE_TEXT = `Copyright (c) 2025 Neuraplay
 
@@ -65,23 +66,6 @@ Neuraplay
 const Footer: React.FC = () => {
   const [showLicense, setShowLicense] = useState(false);
   const [showContact, setShowContact] = useState(false);
-  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
-  const [contactSent, setContactSent] = useState(false);
-  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setContactForm({ ...contactForm, [e.target.name]: e.target.value });
-  };
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // For now, use mailto: to send the email
-    const mailto = `mailto:smt@neuraplay.biz?subject=Contact from ${encodeURIComponent(contactForm.name)}&body=${encodeURIComponent(contactForm.message + '\n\nFrom: ' + contactForm.email)}`;
-    window.location.href = mailto;
-    setContactSent(true);
-    setTimeout(() => {
-      setShowContact(false);
-      setContactSent(false);
-      setContactForm({ name: '', email: '', message: '' });
-    }, 2000);
-  };
   return (
     <footer className="bg-slate-100 border-t border-slate-200">
       <div className="container mx-auto px-6 py-12">
@@ -112,20 +96,23 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-bold text-slate-800 mb-4">Legal</h4>
             <a href="/licenses/neuraplay.txt" className="text-left block hover:text-violet-600 mb-2" target="_blank" rel="noopener noreferrer">
-              Full License
+              Neuraplay License
             </a>
-            <a href="/licenses/neuraplay.txt" className="text-left block hover:text-violet-600 mb-2" target="_blank" rel="noopener noreferrer">
-              Privacy Policy
+            <a href="/licenses/MIT.txt" className="text-left block hover:text-violet-600 mb-2" target="_blank" rel="noopener noreferrer">
+              MIT License
             </a>
-            <a href="#" className="text-left block hover:text-violet-600" onClick={() => setShowLicense(true)}>
+            <a href="#" className="text-left block hover:text-violet-600 mb-2" onClick={() => setShowLicense(true)}>
               View License (Popup)
+            </a>
+            <a href="#" className="text-left block hover:text-violet-600" onClick={e => { e.preventDefault(); setShowContact(true); }}>
+              Contact Us
             </a>
           </div>
         </div>
         <div className="mt-12 border-t border-slate-200 pt-8 text-center text-slate-500">
-          <p>© 2025 Neuraplay. All rights reserved. For healthy smart children.</p>
+          <p>© 2025 Neuraplay. All rights reserved. Proprietary content and intellectual property protected.</p>
           <div className="text-xs text-slate-400 mt-2">
-            By using this site you agree to the <a href="/licenses/neuraplay.txt" className="underline hover:text-violet-600" target="_blank" rel="noopener noreferrer">Neuraplay License Agreement</a>.
+            By using this site you agree to the <a href="/licenses/neuraplay.txt" className="underline hover:text-violet-600" target="_blank" rel="noopener noreferrer">Neuraplay License Agreement</a> and <a href="/licenses/MIT.txt" className="underline hover:text-violet-600" target="_blank" rel="noopener noreferrer">MIT License</a>.
           </div>
         </div>
       </div>
@@ -138,59 +125,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
       )}
-      {showContact && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative min-w-[350px]">
-            <button onClick={() => setShowContact(false)} className="absolute top-4 right-4 text-slate-500 hover:text-violet-600 text-2xl font-bold">&times;</button>
-            <h2 className="text-3xl font-bold mb-6 text-violet-700 text-center">Contact Neuraplay</h2>
-            {contactSent ? (
-              <div className="text-center text-green-600 text-xl font-bold py-12">Thank you! Your message has been sent.</div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-6 w-full max-w-lg mx-auto">
-                <div>
-                  <label className="block font-bold mb-2 text-slate-700">Your Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={contactForm.name}
-                    onChange={handleContactChange}
-                    required
-                    className="w-full p-4 rounded-xl border border-violet-200 bg-slate-50 text-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold mb-2 text-slate-700">Your Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={contactForm.email}
-                    onChange={handleContactChange}
-                    required
-                    className="w-full p-4 rounded-xl border border-violet-200 bg-slate-50 text-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold mb-2 text-slate-700">Message</label>
-                  <textarea
-                    name="message"
-                    value={contactForm.message}
-                    onChange={handleContactChange}
-                    required
-                    rows={6}
-                    className="w-full p-4 rounded-xl border border-violet-200 bg-slate-50 text-slate-900"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold py-4 rounded-full hover:from-violet-700 hover:to-pink-700 transition-all text-lg"
-                >
-                  Send Message
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {showContact && <ContactForm variant="footer" />}
     </footer>
   );
 };

@@ -7,7 +7,7 @@ interface LetterHuntGameProps {
 }
 
 const LetterHuntGame: React.FC<LetterHuntGameProps> = ({ onClose }) => {
-  const { user, addXP, addStars, updateGameProgress } = useUser();
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const [gameState, setGameState] = useState<'ready' | 'playing' | 'gameOver' | 'success'>('ready');
   const [targetLetter, setTargetLetter] = useState('A');
   const [gridLetters, setGridLetters] = useState<string[]>([]);
@@ -116,19 +116,14 @@ const LetterHuntGame: React.FC<LetterHuntGameProps> = ({ onClose }) => {
     setGameState(score >= 120 ? 'success' : 'gameOver');
     
     if (score >= 120) {
-      const starsEarned = Math.floor(score / 30);
-      addXP(25 + (level * 5));
-      addStars(starsEarned);
-      
-      if (user) {
-        const currentProgress = user.profile.gameProgress['letter-hunt'] || { level: 1, stars: 0, bestScore: 0, timesPlayed: 0 };
-        updateGameProgress('letter-hunt', {
-          level: Math.max(currentProgress.level, level),
-          stars: currentProgress.stars + starsEarned,
-          bestScore: Math.max(currentProgress.bestScore, score),
-          timesPlayed: currentProgress.timesPlayed + 1
-        });
-      }
+      // Use standardized analytics function
+      recordGameSession('letter-hunt', {
+        score: score,
+        level: level,
+        starsEarned: Math.floor(score / 30),
+        xpEarned: 25 + (level * 5),
+        success: true
+      });
     }
   };
 

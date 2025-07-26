@@ -2,10 +2,9 @@ import React from 'react';
 
 // Data for the tabs
 const heroTabs = [
-    { title: "Machine Learning & AI" },
-    { title: "Inference Service" },
-    { title: "VFX & Rendering" },
-    { title: "Pixel Streaming" }
+    { title: "What is neuraplay?" },
+    { title: "Forum" },
+    { title: "About Us" }
 ];
 
 interface InteractiveHeroProps {

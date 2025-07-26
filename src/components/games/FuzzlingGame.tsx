@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useUser } from '../../contexts/UserContext';
 import { X, Minimize2, Maximize2, Music, Volume2, VolumeX } from 'lucide-react';
 import Box2DFactory from 'box2d-wasm';
 
@@ -16,6 +17,7 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentView, setCurrentView] = useState<'main-menu' | 'game' | 'post-game'>('main-menu');
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const [gameState, setGameState] = useState({
     score: 0,
     joy: 0,
@@ -549,6 +551,16 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   const endGame = (score: number) => {
     const stardustEarned = Math.floor(score / 10);
     setMetaState(prev => ({ ...prev, stardust: prev.stardust + stardustEarned }));
+    
+    // Use standardized analytics function
+    recordGameSession('fuzzling', {
+      score: score,
+      level: gameState.level,
+      starsEarned: Math.floor(score / 50),
+      xpEarned: score + (gameState.level * 5),
+      success: score > 0
+    });
+    
     saveProgress();
     setCurrentView('post-game');
   };

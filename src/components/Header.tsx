@@ -14,7 +14,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-200">
+    <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-200 shadow-sm">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <Link to="/" className="text-3xl font-black tracking-tighter flex items-center gap-2 bg-gradient-to-r from-purple-400 to-purple-700 bg-clip-text text-transparent drop-shadow-lg text-hero-shadow">
           <Brain className="w-8 h-8 text-purple-500 drop-shadow-lg" />
@@ -35,10 +35,22 @@ const Header: React.FC = () => {
             The Playground
           </Link>
           <Link 
+            to="/dashboard" 
+            className={`hover:text-violet-600 transition-colors ${isActive('/dashboard') ? 'text-violet-600' : ''}`}
+          >
+            Learning Central
+          </Link>
+          <Link 
             to="/forum" 
             className={`hover:text-violet-600 transition-colors ${isActive('/forum') ? 'text-violet-600' : ''}`}
           >
-            Community Forum
+            Forum
+          </Link>
+          <Link 
+            to="/about" 
+            className={`hover:text-violet-600 transition-colors ${isActive('/about') ? 'text-violet-600' : ''}`}
+          >
+            About Us
           </Link>
         </div>
         

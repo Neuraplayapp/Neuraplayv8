@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Brain, Target, Sparkles } from 'lucide-react';
@@ -10,8 +10,14 @@ gsap.registerPlugin(ScrollTrigger);
 const FullscreenPopper = ({ videoSrc, children }: { videoSrc: string; children: React.ReactNode }) => {
     return (
         <div className="grid h-full w-full items-center gap-8 p-8 md:grid-cols-2 lg:gap-16">
-            <div className="relative flex h-full max-h-[70vh] w-full items-center justify-center">
-                <video src={videoSrc} playsInline autoPlay muted loop className="h-auto w-full max-h-full rounded-2xl shadow-2xl" />
+            <div className="relative flex h-full max-h-[80vh] w-full items-center justify-center">
+                <video 
+                    src={videoSrc} 
+                    playsInline 
+                    controls
+                    preload="metadata"
+                    className="h-auto w-full max-h-full rounded-2xl shadow-2xl" 
+                />
             </div>
             <div className="text-left">{children}</div>
         </div>
@@ -19,6 +25,7 @@ const FullscreenPopper = ({ videoSrc, children }: { videoSrc: string; children: 
 };
 
 const HomePage: React.FC = () => {
+    const navigate = useNavigate();
     // State and data from your original component
     const [activeFeature, setActiveFeature] = useState(0);
     const features = [
@@ -122,10 +129,10 @@ const HomePage: React.FC = () => {
                         </div>
                         <div className="relative z-10 w-full max-w-5xl p-4">
                             <div className="flex justify-center items-center gap-4 bg-black/20 backdrop-blur-sm p-2 rounded-xl">
-                                {/* These buttons now directly control the GSAP timeline */}
-                                <button onClick={() => goToSlide("slide2")} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300">Inference Service</button>
-                                <button onClick={() => goToSlide("slide3")} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300">VFX & Rendering</button>
-                                <button onClick={() => goToSlide("slide4")} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300">Pixel Streaming</button>
+                                {/* These buttons now link to actual pages */}
+                                <button onClick={() => navigate('/about')} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300 text-white">What is neuraplay?</button>
+                                <button onClick={() => navigate('/forum')} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300 text-white">Forum</button>
+                                <button onClick={() => navigate('/about')} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300 text-white">About Us</button>
                             </div>
                         </div>
                     </section>
@@ -173,18 +180,64 @@ const HomePage: React.FC = () => {
 
             {/* --- VERTICAL PARALLAX SECTION AFTER THE PINNED MODULE --- */}
             <div className="parallax-container bg-gray-800">
+
+                
+                {/* --- DISCOVER NEURAPLAY VIDEOS SECTION --- */}
                 <div className="parallax-group">
-                    <div className="parallax-layer layer-back flex items-center justify-center">
-                        <h2 className="text-9xl font-black text-white/10">DISCOVERY</h2>
+                    <div className="parallax-layer layer-back">
+                        <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 to-purple-900/20"></div>
                     </div>
-                    <div className="parallax-layer layer-base flex items-center justify-center">
-                        <div className="text-center text-white bg-black/30 p-12 rounded-xl backdrop-blur-sm">
-                            <h2 className="text-5xl font-bold">The Journey Continues</h2>
-                            <p className="mt-2">Content after the filmstrip appears here.</p>
+                    <div className="parallax-layer layer-base h-screen bg-gradient-to-b from-[#100320] to-slate-50 flex items-center justify-center p-6">
+                        <div className="container mx-auto max-w-7xl">
+                            <div className="text-center mb-16">
+                                <h2 className="text-6xl md:text-7xl font-bold text-white mb-8 drop-shadow-2xl">Discover Neuraplay</h2>
+                                <p className="text-3xl md:text-4xl text-white/90 max-w-5xl mx-auto leading-relaxed drop-shadow-lg font-medium">Embark on a journey where neuroscience meets play, where every game is a step toward unlocking your child's limitless potential.</p>
+                            </div>
+                            
+                            <div className="grid lg:grid-cols-2 gap-16">
+                                <div className="bg-white rounded-3xl shadow-2xl overflow-hidden transform hover:scale-105 transition-transform duration-300" style={{ minHeight: '500px' }}>
+                                    <div className="h-full flex flex-col">
+                                        <div className="flex-1 p-6">
+                                            <video 
+                                                src="/assets/Videos/neuraplayintrovid1.mp4" 
+                                                playsInline 
+                                                controls
+                                                preload="metadata"
+                                                className="w-full h-full object-cover rounded-2xl shadow-xl" 
+                                                style={{ minHeight: '300px' }}
+                                            />
+                                        </div>
+                                        <div className="p-6 bg-gradient-to-r from-violet-50 to-purple-50">
+                                            <h3 className="text-3xl md:text-4xl font-bold text-violet-700 mb-4">Welcome to Neuraplay</h3>
+                                            <p className="text-xl text-slate-700 leading-relaxed">Step into a world where learning becomes an adventure. Discover how our neuroscience-based approach transforms education into an engaging journey of discovery and growth.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white rounded-3xl shadow-2xl overflow-hidden transform hover:scale-105 transition-transform duration-300" style={{ minHeight: '500px' }}>
+                                    <div className="h-full flex flex-col">
+                                        <div className="flex-1 p-6">
+                                            <video 
+                                                src="/assets/Videos/Neuraplayintrovid3.mp4" 
+                                                playsInline 
+                                                controls
+                                                preload="metadata"
+                                                className="w-full h-full object-cover rounded-2xl shadow-xl" 
+                                                style={{ minHeight: '300px' }}
+                                            />
+                                        </div>
+                                        <div className="p-6 bg-gradient-to-r from-violet-50 to-purple-50">
+                                            <h3 className="text-3xl md:text-4xl font-bold text-violet-700 mb-4">The Neuraplay Experience</h3>
+                                            <p className="text-xl text-slate-700 leading-relaxed">Witness the magic of personalized learning in action. See how our platform adapts to each child's unique cognitive profile, creating moments of wonder and achievement.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                 <div className="parallax-group">
+                
+                <div className="parallax-group">
                     <div className="parallax-layer layer-base h-screen bg-white flex items-center justify-center">
                          <h2 className="text-5xl font-bold text-slate-800">Final Page Content</h2>
                     </div>

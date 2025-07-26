@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { X, Minimize2, Maximize2, Star } from 'lucide-react';
+import { useUser } from '../../contexts/UserContext';
+import { X, Minimize2, Maximize2, Star, Trophy } from 'lucide-react';
 import Box2DFactory from 'box2d-wasm';
 
 // --- Types and Interfaces ---
@@ -61,6 +62,8 @@ const TALENT_COSTS = {
 let Box2D: any;
 
 const MountainClimber: React.FC<MountainClimberProps> = ({ onClose }) => {
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
+  
   // --- Refs ---
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -523,10 +526,36 @@ const MountainClimber: React.FC<MountainClimberProps> = ({ onClose }) => {
   };
 
   const handleNextLevel = () => {
-    if (gameState.level < LEVELS.length) {
-      handleStartGame(gameState.level + 1);
+    const nextLevel = gameState.level + 1;
+    if (nextLevel <= LEVELS.length) {
+      setGameState(prev => ({
+        ...prev,
+        level: nextLevel,
+        goalHeight: LEVELS[nextLevel - 1].goalHeight,
+        levelComplete: false,
+        eventWarning: ''
+      }));
+      
+      // Use standardized analytics function for level completion
+      recordGameSession('mountain-climber', {
+        score: gameState.maxHeight,
+        level: gameState.level,
+        starsEarned: 2,
+        xpEarned: gameState.level * 20,
+        success: true
+      });
     } else {
-      setGameState(p => ({ ...p, gameWon: true }));
+      // Game completed
+      setGameState(prev => ({ ...prev, gameWon: true }));
+      
+      // Use standardized analytics function for game completion
+      recordGameSession('mountain-climber', {
+        score: gameState.maxHeight,
+        level: LEVELS.length,
+        starsEarned: 5,
+        xpEarned: 100,
+        success: true
+      });
     }
   };
   

@@ -1,7 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useUser } from '../../contexts/UserContext';
+import { Star, Trophy } from 'lucide-react';
 
 // Berry Blaster Game React Component
 const BerryBlasterGame: React.FC<{ onRequestFullscreen?: () => void }> = ({ onRequestFullscreen }) => {
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const shootAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -397,6 +400,16 @@ const BerryBlasterGame: React.FC<{ onRequestFullscreen?: () => void }> = ({ onRe
     setShowGameOver(true);
     setIsRunning(false);
     setModalScore(score);
+    
+    // Use standardized analytics function
+    recordGameSession('berry-blaster', {
+      score: score,
+      level: wave,
+      starsEarned: Math.floor(score / 100),
+      xpEarned: score + (wave * 5),
+      success: score > 0
+    });
+    
     // Play local game over sound
     const audio = new Audio('/assets/music/game-over-38511.mp3');
     audio.play();
@@ -408,6 +421,7 @@ const BerryBlasterGame: React.FC<{ onRequestFullscreen?: () => void }> = ({ onRe
     setShowMenu(false);
     setShowGameOver(false);
     setIsRunning(true);
+    setGameState('playing');
     animate();
     spawnEnemies(1);
   };

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { useUser } from '../../contexts/UserContext';
+import { Star, Trophy } from 'lucide-react';
 
 // --- CONSTANTS ---
 const CHUNK_SIZE: number = 16;
@@ -238,6 +240,13 @@ const getSafeSpawn = (world: World, centerX = 8, centerZ = 8, radius = 24) => {
 };
 
 const HappyBuilderGame: React.FC = () => {
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
+  const [blocksPlaced, setBlocksPlaced] = useState(0);
+  const [gameSession, setGameSession] = useState({
+    startTime: Date.now(),
+    blocksPlaced: 0,
+    structuresBuilt: 0
+  });
   const mountRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<any>(null); // Holds all game state
   const healthRef = useRef(MAX_HEALTH);
@@ -412,6 +421,26 @@ const HappyBuilderGame: React.FC = () => {
     if (mountRef.current && mountRef.current.requestFullscreen) {
       mountRef.current.requestFullscreen();
     }
+  };
+
+  const endGameSession = () => {
+    const sessionDuration = Date.now() - gameSession.startTime;
+    const minutesPlayed = Math.round(sessionDuration / 60000);
+    
+    // Calculate rewards based on building activity
+    const structuresBuilt = Math.floor(blocksPlaced / 20); // Every 20 blocks = 1 structure
+    const starsEarned = Math.floor(blocksPlaced / 10); // Every 10 blocks = 1 star
+    const xpEarned = blocksPlaced * 2 + structuresBuilt * 10;
+    
+    // Use standardized analytics function
+    recordGameSession('happy-builder', {
+      score: blocksPlaced,
+      level: Math.floor(blocksPlaced / 50) + 1,
+      starsEarned: starsEarned,
+      xpEarned: xpEarned,
+      playTime: minutesPlayed,
+      success: blocksPlaced > 0
+    });
   };
 
   return (

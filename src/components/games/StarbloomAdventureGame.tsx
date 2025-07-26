@@ -164,7 +164,8 @@ const StarbloomAdventureGame: React.FC = () => {
     'Mental Set', 'Cognitive Bias', 'Heuristic Processing', 'Automatic Processing',
     'Controlled Processing', 'Divided Attention', 'Sustained Attention', 'Selective Attention',
     'Response Inhibition', 'Task Switching', 'Goal Setting', 'Self-Monitoring',
-    'Error Detection', 'Feedback Processing', 'Adaptive Behavior', 'Cognitive Strategy'
+    'Error Detection', 'Feedback Processing', 'Adaptive Behavior', 'Cognitive Strategy',
+    'Motor Skills'
   ];
 
   // Initialize game with dynamic content
@@ -816,21 +817,33 @@ Format: ["choice1", "choice2", "choice3"]`;
     const starsEarned = Math.min(gameSession.choices.length * 2, 10); // Max 10 stars
     const rankProgress = Math.min(gameSession.choices.length * 5, 100); // Progress toward next rank
 
-    updateUser({
-      ...user,
-      profile: {
-        ...user.profile,
-        gameProgress: {
-          ...user.profile.gameProgress,
-          starbloomAdventure: gameData
-        },
-        stars: (user.profile.stars || 0) + starsEarned,
-        rank: {
-          ...user.profile.rank,
-          progress: (user.profile.rank?.progress || 0) + rankProgress
-        }
-      }
+    // Use standardized analytics function
+    recordGameSession('starbloom-adventure', {
+      score: gameSession.choices.length,
+      level: Math.floor(gameSession.choices.length / 5) + 1,
+      starsEarned: starsEarned,
+      xpEarned: gameSession.choices.length * 15,
+      success: true
     });
+
+    // Update additional game data
+    if (user) {
+      const updatedUser = {
+        ...user,
+        profile: {
+          ...user.profile,
+          gameProgress: {
+            ...user.profile.gameProgress,
+            starbloomAdventure: gameData
+          },
+          rank: {
+            ...user.profile.rank,
+            progress: (user.profile.rank?.progress || 0) + rankProgress
+          }
+        }
+      };
+      setUser(updatedUser);
+    }
 
     setGameCompleted(true);
     setIsLoading(false);

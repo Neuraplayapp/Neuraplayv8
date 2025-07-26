@@ -19,6 +19,7 @@ export interface User {
         stars: number;
         bestScore: number;
         timesPlayed: number;
+        playTime?: number;
       };
     };
   };
@@ -45,6 +46,15 @@ interface UserContextType {
   updateGameProgress: (gameId: string, progress: Partial<User['profile']['gameProgress'][string]>) => void;
   updateFriends: (friends: string[]) => void;
   updateFriendRequests: (friendRequests: { sent: string[]; received: string[] }) => void;
+  // New standardized analytics function
+  recordGameSession: (gameId: string, sessionData: {
+    score: number;
+    level?: number;
+    starsEarned?: number;
+    xpEarned?: number;
+    playTime?: number;
+    success?: boolean;
+  }) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -125,7 +135,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         level: 1,
         stars: 0,
         bestScore: 0,
-        timesPlayed: 0
+        timesPlayed: 0,
+        playTime: 0
       };
     }
     
@@ -135,6 +146,48 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     setUserWithPersistence(updatedUser);
+  };
+
+  // Standardized analytics function for consistent game session recording
+  const recordGameSession = (gameId: string, sessionData: {
+    score: number;
+    level?: number;
+    starsEarned?: number;
+    xpEarned?: number;
+    playTime?: number;
+    success?: boolean;
+  }) => {
+    if (!user) return;
+    
+    const {
+      score,
+      level = 1,
+      starsEarned = Math.floor(score / 50),
+      xpEarned = score + (level * 5),
+      playTime = 0,
+      success = score > 0
+    } = sessionData;
+    
+    // Award XP and stars
+    addXP(xpEarned);
+    addStars(starsEarned);
+    
+    // Update game progress
+    const currentProgress = user.profile.gameProgress[gameId] || { 
+      level: 1, 
+      stars: 0, 
+      bestScore: 0, 
+      timesPlayed: 0, 
+      playTime: 0 
+    };
+    
+    updateGameProgress(gameId, {
+      level: Math.max(currentProgress.level, level),
+      stars: currentProgress.stars + starsEarned,
+      bestScore: Math.max(currentProgress.bestScore, score),
+      timesPlayed: currentProgress.timesPlayed + 1,
+      playTime: (currentProgress.playTime || 0) + playTime
+    });
   };
 
   const updateFriends = (friends: string[]) => {
@@ -150,7 +203,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser: setUserWithPersistence, addXP, addStars, updateGameProgress, updateFriends, updateFriendRequests }}>
+    <UserContext.Provider value={{ 
+      user, 
+      setUser: setUserWithPersistence, 
+      addXP, 
+      addStars, 
+      updateGameProgress, 
+      updateFriends, 
+      updateFriendRequests,
+      recordGameSession
+    }}>
       {children}
     </UserContext.Provider>
   );

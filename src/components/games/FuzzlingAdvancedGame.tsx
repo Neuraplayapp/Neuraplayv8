@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { X, Minimize2, Maximize2, Volume2, VolumeX, Star } from 'lucide-react';
+import { X, Minimize2, Maximize2, Volume2, VolumeX } from 'lucide-react';
+import PremiumStar from '../PremiumStar';
+import { useUser } from '../../contexts/UserContext';
+import { Star, Trophy } from 'lucide-react';
 
 interface FuzzlingAdvancedGameProps {
   onClose: () => void;
@@ -91,6 +94,7 @@ const FuzzlingAdvancedGame: React.FC<FuzzlingAdvancedGameProps> = ({ onClose }) 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentView, setCurrentView] = useState<'main-menu' | 'game' | 'post-game'>('main-menu');
   const [gameError, setGameError] = useState<string | null>(null);
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const [gameState, setGameState] = useState<GameState>({
     score: 0,
     joy: 0,
@@ -720,6 +724,17 @@ const FuzzlingAdvancedGame: React.FC<FuzzlingAdvancedGameProps> = ({ onClose }) 
     // Convert all remaining joy to stardust at game end
     const stardustEarned = joyToStardust(localGameStateRef.current.joy + localGameStateRef.current.score);
     setMetaState(prev => ({ ...prev, stardust: prev.stardust + stardustEarned }));
+    
+    // Use standardized analytics function
+    const totalScore = localGameStateRef.current.score + localGameStateRef.current.joy;
+    recordGameSession('fuzzling-advanced', {
+      score: totalScore,
+      level: localGameStateRef.current.level,
+      starsEarned: Math.floor(totalScore / 100),
+      xpEarned: totalScore + (localGameStateRef.current.level * 10),
+      success: totalScore > 0
+    });
+    
     saveProgress();
     setCurrentView('post-game');
   };
@@ -862,22 +877,8 @@ const FuzzlingAdvancedGame: React.FC<FuzzlingAdvancedGameProps> = ({ onClose }) 
     };
   }, [currentView, gameOver]);
 
-  // At the top of the main menu, add a plushy 3D star SVG for stardust
-  const PlushyStar = () => (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="starGradient" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fffbe6" />
-          <stop offset="60%" stopColor="#ffe066" />
-          <stop offset="100%" stopColor="#ffd700" />
-        </radialGradient>
-        <filter id="starShadow" x="-10" y="-10" width="68" height="68" filterUnits="userSpaceOnUse">
-          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#eab308" floodOpacity="0.5" />
-        </filter>
-      </defs>
-      <polygon filter="url(#starShadow)" points="24,3 29,18 45,18 32,28 37,43 24,34 11,43 16,28 3,18 19,18" fill="url(#starGradient)" stroke="#eab308" strokeWidth="2" />
-    </svg>
-  );
+  // At the top of the main menu, add a premium star SVG for stardust
+  const PlushyStar = () => <PremiumStar size={48} />;
 
   // Main menu tabs state
   const [mainMenuTab, setMainMenuTab] = useState<'play' | 'shop'>('play');

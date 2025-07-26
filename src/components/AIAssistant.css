@@ -7,7 +7,7 @@
 
 #ai-teacher-menu {
   /* Core styles for the glass panel */
-  font-family: sans-serif;
+  font-family: 'Nunito', 'Segoe UI', 'Arial Rounded MT Bold', 'Helvetica Neue', sans-serif;
   color: #c7d2fe; /* indigo-200 */
   position: fixed;
   bottom: 6.5rem; /* Position above the FAB */
@@ -43,17 +43,39 @@
   flex-direction: column;
 }
 
+/* Child-friendly text styling */
+#ai-teacher-menu h3 {
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  color: #fbbf24 !important; /* Amber color for child appeal */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#ai-teacher-menu p {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  color: #fef3c7 !important; /* Light amber for better readability */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 /* Input styling from the example */
 #ai-teacher-menu input {
   width: 100%;
   background: hsl(var(--hue1) 0% 40% / 0.1);
   border: 1px solid hsl(var(--hue2) 13% 18.5% / 0.3);
   border-radius: 99px; /* rounded-full */
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   color: white;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Nunito', 'Segoe UI', 'Arial Rounded MT Bold', 'Helvetica Neue', sans-serif;
 }
-#ai-teacher-menu input::placeholder { color: #a5b4fc; } /* indigo-300 */
+#ai-teacher-menu input::placeholder { 
+  color: #fbbf24; 
+  font-weight: 600;
+  font-size: 1rem;
+}
 
 /* Shine & Glow Effects (adapted from your example) */
 #ai-teacher-menu .shine, #ai-teacher-menu .glow { --hue: var(--hue1); }

@@ -8,6 +8,8 @@ import PlaygroundPage from './pages/PlaygroundPage';
 import ForumPage from './pages/ForumPage';
 import RegistrationPage from './pages/RegistrationPage';
 import AIReportPage from './pages/AIReportPage';
+import AboutUsPage from './pages/AboutUsPage';
+import DashboardPage from './pages/DashboardPage';
 // ... other page imports
 
 // Import the AI Assistant and Header
@@ -28,9 +30,11 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/playground" element={<PlaygroundPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/forum" element={<ForumPage />} />
           <Route path="/registration" element={<RegistrationPage />} />
           <Route path="/ai-report" element={<AIReportPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
           {/* ... etc */}
         </Routes>
       </main>

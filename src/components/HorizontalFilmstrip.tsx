@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Brain, Target, Sparkles } from 'lucide-react';
@@ -27,6 +27,7 @@ const HorizontalFilmstrip: React.FC<HorizontalFilmstripProps> = ({
     className = "h-screen", 
     height = "h-screen" 
 }) => {
+    const navigate = useNavigate();
     // State and data from your original component
     const [activeFeature, setActiveFeature] = useState(0);
     const features = [
@@ -124,10 +125,10 @@ const HorizontalFilmstrip: React.FC<HorizontalFilmstripProps> = ({
                         </div>
                         <div className="relative z-10 w-full max-w-5xl p-4">
                             <div className="flex justify-center items-center gap-4 bg-black/20 backdrop-blur-sm p-2 rounded-xl">
-                                {/* These buttons now directly control the GSAP timeline */}
-                                <button onClick={() => goToSlide("slide2")} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300">Inference Service</button>
-                                <button onClick={() => goToSlide("slide3")} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300">VFX & Rendering</button>
-                                <button onClick={() => goToSlide("slide4")} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300">Pixel Streaming</button>
+                                {/* These buttons now link to actual pages */}
+                                <button onClick={() => navigate('/about')} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300 text-white">What is neuraplay?</button>
+                                <button onClick={() => navigate('/forum')} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300 text-white">Forum</button>
+                                <button onClick={() => navigate('/about')} className="flex-1 p-3 rounded-lg hover:bg-white/20 transition-colors duration-300 text-white">About Us</button>
                             </div>
                         </div>
                     </section>

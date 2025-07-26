@@ -7,7 +7,7 @@ interface MemorySequenceGameProps {
 }
 
 const MemorySequenceGame: React.FC<MemorySequenceGameProps> = ({ onClose }) => {
-  const { user, addXP, addStars, updateGameProgress } = useUser();
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerSequence, setPlayerSequence] = useState<number[]>([]);
   const [isShowingSequence, setIsShowingSequence] = useState(false);
@@ -73,20 +73,14 @@ const MemorySequenceGame: React.FC<MemorySequenceGameProps> = ({ onClose }) => {
       setScore(newScore);
       setLevel(level + 1);
       
-      // Add rewards
-      addXP(20 + (level * 5));
-      addStars(starsEarned);
-      
-      // Update game progress
-      if (user) {
-        const currentProgress = user.profile.gameProgress['memory-sequence'] || { level: 1, stars: 0, bestScore: 0, timesPlayed: 0 };
-        updateGameProgress('memory-sequence', {
-          level: Math.max(currentProgress.level, level),
-          stars: currentProgress.stars + starsEarned,
-          bestScore: Math.max(currentProgress.bestScore, newScore),
-          timesPlayed: currentProgress.timesPlayed + 1
-        });
-      }
+      // Use standardized analytics function
+      recordGameSession('memory-sequence', {
+        score: newScore,
+        level: level,
+        starsEarned: starsEarned,
+        xpEarned: 20 + (level * 5),
+        success: true
+      });
 
       if (level >= 5) {
         setGameState('success');

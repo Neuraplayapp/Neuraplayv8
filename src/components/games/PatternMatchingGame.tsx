@@ -7,7 +7,7 @@ interface PatternMatchingGameProps {
 }
 
 const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) => {
-  const { user, addXP, addStars, updateGameProgress } = useUser();
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const [gameState, setGameState] = useState<'ready' | 'playing' | 'gameOver' | 'success'>('ready');
   const [currentPattern, setCurrentPattern] = useState<string[]>([]);
   const [options, setOptions] = useState<string[]>([]);
@@ -128,19 +128,14 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
     setGameState(score >= 150 ? 'success' : 'gameOver');
     
     if (score >= 150) {
-      const starsEarned = Math.floor(score / 30);
-      addXP(25 + (level * 8));
-      addStars(starsEarned);
-      
-      if (user) {
-        const currentProgress = user.profile.gameProgress['pattern-matching'] || { level: 1, stars: 0, bestScore: 0, timesPlayed: 0 };
-        updateGameProgress('pattern-matching', {
-          level: Math.max(currentProgress.level, level),
-          stars: currentProgress.stars + starsEarned,
-          bestScore: Math.max(currentProgress.bestScore, score),
-          timesPlayed: currentProgress.timesPlayed + 1
-        });
-      }
+      // Use standardized analytics function
+      recordGameSession('pattern-matching', {
+        score: score,
+        level: level,
+        starsEarned: Math.floor(score / 30),
+        xpEarned: 25 + (level * 8),
+        success: true
+      });
     }
   };
 
