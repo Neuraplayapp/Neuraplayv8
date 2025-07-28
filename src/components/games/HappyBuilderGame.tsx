@@ -492,12 +492,6 @@ const HappyBuilderGame: React.FC = () => {
           </div>
         ))}
       </div>
-      <button
-        onClick={enterFullscreen}
-        style={{ position: 'absolute', right: 24, top: 24, zIndex: 10, fontSize: 18, padding: '8px 20px', borderRadius: 8, background: '#222', color: '#fff', border: 'none', cursor: 'pointer' }}
-      >
-        Fullscreen
-      </button>
     </div>
   );
 };

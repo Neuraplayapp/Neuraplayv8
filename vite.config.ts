@@ -24,6 +24,22 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
+        manualChunks: {
+          // Vendor chunk for node_modules dependencies
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // GSAP chunk for animations
+          gsap: ['gsap'],
+          // Three.js chunk for 3D graphics
+          three: ['three', 'cannon-es'],
+          // UI libraries chunk
+          ui: ['lucide-react', 'framer-motion'],
+          // Chart.js chunk
+          charts: ['chart.js'],
+          // Audio/WebSocket chunk
+          audio: ['@elevenlabs/elevenlabs-js', 'ws'],
+          // Utilities chunk
+          utils: ['simplex-noise', 'box2d-wasm'],
+        },
       },
     },
   },

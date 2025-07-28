@@ -151,43 +151,44 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
   };
 
   return (
-    <div className="text-center space-y-6">
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-slate-900 mb-2">Pattern Detective</h3>
-        <p className="text-slate-600">Find the pattern and complete the sequence!</p>
-      </div>
+    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-900 to-blue-900">
+      <div className="text-center space-y-6 max-w-4xl mx-auto p-8">
+        <div className="mb-6">
+          <h3 className="text-3xl font-bold text-white mb-2">Pattern Detective</h3>
+          <p className="text-white/80">Find the pattern and complete the sequence!</p>
+        </div>
 
       {/* Game Stats */}
       <div className="flex justify-center gap-8 mb-6">
         <div className="text-center">
-          <div className="text-2xl font-bold text-purple-600">{score}</div>
-          <div className="text-sm text-slate-500">Score</div>
+          <div className="text-2xl font-bold text-purple-400">{score}</div>
+          <div className="text-sm text-white/70">Score</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">{level}</div>
-          <div className="text-sm text-slate-500">Level</div>
+          <div className="text-2xl font-bold text-blue-400">{level}</div>
+          <div className="text-sm text-white/70">Level</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-red-600">{mistakes}/3</div>
-          <div className="text-sm text-slate-500">Mistakes</div>
+          <div className="text-2xl font-bold text-red-400">{mistakes}/3</div>
+          <div className="text-sm text-white/70">Mistakes</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-green-600">{timeLeft}s</div>
-          <div className="text-sm text-slate-500">Time</div>
+          <div className="text-2xl font-bold text-green-400">{timeLeft}s</div>
+          <div className="text-sm text-white/70">Time</div>
         </div>
       </div>
 
       {/* Pattern Display */}
       {gameState === 'playing' && (
-        <div className="bg-slate-100 rounded-2xl p-8 mb-6">
-          <div className="text-lg font-semibold text-slate-700 mb-4">
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-6 border border-white/20">
+          <div className="text-lg font-semibold text-white mb-4">
             What comes next in this pattern?
           </div>
           <div className="flex justify-center gap-4 mb-6">
             {currentPattern.map((item, index) => (
               <div
                 key={index}
-                className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center text-3xl border-2 border-slate-200"
+                className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-lg shadow-md flex items-center justify-center text-3xl border-2 border-white/30"
               >
                 {item}
               </div>
@@ -199,7 +200,7 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
               <button
                 key={index}
                 onClick={() => handleOptionClick(option)}
-                className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center text-3xl border-2 border-purple-200 hover:border-purple-400 transition-all transform hover:scale-105"
+                className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-lg shadow-md flex items-center justify-center text-3xl border-2 border-purple-300 hover:border-purple-400 transition-all transform hover:scale-105"
               >
                 {option}
               </button>
@@ -211,12 +212,12 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
       {/* Game Status */}
       {gameState === 'ready' && (
         <div className="space-y-4">
-          <p className="text-lg text-slate-700">
+          <p className="text-lg text-white/80">
             Exercise your pattern recognition skills! Find the missing pieces and complete sequences.
           </p>
           <button
             onClick={startGame}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold px-8 py-4 rounded-full hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 flex items-center gap-2 mx-auto"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold px-8 py-4 rounded-full hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 flex items-center gap-2 mx-auto shadow-lg"
           >
             <Shuffle className="w-5 h-5" />
             Start Game
@@ -226,24 +227,24 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
 
       {gameState === 'gameOver' && (
         <div className="space-y-4">
-          <div className="text-2xl font-bold text-red-600">Game Over!</div>
-          <div className="text-lg text-slate-700">
+          <div className="text-2xl font-bold text-red-400">Game Over!</div>
+          <div className="text-lg text-white/80">
             You reached level {level} with a score of {score}!
           </div>
-          <p className="text-slate-600">
+          <p className="text-white/70">
             Great job working on pattern recognition! Keep practicing to improve your cognitive flexibility.
           </p>
           <div className="flex justify-center gap-4">
             <button
               onClick={resetGame}
-              className="bg-blue-500 text-white font-bold px-6 py-3 rounded-full hover:bg-blue-600 transition-all flex items-center gap-2"
+              className="bg-blue-500 text-white font-bold px-6 py-3 rounded-full hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg"
             >
               <RotateCcw className="w-4 h-4" />
               Try Again
             </button>
             <button
               onClick={onClose}
-              className="bg-slate-500 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-600 transition-all"
+              className="bg-slate-500 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-600 transition-all shadow-lg"
             >
               Close
             </button>
@@ -254,26 +255,26 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
       {gameState === 'success' && (
         <div className="space-y-4">
           <div className="text-center">
-            <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <div className="text-3xl font-bold text-green-600">Pattern Master!</div>
-            <div className="text-lg text-slate-700">
+            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+            <div className="text-3xl font-bold text-green-400">Pattern Master!</div>
+            <div className="text-lg text-white/80">
               You're amazing at finding patterns! Final score: {score}
             </div>
             <div className="flex justify-center items-center gap-2 mt-4">
               <Star className="w-6 h-6 text-yellow-400 fill-current" />
-              <span className="text-xl font-bold text-yellow-500">Stars earned this session!</span>
+              <span className="text-xl font-bold text-yellow-400">Stars earned this session!</span>
             </div>
           </div>
           <div className="flex justify-center gap-4">
             <button
               onClick={resetGame}
-              className="bg-green-500 text-white font-bold px-6 py-3 rounded-full hover:bg-green-600 transition-all"
+              className="bg-green-500 text-white font-bold px-6 py-3 rounded-full hover:bg-green-600 transition-all shadow-lg"
             >
               Play Again
             </button>
             <button
               onClick={onClose}
-              className="bg-slate-500 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-600 transition-all"
+              className="bg-slate-500 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-600 transition-all shadow-lg"
             >
               Close
             </button>
@@ -281,6 +282,7 @@ const PatternMatchingGame: React.FC<PatternMatchingGameProps> = ({ onClose }) =>
         </div>
       )}
     </div>
+  </div>
   );
 };
 

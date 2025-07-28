@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useUser } from '../../contexts/UserContext';
-import { X, Minimize2, Maximize2, Music, Volume2, VolumeX } from 'lucide-react';
-import Box2DFactory from 'box2d-wasm';
+import React, { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
+import { recordGameSession } from '../../utils/analyticsService';
 
 interface FuzzlingGameProps {
   onClose: () => void;
@@ -13,11 +12,7 @@ let Box2D: any;
 const SCALE = 30; // 30 pixels = 1 meter in Box2D
 
 const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
-  console.log('FuzzlingGame component mounted');
-  const gameContainerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentView, setCurrentView] = useState<'main-menu' | 'game' | 'post-game'>('main-menu');
-  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const [gameState, setGameState] = useState({
     score: 0,
     joy: 0,
@@ -26,8 +21,6 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
     showLevelUp: false,
     showGameOver: false
   });
-
-  // Meta-progression state
   const [metaState, setMetaState] = useState({
     stardust: 0,
     talents: {
@@ -49,6 +42,11 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
     selectedFuzzling: 'sunny',
     musicEnabled: true,
   });
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationIdRef = useRef<number>(0);
+  const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
 
   const JOY_PER_LEVEL = [0, 10, 25, 45, 70, 100, 150, 210, 300];
 
@@ -533,14 +531,6 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
     console.log("Advanced Fuzzling Game with Box2D Shutdown.");
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const toggleMusic = () => {
-    setMetaState(prev => ({ ...prev, musicEnabled: !prev.musicEnabled }));
-  };
-
   const startGame = () => {
     setCurrentView('game');
     if (gameContainerRef.current) {
@@ -595,9 +585,7 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   // Main Menu View
   if (currentView === 'main-menu') {
     return (
-      <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-        isFullscreen ? 'fixed inset-0 z-50' : 'w-full max-w-4xl max-h-[90vh]'
-      }`}>
+      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 w-full max-w-4xl max-h-[90vh]">
         {/* Header */}
         <div className="bg-gradient-to-r from-pink-400 to-purple-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -606,20 +594,6 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
               <p className="text-white/90">Drop berries and watch them merge with advanced physics!</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={toggleMusic}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                title={metaState.musicEnabled ? "Disable Music" : "Enable Music"}
-              >
-                {metaState.musicEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-              </button>
-              <button
-                onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                title={isFullscreen ? "Minimize" : "Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-              </button>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -741,9 +715,7 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
   // Post Game View
   if (currentView === 'post-game') {
     return (
-      <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-        isFullscreen ? 'fixed inset-0 z-50' : 'w-full max-w-4xl max-h-[90vh]'
-      }`}>
+      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 w-full max-w-4xl max-h-[90vh]">
         {/* Header */}
         <div className="bg-gradient-to-r from-pink-400 to-purple-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -752,13 +724,6 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
               <p className="text-white/90">Game Over</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                title={isFullscreen ? "Minimize" : "Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-              </button>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -797,9 +762,7 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
 
   // Game View
   return (
-    <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-0 z-50' : 'w-full max-w-4xl max-h-[90vh]'
-    }`}>
+    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 w-full max-w-4xl max-h-[90vh]">
       {/* Header */}
       <div className="bg-gradient-to-r from-pink-400 to-purple-600 text-white p-6">
         <div className="flex justify-between items-center">
@@ -808,20 +771,6 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
             <p className="text-white/90">Drop berries and watch them merge with advanced physics!</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggleMusic}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              title={metaState.musicEnabled ? "Disable Music" : "Enable Music"}
-            >
-              {metaState.musicEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            </button>
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              title={isFullscreen ? "Minimize" : "Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </button>
             <button
               onClick={() => endGame(gameState.score)}
               className="p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -855,7 +804,7 @@ const FuzzlingGame: React.FC<FuzzlingGameProps> = ({ onClose }) => {
       <div 
         ref={gameContainerRef}
         className="w-full h-[600px] bg-gradient-to-b from-yellow-100 to-orange-100"
-        style={{ minHeight: isFullscreen ? 'calc(100vh - 200px)' : '600px' }}
+        style={{ minHeight: '600px' }}
       />
 
       {/* Level Up Modal */}

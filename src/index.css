@@ -6,29 +6,17 @@
 body {
   background-color: #0c0a1a; /* Dark violet fallback */
   color: #e2e8f0; /* Default light text color (slate-200) */
+  margin: 0;
+  padding: 0;
 }
 
 body, #root {
   background-color: transparent;
+  margin: 0;
+  padding: 0;
 }
 
-#app-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  z-index: -10;
-  background: repeating-linear-gradient(-45deg, #1e1b4b, #4c1d95, #3730a3, #5b21b6 50%);
-  background-size: 800% 800%;
-  animation: gradient-pan 30s ease infinite;
-}
 
-@keyframes gradient-pan {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 
 /* Base style for all glass panels */
 .glass-panel {
@@ -37,3 +25,8 @@ body, #root {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem; /* rounded-2xl */
 }
+
+
+
+
+

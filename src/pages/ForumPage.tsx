@@ -2,7 +2,10 @@ import React, { useState, useRef, useLayoutEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { usePost } from '../contexts/PostContext';
 import { MessageCircle, ThumbsUp, ThumbsDown, Reply, Send, Plus, Users, Star, TrendingUp, Heart, Share2, Bookmark, MoreHorizontal } from 'lucide-react';
-import { gsap } from 'gsap';
+// Use the globally loaded GSAP from CDN
+declare const gsap: any;
+import { Link } from 'react-router-dom';
+import PlasmaBackground from '../components/PlasmaBackground';
 
 const ForumPage: React.FC = () => {
     const { user } = useUser();
@@ -71,10 +74,51 @@ const ForumPage: React.FC = () => {
         return date.toLocaleDateString();
     };
 
-    if (!user) return <div className="min-h-screen flex items-center justify-center text-white">Please log in.</div>;
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-6">
+            <div className="flex items-center justify-center mb-8">
+              <img 
+                src="/assets/images/Mascot.png" 
+                alt="NeuraPlay Mascot" 
+                className="w-32 h-32 object-contain"
+              />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
+            <p className="text-lg text-gray-300 mb-8">
+              Please log in to join the community forum and share your learning journey.
+            </p>
+            <div className="space-y-4">
+              <Link 
+                to="/forum-registration" 
+                className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                Create Account
+              </Link>
+              <Link 
+                to="/login" 
+                className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+              >
+                Log In
+              </Link>
+            </div>
+            <p className="text-sm text-gray-400 mt-6">
+              Join thousands of learners discovering the joy of cognitive development!
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     return (
-        <div className="min-h-screen text-slate-200 pt-24 pb-12">
+        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative">
+            {/* Plasma Background */}
+            <PlasmaBackground />
+            
+            {/* Light Blue Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-cyan-400/15 to-blue-500/25 pointer-events-none"></div>
+            
             <div className="container mx-auto px-6">
                 {/* Header Section */}
                 <div className="text-center mb-12">

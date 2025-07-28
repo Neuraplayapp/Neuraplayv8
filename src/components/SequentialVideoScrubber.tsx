@@ -1,8 +1,8 @@
 import React, { useLayoutEffect, useRef, useState, useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+// Use the globally loaded GSAP from CDN
+declare const gsap: any;
+declare const ScrollTrigger: any;
 
 interface Props {
   sources: string[];

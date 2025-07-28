@@ -131,61 +131,92 @@ const RegistrationPage: React.FC = () => {
     }
     setGeneratingAvatar(true);
     setAvatarError('');
+    
     try {
+      console.log('Generating avatar with prompt:', avatarPrompt);
+      
       const response = await fetch('/.netlify/functions/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task_type: 'image',
-          input_data: `Cartoon avatar, ${avatarPrompt}, child-friendly, bright colors, round face, smiling, high quality, detailed, 4k`
+          input_data: avatarPrompt
         })
       });
+      
+      console.log('Avatar generation response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to get response' }));
+        console.error('Avatar generation error:', errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const result = await response.json();
-      if (result.data) {
-        const imageBlob = `data:${result.contentType};base64,${result.data}`;
+      console.log('Avatar generation result:', result);
+      
+      if (result.data && result.data.length > 0) {
+        const imageBlob = `data:${result.contentType || 'image/png'};base64,${result.data}`;
+        console.log('Generated avatar blob length:', imageBlob.length);
         setGeneratedAvatars(prev => [...prev, imageBlob]);
         setFormData({ ...formData, avatar: imageBlob });
-        setAvatarGenerated(true);
+      } else if (result.data) {
+        // Handle case where data is a string (not array)
+        const imageBlob = `data:${result.contentType || 'image/png'};base64,${result.data}`;
+        console.log('Generated avatar blob length:', imageBlob.length);
+        setGeneratedAvatars(prev => [...prev, imageBlob]);
+        setFormData({ ...formData, avatar: imageBlob });
       } else {
+        console.error('No image data in response:', result);
         setAvatarError('Failed to generate avatar. Please try again.');
       }
     } catch (error) {
-      setAvatarError('Error generating avatar. Please try again.');
+      console.error('Avatar generation error:', error);
+      setAvatarError(`Error generating avatar: ${error.message}. Please try again.`);
     } finally {
       setGeneratingAvatar(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-600 to-purple-600 text-white py-24 px-6">
-      <div className="container mx-auto max-w-2xl">
-        {step === 1 && (
-          <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4">
-              The best investment you will ever make is your child
-            </h1>
-            <p className="text-xl text-violet-200">
-              Their education is priceless. Seriously.
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white py-24 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center mb-8">
+            <img 
+              src="/assets/images/Mascot.png" 
+              alt="NeuraPlay Mascot" 
+              className="w-32 h-32 object-contain"
+            />
           </div>
-        )}
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Join NeuraPlay Premium</h1>
+          <p className="text-xl text-violet-300">Unlock the full potential of cognitive development</p>
+        </div>
 
-        <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl border border-white/20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Step 1: Basic Information */}
           {step === 1 && (
-            <div>
-              <h2 className="text-3xl font-bold mb-8 text-center">Create your account</h2>
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
+                  <Check className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Step 1: Your Information</h2>
+                <p className="text-gray-300">Let's get to know you better</p>
+              </div>
+
               <div className="space-y-6">
                 <div>
-                  <label className="block font-bold mb-3">I am a...</label>
+                  <label className="block font-bold mb-4 text-white text-lg">I am a...</label>
                   <div className="grid grid-cols-2 gap-4">
                     {['learner', 'parent'].map(role => (
                       <button
                         key={role}
                         onClick={() => setFormData({ ...formData, role })}
-                        className={`p-4 rounded-xl font-semibold transition-all ${
+                        className={`p-6 rounded-xl font-semibold text-lg transition-all border-2 ${
                           formData.role === role
-                            ? 'bg-white text-violet-600 shadow-lg'
-                            : 'bg-white/20 hover:bg-white/30'
+                            ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-600 shadow-lg'
+                            : 'bg-white/10 text-gray-300 border-white/20 hover:border-violet-400 hover:bg-white/20'
                         }`}
                       >
                         {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -196,189 +227,225 @@ const RegistrationPage: React.FC = () => {
 
                 {formData.role === 'learner' && (
                   <div>
-                    <label className="block font-bold mb-3">Learner's age</label>
+                    <label className="block font-bold mb-4 text-white text-lg">Learner's age</label>
                     <select
                       value={formData.age}
                       onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                      className="w-full p-4 rounded-xl bg-white/20 border border-white/30 text-white"
+                      className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
                     >
-                      <option value={4}>3-5</option>
-                      <option value={7}>6-8</option>
-                      <option value={10}>9-12</option>
+                      <option value={4} className="bg-slate-800">3-5 years</option>
+                      <option value={7} className="bg-slate-800">6-8 years</option>
+                      <option value={10} className="bg-slate-800">9-12 years</option>
                     </select>
                   </div>
                 )}
 
-                <input
-                  type="text"
-                  placeholder="Create a username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                />
-
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                />
-
-                {/* Move avatar selection UI here */}
                 <div>
-                  <h4 className="font-bold mb-3">Choose your hero avatar</h4>
-                  <div className="flex gap-2 mb-2">
+                  <label className="block font-bold mb-4 text-white text-lg">Username</label>
+                  <input
+                    type="text"
+                    placeholder="Create a unique username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-4 text-white text-lg">Email</label>
+                  <input
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                  />
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="agreeToTerms"
+                    checked={formData.agreeToTerms}
+                    onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+                    className="mt-1 w-5 h-5 text-violet-600 bg-white/10 border-white/20 rounded focus:ring-violet-400 focus:ring-2"
+                  />
+                  <label htmlFor="agreeToTerms" className="text-sm text-gray-300">
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowLicense(true)}
+                      className="text-violet-400 hover:text-violet-300 underline"
+                    >
+                      Terms of Service
+                    </button>
+                  </label>
+                </div>
+
+                <button
+                  onClick={handleStepOne}
+                  disabled={!formData.role || !formData.username.trim() || !formData.email.trim() || !formData.agreeToTerms}
+                  className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-xl hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg text-lg"
+                >
+                  Continue to Avatar Creation
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Avatar Creation */}
+          {step === 2 && (
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
+                  <Star className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Step 2: Create Your Avatar</h2>
+                <p className="text-gray-300">Design your unique hero character</p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-bold mb-4 text-white text-lg">Choose your hero avatar</h4>
+                  <div className="flex gap-3 mb-4">
                     <input
                       type="text"
                       value={avatarPrompt}
                       onChange={e => setAvatarPrompt(e.target.value)}
                       placeholder="Describe your avatar (e.g. brave robot, magical cat)"
-                      className="flex-1 px-3 py-2 rounded-lg border border-white/30 text-black"
+                      className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
                       disabled={generatingAvatar}
                     />
                     <button
                       type="button"
                       onClick={handleGenerateAvatar}
                       disabled={generatingAvatar || !avatarPrompt.trim()}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold rounded-xl hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
                     >
-                      {generatingAvatar ? 'Generating...' : 'Generate AI Avatar'}
+                      {generatingAvatar ? 'Generating...' : 'Generate'}
                     </button>
                   </div>
-                  {avatarError && <div className="text-red-200 text-sm mb-2">{avatarError}</div>}
-                  {/* Centered avatar preview below the generate bar */}
-                  <div className="flex justify-center my-4 min-h-[96px]">
-                    {generatingAvatar ? (
-                      <div className="w-24 h-24 rounded-full border-4 border-violet-200 shadow-lg flex items-center justify-center bg-white/40 text-violet-700 font-bold text-center">
-                        Making avatar...
+                  {avatarError && <div className="text-red-400 text-sm mb-4">{avatarError}</div>}
+                  
+                  {/* Avatar Preview - Only show when generating or when avatar is selected */}
+                  {generatingAvatar && (
+                    <div className="flex justify-center mb-6">
+                      <div className="relative w-32 h-32">
+                        {/* Outer force field ring */}
+                        <div className="absolute inset-0 rounded-full border-4 border-violet-400/30 animate-pulse"></div>
+                        {/* Middle force field ring */}
+                        <div className="absolute inset-2 rounded-full border-2 border-violet-400/50 animate-spin" style={{ animationDuration: '3s' }}></div>
+                        {/* Inner force field ring */}
+                        <div className="absolute inset-4 rounded-full border border-violet-400/70 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }}></div>
+                        {/* Central energy core */}
+                        <div className="absolute inset-8 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-400/20 animate-pulse">
+                          <div className="absolute inset-2 rounded-full bg-gradient-to-br from-violet-400/40 to-purple-400/40 animate-spin" style={{ animationDuration: '1.5s' }}></div>
+                        </div>
+                        {/* Energy particles */}
+                        <div className="absolute inset-0 rounded-full">
+                          <div className="absolute top-2 left-1/2 w-1 h-1 bg-violet-400 rounded-full animate-ping"></div>
+                          <div className="absolute bottom-2 left-1/2 w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+                          <div className="absolute left-2 top-1/2 w-1 h-1 bg-violet-400 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+                          <div className="absolute right-2 top-1/2 w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '1.5s' }}></div>
+                        </div>
                       </div>
-                    ) : (
-                      avatarGenerated && formData.avatar && (
-                        <img
-                          src={formData.avatar}
-                          alt="Avatar Preview"
-                          className="w-24 h-24 rounded-full border-4 border-violet-200 shadow-lg"
-                        />
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    checked={formData.agreeToTerms}
-                    onChange={e => {
-                      if (!formData.agreeToTerms) {
-                        setShowLicense(true);
-                      } else {
-                        setFormData({ ...formData, agreeToTerms: false });
-                      }
-                    }}
-                    className="w-5 h-5 rounded"
-                  />
-                  <label htmlFor="terms" className="text-sm">
-                    I have read and agree to the <button type="button" className="underline text-violet-200 hover:text-violet-400" onClick={() => setShowLicense(true)}>terms of service & license</button>
-                  </label>
-                </div>
-                {showLicense && (
-                  <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
-                      <button onClick={() => setShowLicense(false)} className="absolute top-4 right-4 text-slate-500 hover:text-violet-600 text-2xl font-bold">&times;</button>
-                      <h2 className="text-2xl font-bold mb-4 text-violet-700">Neuraplay License Agreement</h2>
-                      <pre className="text-xs text-slate-700 whitespace-pre-wrap max-h-[60vh] overflow-y-auto">{LICENSE_TEXT}</pre>
-                      <button onClick={() => {
-                        setShowLicense(false);
-                        setFormData({ ...formData, agreeToTerms: true });
-                      }} className="mt-6 bg-violet-600 text-white font-bold px-6 py-2 rounded-full hover:bg-violet-700 transition-all block mx-auto">Accept & Close</button>
                     </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleStepOne}
-                  disabled={!formData.agreeToTerms}
-                  className="w-full bg-white text-violet-600 font-bold py-4 rounded-full hover:bg-slate-100 transition-all disabled:opacity-50"
-                >
-                  Next: Address & payment
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <h2 className="text-3xl font-bold mb-8 text-center">Billing information</h2>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Full name"
-                  className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                />
-                <input
-                  type="text"
-                  placeholder="Address"
-                  className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="City"
-                    className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Postal code"
-                    className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                  />
+                  )}
+                  
+                  {!generatingAvatar && formData.avatar && (formData.avatar !== '/assets/placeholder.png' || formData.avatar.startsWith('data:')) && (
+                    <div className="flex justify-center mb-6">
+                      <img
+                        src={formData.avatar}
+                        alt="Avatar Preview"
+                        className="w-32 h-32 rounded-full border-4 border-violet-400 shadow-lg"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="bg-white/20 p-6 rounded-xl border border-white/30">
-                  <h4 className="font-bold mb-4">Credit card information (Demo)</h4>
-                  <input
-                    type="text"
-                    placeholder="Card number (e.g., 4242 4242 4242 4242)"
-                    className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white mb-4"
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="CVC"
-                      className="w-full p-4 rounded-xl bg-white/20 border border-white/30 placeholder-white/70 text-white"
-                    />
-                  </div>
-                </div>
+
                 <button
                   onClick={handleComplete}
-                  className="w-full bg-white text-violet-600 font-bold py-4 rounded-full hover:bg-slate-100 transition-all"
+                  disabled={!formData.avatar}
+                  className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-xl hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg text-lg"
                 >
-                  Complete purchase ($10)
+                  Complete Registration
                 </button>
               </div>
             </div>
           )}
 
-          {step === 3 && (
-            <div className="text-center">
-              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Check className="w-10 h-10 text-white" />
+          {/* Premium Features Sidebar */}
+          <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center">
+                <Star className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-4xl font-bold text-green-400 mb-4">Success!</h2>
-              <p className="text-xl">
-                Your journey begins now. Welcome to the family!
-              </p>
-              <div className="flex justify-center mt-6">
-                <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
+              <h2 className="text-2xl font-bold text-white mb-2">Premium Features</h2>
+              <p className="text-gray-300">Unlock the full NeuraPlay experience</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white">Unlimited AI Story Generation</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white">Advanced Progress Analytics</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white">Personalized Learning Paths</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white">Priority Customer Support</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white">Exclusive Educational Content</span>
               </div>
             </div>
-          )}
+
+            <div className="mt-8 p-6 bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-xl border border-violet-400/30">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">$9.99</div>
+                <div className="text-gray-300 mb-4">per month</div>
+                <div className="text-sm text-violet-300">Cancel anytime • 30-day free trial</div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* License Modal */}
+        {showLicense && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+            <div className="bg-black/90 border border-white/10 rounded-2xl p-8 max-w-4xl max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-white">Terms of Service</h3>
+                <button
+                  onClick={() => setShowLicense(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+                {LICENSE_TEXT}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

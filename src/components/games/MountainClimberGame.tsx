@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useUser } from '../../contexts/UserContext';
-import { X, Minimize2, Maximize2, Star, Trophy } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import Box2DFactory from 'box2d-wasm';
 
 // --- Types and Interfaces ---
@@ -75,7 +74,6 @@ const MountainClimber: React.FC<MountainClimberProps> = ({ onClose }) => {
   const lastMouseXRef = useRef<number | null>(null);
   
   // --- State ---
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [view, setView] = useState<'main-menu' | 'game'>('main-menu');
   const [gameError, setGameError] = useState<string | null>(null);
   const [box2dLoaded, setBox2dLoaded] = useState(false);
@@ -604,14 +602,11 @@ const MountainClimber: React.FC<MountainClimberProps> = ({ onClose }) => {
   // --- Render ---
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`bg-gray-800 rounded-lg shadow-2xl ${isFullscreen ? 'w-full h-full' : 'w-[80vw] h-[90vh]'} relative flex flex-col`}>
+      <div className={`bg-gray-800 rounded-lg shadow-2xl w-full h-full relative flex flex-col`}>
         {/* Header */}
         <div className="flex justify-between items-center p-2 bg-gray-700 rounded-t-lg">
           <h2 className="text-2xl font-bold text-cyan-300">Mountain Climber</h2>
           <div className="flex items-center space-x-2">
-            <button onClick={() => setIsFullscreen(f => !f)} className="p-2 text-white hover:bg-gray-600 rounded">
-              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
             <button onClick={onClose} className="p-2 text-white hover:bg-gray-600 rounded">
               <X size={20} />
             </button>

@@ -1,978 +1,763 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
-import DashboardScript from '../components/DashboardScript';
-import Calendar from '../components/Calendar';
+import { 
+  BookOpen, 
+  Brain, 
+  Target, 
+  TrendingUp, 
+  Calendar, 
+  Clock, 
+  Star, 
+  Trophy, 
+  Users, 
+  Search, 
+  Filter, 
+  Play, 
+  Pause, 
+  SkipForward, 
+  Volume2, 
+  VolumeX,
+  Bookmark,
+  Share2,
+  Download,
+  Eye,
+  Heart,
+  MessageCircle,
+  BarChart3,
+  PieChart,
+  Activity,
+  Zap,
+  Award,
+  Crown,
+  Lightbulb,
+  GraduationCap,
+  Library,
+  Notebook,
+  Video,
+  Headphones,
+  FileText,
+  Image,
+  Code,
+  Palette,
+  Calculator,
+  Globe,
+  Map,
+  Music,
+  Camera,
+  Gamepad2,
+  Puzzle,
+  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Home,
+  Settings,
+  Bell,
+  User,
+  LogOut,
+  X,
+  CheckSquare
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import TaskManager from '../components/TaskManager';
+import StudyCalendar from '../components/StudyCalendar';
+import Diary from '../components/Diary';
+
+interface LearningModule {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  duration: string;
+  progress: number;
+  isBookmarked: boolean;
+  isCompleted: boolean;
+  thumbnail: string;
+  type: 'video' | 'interactive' | 'reading' | 'quiz' | 'game';
+  skills: string[];
+  rating: number;
+  instructor: string;
+  lastAccessed?: Date;
+}
+
+interface StudySession {
+  id: string;
+  moduleId: string;
+  startTime: Date;
+  endTime?: Date;
+  duration: number;
+  progress: number;
+}
 
 const DashboardPage: React.FC = () => {
   const { user } = useUser();
-  const chartRef1 = useRef<HTMLCanvasElement>(null);
-  const chartRef2 = useRef<HTMLCanvasElement>(null);
-  const chartRef3 = useRef<HTMLCanvasElement>(null);
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('library');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [currentModule, setCurrentModule] = useState<LearningModule | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalTime, setTotalTime] = useState(0);
+  const [showStats, setShowStats] = useState(false);
+  const [showTaskManager, setShowTaskManager] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showDiary, setShowDiary] = useState(false);
 
-  useEffect(() => {
-    const loadCharts = async () => {
-      try {
-        const { Chart } = await import('chart.js/auto');
-        
-        // Simple Bar Chart
-        if (chartRef1.current) {
-          new Chart(chartRef1.current, {
-            type: 'bar',
-            data: {
-              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-              datasets: [{
-                label: 'Progress',
-                data: [65, 59, 80, 81, 56, 55],
-                backgroundColor: '#0d6efd',
-                borderColor: '#0d6efd',
-                borderWidth: 1
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: '#3b3d56'
-                  },
-                  ticks: {
-                    color: '#71748c'
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false
-                  },
-                  ticks: {
-                    color: '#71748c'
-                  }
-                }
-              }
-            }
-          });
-        }
+  // Mock data for learning modules
+  const learningModules: LearningModule[] = [
+    {
+      id: '1',
+      title: 'Introduction to Memory Techniques',
+      description: 'Learn powerful memory techniques to improve your learning efficiency and retention.',
+      category: 'Memory',
+      difficulty: 'Beginner',
+      duration: '15 min',
+      progress: 75,
+      isBookmarked: true,
+      isCompleted: false,
+      thumbnail: '/assets/images/Neuraplaybrain.png',
+      type: 'video',
+      skills: ['Working Memory', 'Visual Memory', 'Sequential Processing'],
+      rating: 4.8,
+      instructor: 'Dr. Sarah Chen',
+      lastAccessed: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
+    },
+    {
+      id: '2',
+      title: 'Advanced Problem Solving Strategies',
+      description: 'Master advanced problem-solving techniques for complex cognitive challenges.',
+      category: 'Logic',
+      difficulty: 'Advanced',
+      duration: '25 min',
+      progress: 30,
+      isBookmarked: false,
+      isCompleted: false,
+      thumbnail: '/assets/images/Thecube.png',
+      type: 'interactive',
+      skills: ['Problem Solving', 'Critical Thinking', 'Analytical Reasoning'],
+      rating: 4.9,
+      instructor: 'Prof. Michael Rodriguez',
+      lastAccessed: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+    },
+    {
+      id: '3',
+      title: 'Focus and Attention Training',
+      description: 'Develop sustained attention and focus through specialized exercises.',
+      category: 'Focus',
+      difficulty: 'Intermediate',
+      duration: '20 min',
+      progress: 100,
+      isBookmarked: true,
+      isCompleted: true,
+      thumbnail: '/assets/images/Mascot.png',
+      type: 'game',
+      skills: ['Sustained Attention', 'Selective Attention', 'Divided Attention'],
+      rating: 4.7,
+      instructor: 'Dr. Emily Watson',
+      lastAccessed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
+    },
+    {
+      id: '4',
+      title: 'Creative Thinking Workshop',
+      description: 'Unlock your creative potential through innovative thinking exercises.',
+      category: 'Creativity',
+      difficulty: 'Intermediate',
+      duration: '18 min',
+      progress: 0,
+      isBookmarked: false,
+      isCompleted: false,
+      thumbnail: '/assets/images/neuraplaybanner1.png',
+      type: 'interactive',
+      skills: ['Creative Thinking', 'Divergent Thinking', 'Innovation'],
+      rating: 4.6,
+      instructor: 'Prof. David Kim',
+      lastAccessed: undefined
+    },
+    {
+      id: '5',
+      title: 'Spatial Reasoning Fundamentals',
+      description: 'Build strong spatial reasoning skills through 3D visualization exercises.',
+      category: 'Spatial',
+      difficulty: 'Beginner',
+      duration: '22 min',
+      progress: 45,
+      isBookmarked: false,
+      isCompleted: false,
+      thumbnail: '/assets/images/Thecube.png',
+      type: 'game',
+      skills: ['Spatial Reasoning', 'Visual Processing', '3D Thinking'],
+      rating: 4.5,
+      instructor: 'Dr. Lisa Thompson',
+      lastAccessed: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
+    },
+    {
+      id: '6',
+      title: 'Language Development Mastery',
+      description: 'Enhance your language skills through comprehensive vocabulary and grammar exercises.',
+      category: 'Language',
+      difficulty: 'Advanced',
+      duration: '30 min',
+      progress: 60,
+      isBookmarked: true,
+      isCompleted: false,
+      thumbnail: '/assets/images/police.jpg',
+      type: 'reading',
+      skills: ['Verbal Memory', 'Language Processing', 'Communication'],
+      rating: 4.8,
+      instructor: 'Prof. James Wilson',
+      lastAccessed: new Date(Date.now() - 6 * 60 * 60 * 1000) // 6 hours ago
+    }
+  ];
 
-        // Simple Line Chart
-        if (chartRef2.current) {
-          new Chart(chartRef2.current, {
-            type: 'line',
-            data: {
-              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-              datasets: [{
-                label: 'Performance',
-                data: [12, 19, 3, 5, 2, 3],
-                borderColor: '#dc3545',
-                backgroundColor: 'transparent',
-                tension: 0.4
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: '#3b3d56'
-                  },
-                  ticks: {
-                    color: '#71748c'
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false
-                  },
-                  ticks: {
-                    color: '#71748c'
-                  }
-                }
-              }
-            }
-          });
-        }
+  const categories = ['all', 'Memory', 'Logic', 'Focus', 'Creativity', 'Spatial', 'Language'];
+  const difficulties = ['all', 'Beginner', 'Intermediate', 'Advanced'];
 
-        // Simple Area Chart
-        if (chartRef3.current) {
-          new Chart(chartRef3.current, {
-            type: 'line',
-            data: {
-              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-              datasets: [{
-                label: 'Growth',
-                data: [30, 45, 35, 50, 40, 60],
-                borderColor: '#198754',
-                backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                fill: true,
-                tension: 0.4
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: '#3b3d56'
-                  },
-                  ticks: {
-                    color: '#71748c'
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false
-                  },
-                  ticks: {
-                    color: '#71748c'
-                  }
-                }
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error loading charts:', error);
-      }
-    };
+  const filteredModules = learningModules.filter(module => {
+    const matchesSearch = module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         module.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || module.category === selectedCategory;
+    const matchesDifficulty = selectedDifficulty === 'all' || module.difficulty === selectedDifficulty;
+    
+    return matchesSearch && matchesCategory && matchesDifficulty;
+  });
 
-    // Load charts after a short delay
-    const timer = setTimeout(loadCharts, 500);
-    return () => clearTimeout(timer);
-  }, []);
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Memory': return <Brain className="w-5 h-5" />;
+      case 'Logic': return <Puzzle className="w-5 h-5" />;
+      case 'Focus': return <Target className="w-5 h-5" />;
+      case 'Creativity': return <Palette className="w-5 h-5" />;
+      case 'Spatial': return <Globe className="w-5 h-5" />;
+      case 'Language': return <FileText className="w-5 h-5" />;
+      default: return <BookOpen className="w-5 h-5" />;
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'video': return <Video className="w-4 h-4" />;
+      case 'interactive': return <Code className="w-4 h-4" />;
+      case 'reading': return <FileText className="w-4 h-4" />;
+      case 'quiz': return <Calculator className="w-4 h-4" />;
+      case 'game': return <Gamepad2 className="w-4 h-4" />;
+      default: return <BookOpen className="w-4 h-4" />;
+    }
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Beginner': return 'text-green-500 bg-green-100';
+      case 'Intermediate': return 'text-yellow-500 bg-yellow-100';
+      case 'Advanced': return 'text-red-500 bg-red-100';
+      default: return 'text-gray-500 bg-gray-100';
+    }
+  };
+
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  const handleModuleClick = (module: LearningModule) => {
+    setCurrentModule(module);
+    setIsPlaying(true);
+    setCurrentTime(0);
+    setTotalTime(parseInt(module.duration) * 60); // Convert minutes to seconds
+  };
+
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  const toggleBookmark = (moduleId: string) => {
+    // In a real app, this would update the backend
+    console.log('Toggle bookmark for module:', moduleId);
+  };
+
+  const progressPercentage = totalTime > 0 ? (currentTime / totalTime) * 100 : 0;
+
+  // Show login prompt if user is not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="flex items-center justify-center mb-8">
+            <img 
+              src="/assets/images/Mascot.png" 
+              alt="NeuraPlay Mascot" 
+              className="w-32 h-32 object-contain"
+            />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
+          <p className="text-lg text-gray-300 mb-8">
+            Please log in to access your personalized learning dashboard and track your progress.
+          </p>
+          <div className="space-y-4">
+            <Link 
+              to="/forum-registration" 
+              className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              Create Account
+            </Link>
+            <Link 
+              to="/login" 
+              className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+            >
+              Log In
+            </Link>
+          </div>
+          <p className="text-sm text-gray-400 mt-6">
+            Join thousands of learners discovering the joy of cognitive development!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-container">
-      <DashboardScript />
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-        
-        :root {
-          --dk-gray-100: #F3F4F6;
-          --dk-gray-200: #E5E7EB;
-          --dk-gray-300: #D1D5DB;
-          --dk-gray-400: #9CA3AF;
-          --dk-gray-500: #6B7280;
-          --dk-gray-600: #4B5563;
-          --dk-gray-700: #374151;
-          --dk-gray-800: #1F2937;
-          --dk-gray-900: #111827;
-          --dk-dark-bg: #313348;
-          --dk-darker-bg: #2a2b3d;
-          --navbar-bg-color: #6f6486;
-          --sidebar-bg-color: #252636;
-          --sidebar-width: 250px;
-        }
-
-        .dashboard-container {
-          font-family: 'Inter', sans-serif;
-          background-color: var(--dk-darker-bg);
-          font-size: .925rem;
-          min-height: 100vh;
-          width: 100vw;
-          overflow-x: hidden;
-        }
-
-        .sidebar {
-          background-color: var(--sidebar-bg-color);
-          width: var(--sidebar-width);
-          transition: all .3s ease-in-out;
-          transform: translateX(0);
-          z-index: 9999999;
-          position: fixed;
-          top: 0;
-          left: 0;
-          overflow: auto;
-          height: 100vh;
-          float: left;
-        }
-
-        .sidebar .close-aside {
-          position: absolute;
-          top: 7px;
-          right: 7px;
-          cursor: pointer;
-          color: #EEE;
-        }
-
-        .sidebar .sidebar-header {
-          border-bottom: 1px solid #2a2b3c;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 1rem;
-        }
-
-        .sidebar .sidebar-header h5 a {
-          color: var(--dk-gray-300);
-          text-decoration: none;
-        }
-
-        .sidebar .sidebar-header p {
-          color: var(--dk-gray-400);
-          font-size: .825rem;
-        }
-
-        .search {
-          position: relative;
-          text-align: center;
-          padding: 1rem;
-          margin-top: 0.5rem;
-        }
-
-        .search input {
-          width: 100%;
-          border: 0;
-          background: transparent;
-          color: var(--dk-gray-300);
-        }
-
-        .search i {
-          position: absolute;
-          right: 40px;
-          top: 22px;
-          color: #2b2f3a;
-        }
-
-        .categories {
-          list-style: none;
-          padding: 0;
-        }
-
-        .categories li {
-          padding: .7rem 1.75rem;
-          color: var(--dk-gray-400);
-        }
-
-        .categories li a {
-          color: var(--dk-gray-400);
-          text-decoration: none;
-          transition: color 0.2s ease;
-        }
-
-        .categories li.active a {
-          color: var(--dk-gray-200);
-        }
-
-        .categories li.active i {
-          color: var(--dk-gray-300);
-        }
-
-        .categories li i {
-          font-size: 18px;
-          margin-right: .7rem;
-          color: var(--dk-gray-500);
-          transition: color 0.2s ease;
-        }
-
-        .wrapper {
-          margin-left: var(--sidebar-width);
-          transition: all .3s ease-in-out;
-          min-height: 100vh;
-          background-color: var(--dk-darker-bg);
-        }
-
-        .wrapper.fullwidth {
-          margin-left: 0;
-        }
-
-        .navbar {
-          background-color: var(--navbar-bg-color) !important;
-          border: none !important;
-          position: sticky;
-          top: 0;
-          z-index: 1000;
-        }
-
-        .navbar .navbar-brand {
-          color: #FFF !important;
-        }
-
-        .navbar .navbar-nav > li > a {
-          color: #EEE !important;
-          line-height: 55px !important;
-          padding: 0 10px !important;
-        }
-
-        .welcome {
-          color: var(--dk-gray-300);
-          margin-top: 1rem;
-        }
-
-        .welcome .content {
-          background-color: var(--dk-dark-bg);
-          border-radius: 0.75rem;
-          padding: 1rem;
-        }
-
-        .welcome p {
-          color: var(--dk-gray-400);
-        }
-
-        .statistics {
-          color: var(--dk-gray-200);
-          margin-top: 1.5rem;
-        }
-
-        .statistics .box {
-          background-color: var(--dk-dark-bg);
-          border-radius: 0.5rem;
-          padding: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .statistics .box i {
-          width: 60px;
-          height: 60px;
-          line-height: 60px;
-          border-radius: 50%;
-          text-align: center;
-          font-size: 1.5rem;
-        }
-
-        .statistics .box p {
-          color: var(--dk-gray-400);
-        }
-
-        .charts {
-          margin-top: 1.5rem;
-        }
-
-        .charts .chart-container {
-          background-color: var(--dk-dark-bg);
-          border-radius: 0.5rem;
-          padding: 1rem;
-          height: 300px;
-          position: relative;
-          margin-bottom: 1rem;
-        }
-
-        .charts .chart-container h3 {
-          color: var(--dk-gray-400);
-          margin-bottom: 1rem;
-        }
-
-        .charts .chart-container canvas {
-          max-height: 250px !important;
-        }
-
-        .admins {
-          margin-top: 1.5rem;
-        }
-
-        .admins .box .admin {
-          background-color: var(--dk-dark-bg);
-          border-radius: 0.5rem;
-          padding: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .admins .box h3 {
-          color: var(--dk-gray-300);
-        }
-
-        .admins .box p {
-          color: var(--dk-gray-400);
-        }
-
-        .statis {
-          color: var(--dk-gray-100);
-          margin-top: 1.5rem;
-        }
-
-        .statis .box {
-          position: relative;
-          overflow: hidden;
-          border-radius: 3px;
-          padding: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .statis .box h3:after {
-          content: "";
-          height: 2px;
-          width: 70%;
-          margin: auto;
-          background-color: rgba(255, 255, 255, 0.12);
-          display: block;
-          margin-top: 10px;
-        }
-
-        .statis .box i {
-          position: absolute;
-          height: 70px;
-          width: 70px;
-          font-size: 22px;
-          padding: 15px;
-          top: -25px;
-          left: -25px;
-          background-color: rgba(255, 255, 255, 0.15);
-          line-height: 60px;
-          text-align: right;
-          border-radius: 50%;
-        }
-
-        .main-color {
-          color: #ffc107;
-        }
-
-        @media (max-width: 767px) {
-          .wrapper {
-            margin-left: 0 !important;
-          }
-          .sidebar {
-            transform: translateX(-270px);
-          }
-          .sidebar.show-sidebar {
-            transform: translateX(0);
-          }
-        }
-
-        /* Additional responsive styles */
-        .row {
-          display: flex;
-          flex-wrap: wrap;
-          margin-right: -0.75rem;
-          margin-left: -0.75rem;
-        }
-
-        .col-lg-4, .col-lg-6, .col-md-6, .col-md-6.col-lg-3 {
-          position: relative;
-          width: 100%;
-          padding-right: 0.75rem;
-          padding-left: 0.75rem;
-        }
-
-        @media (min-width: 768px) {
-          .col-md-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
-          }
-        }
-
-        @media (min-width: 992px) {
-          .col-lg-4 {
-            flex: 0 0 33.333333%;
-            max-width: 33.333333%;
-          }
-          .col-lg-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
-          }
-          .col-lg-3 {
-            flex: 0 0 25%;
-            max-width: 25%;
-          }
-        }
-
-        .d-flex {
-          display: flex !important;
-        }
-
-        .align-items-center {
-          align-items: center !important;
-        }
-
-        .justify-content-center {
-          justify-content: center !important;
-        }
-
-        .rounded-2 {
-          border-radius: 0.375rem !important;
-        }
-
-        .rounded-3 {
-          border-radius: 0.5rem !important;
-        }
-
-        .p-3 {
-          padding: 1rem !important;
-        }
-
-        .p-4 {
-          padding: 1.5rem !important;
-        }
-
-        .mb-0 {
-          margin-bottom: 0 !important;
-        }
-
-        .mb-1 {
-          margin-bottom: 0.25rem !important;
-        }
-
-        .mb-3 {
-          margin-bottom: 1rem !important;
-        }
-
-        .mb-4 {
-          margin-bottom: 1.5rem !important;
-        }
-
-        .mb-lg-0 {
-          margin-bottom: 0 !important;
-        }
-
-        .mt-1 {
-          margin-top: 0.25rem !important;
-        }
-
-        .mt-2 {
-          margin-top: 0.5rem !important;
-        }
-
-        .mt-4 {
-          margin-top: 1.5rem !important;
-        }
-
-        .ms-2 {
-          margin-left: 0.5rem !important;
-        }
-
-        .ms-3 {
-          margin-left: 1rem !important;
-        }
-
-        .fs-3 {
-          font-size: 1.75rem !important;
-        }
-
-        .fs-5 {
-          font-size: 1.25rem !important;
-        }
-
-        .fs-6 {
-          font-size: 1rem !important;
-        }
-
-        .fs-normal {
-          font-size: 1rem !important;
-        }
-
-        .text-center {
-          text-align: center !important;
-        }
-
-        .text-decoration-none {
-          text-decoration: none !important;
-        }
-
-        .img-fluid {
-          max-width: 100%;
-          height: auto;
-        }
-
-        .rounded-pill {
-          border-radius: 50rem !important;
-        }
-
-        .bg-primary {
-          background-color: #0d6efd !important;
-        }
-
-        .bg-danger {
-          background-color: #dc3545 !important;
-        }
-
-        .bg-success {
-          background-color: #198754 !important;
-        }
-
-        .bg-warning {
-          background-color: #ffc107 !important;
-        }
-
-        .text-white {
-          color: #fff !important;
-        }
-
-        .lead {
-          font-size: 1.25rem;
-          font-weight: 300;
-        }
-      `}</style>
-
-      <aside className="sidebar" id="show-side-navigation1">
-        <i className="uil-bars close-aside d-md-none d-lg-none" data-close="show-side-navigation1">☰</i>
-        <div className="sidebar-header">
-          <img
-            className="rounded-pill img-fluid"
-            width="65"
-            src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148907008/medium/1501685726/enhance"
-            alt=""
-          />
-          <div className="ms-2">
-            <h5 className="fs-6 mb-0">
-              <a className="text-decoration-none" href="#">{user?.username || 'User'}</a>
-            </h5>
-            <p className="mt-1 mb-0">Welcome to your learning hub!</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white">
+      {/* Header */}
+      <div className="bg-black/20 backdrop-blur-md border-b border-white/10">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <Library className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Learning Central</h1>
+                <p className="text-sm text-gray-300">Your personal learning library</p>
           </div>
         </div>
 
-        <div className="search">
-          <input type="text" className="form-control w-100 border-0 bg-transparent" placeholder="Search here" />
-          <i className="fa fa-search position-absolute d-block fs-6">🔍</i>
-        </div>
-
-        <ul className="categories">
-          <li className={`has-dropdown ${activeSection === 'dashboard' ? 'active' : ''}`}>
-            <i className="uil-estate fa-fw">🏠</i><a href="#" onClick={() => setActiveSection('dashboard')}> Dashboard</a>
-          </li>
-          <li className={`${activeSection === 'library' ? 'active' : ''}`}>
-            <i className="uil-folder">📁</i><a href="#" onClick={() => setActiveSection('library')}> Library</a>
-          </li>
-          <li className={`has-dropdown ${activeSection === 'calendar' ? 'active' : ''}`}>
-            <i className="uil-calendar-alt">📅</i><a href="#" onClick={() => setActiveSection('calendar')}> Calendar</a>
-          </li>
-          <li className="has-dropdown">
-            <i className="uil-envelope-download fa-fw">📧</i><a href="#"> Mailbox</a>
-          </li>
-          <li className="has-dropdown">
-            <i className="uil-shopping-cart-alt">🛒</i><a href="#"> Ecommerce</a>
-          </li>
-          <li className={`has-dropdown ${activeSection === 'projects' ? 'active' : ''}`}>
-            <i className="uil-bag">💼</i><a href="#" onClick={() => setActiveSection('projects')}> Future Projects</a>
-          </li>
-          <li className="">
-            <i className="uil-setting">⚙️</i><a href="#"> Settings</a>
-          </li>
-          <li className={`has-dropdown ${activeSection === 'tools' ? 'active' : ''}`}>
-            <i className="uil-chart-pie-alt">📊</i><a href="#" onClick={() => setActiveSection('tools')}> Study Tools</a>
-          </li>
-          <li className={`has-dropdown ${activeSection === 'performance' ? 'active' : ''}`}>
-            <i className="uil-panel-add">📈</i><a href="#" onClick={() => setActiveSection('performance')}> Your Study Performance</a>
-          </li>
-          <li className={`${activeSection === 'studies' ? 'active' : ''}`}>
-            <i className="uil-map-marker">📍</i><a href="#" onClick={() => setActiveSection('studies')}> Your Studies</a>
-          </li>
-        </ul>
-      </aside>
-
-      <section id="wrapper" className="wrapper">
-        <nav className="navbar navbar-expand-md">
-          <div className="container-fluid mx-2">
-            <div className="navbar-header">
-              <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="Toggle navigation">
-                <i className="uil-bars text-white">☰</i>
+            <div className="flex items-center space-x-4">
+              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                <Bell className="w-5 h-5" />
               </button>
-              <a className="navbar-brand" href="#">Learning<span className="main-color">Central</span></a>
+              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                <Settings className="w-5 h-5" />
+              </button>
+              <div className="flex items-center space-x-2">
+                <img 
+                  src={user?.profile?.avatar || '/assets/images/placeholder.png'} 
+                  alt="Avatar" 
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="text-sm font-medium">{user?.username || 'User'}</span>
             </div>
-            <div className="collapse navbar-collapse" id="toggle-navbar">
-              <ul className="navbar-nav ms-auto">
-                <li className="nav-item dropdown">
-                  <a className="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Settings
-                  </a>
-                  <ul className="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <li><a className="dropdown-item" href="#">My account</a></li>
-                    <li><a className="dropdown-item" href="#">My inbox</a></li>
-                    <li><a className="dropdown-item" href="#">Help</a></li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li><a className="dropdown-item" href="#">Log out</a></li>
-                  </ul>
-                </li>
-                <li className="nav-item">
-                  <a className="nav-link" href="#"><i className="uil-comments-alt">💬</i><span>23</span></a>
-                </li>
-                <li className="nav-item">
-                  <a className="nav-link" href="#"><i className="uil-bell">🔔</i><span>98</span></a>
-                </li>
-                <li className="nav-item">
-                  <a className="nav-link" href="#">
-                    <i data-show="show-side-navigation1" className="uil-bars show-side-btn">☰</i>
-                  </a>
-                </li>
-              </ul>
             </div>
           </div>
-        </nav>
-
-        <div className="p-4">
-          {activeSection === 'dashboard' && (
-            <>
-              <div className="welcome">
-                <div className="content">
-                  <h1 className="fs-3">Welcome to Learning Central</h1>
-                  <p className="mb-0">Hello {user?.username || 'User'}, welcome to your learning hub!</p>
                 </div>
               </div>
 
-              <section className="statistics">
-                <div className="row">
-                  <div className="col-lg-4">
-                    <div className="box d-flex rounded-2 align-items-center mb-4 mb-lg-0 p-3">
-                      <i className="uil-envelope-shield fs-2 text-center bg-primary rounded-circle">📧</i>
-                      <div className="ms-3">
-                        <div className="d-flex align-items-center">
-                          <h3 className="mb-0">1,245</h3> <span className="d-block ms-2">Emails</span>
-                        </div>
-                        <p className="fs-normal mb-0">Lorem ipsum dolor sit amet</p>
-                      </div>
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+              <nav className="space-y-2">
+                {[
+                  { id: 'library', label: 'Library', icon: <BookOpen className="w-5 h-5" /> },
+                  { id: 'progress', label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
+                  { id: 'bookmarks', label: 'Bookmarks', icon: <Bookmark className="w-5 h-5" /> },
+                  { id: 'diary', label: 'Diary', icon: <BookOpen className="w-5 h-5" /> },
+                  { id: 'calendar', label: 'Calendar', icon: <Calendar className="w-5 h-5" /> },
+                  { id: 'stats', label: 'Statistics', icon: <BarChart3 className="w-5 h-5" /> },
+                  { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      // Reset all states first
+                      setShowTaskManager(false);
+                      setShowCalendar(false);
+                      setShowDiary(false);
+                      
+                      if (tab.id === 'tasks') {
+                        setShowTaskManager(true);
+                        setActiveTab('tasks');
+                      } else if (tab.id === 'calendar') {
+                        setShowCalendar(true);
+                        setActiveTab('calendar');
+                      } else if (tab.id === 'diary') {
+                        setShowDiary(true);
+                        setActiveTab('diary');
+                      } else {
+                        setActiveTab(tab.id);
+                      }
+                    }}
+                    className={`w-full flex items-center space-x-3 p-3 rounded-xl text-left transition-all ${
+                      (activeTab === tab.id || (tab.id === 'tasks' && showTaskManager) || (tab.id === 'calendar' && showCalendar) || (tab.id === 'diary' && showDiary))
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white' 
+                        : 'hover:bg-white/10 text-gray-300'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span className="font-medium">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+
+              {/* Quick Stats */}
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">Modules Completed</span>
+                    <span className="text-sm font-medium">12</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">Total Study Time</span>
+                    <span className="text-sm font-medium">8.5h</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">Current Streak</span>
+                    <span className="text-sm font-medium text-green-400">7 days</span>
+                  </div>
+                </div>
+              </div>
                     </div>
                   </div>
-                  <div className="col-lg-4">
-                    <div className="box d-flex rounded-2 align-items-center mb-4 mb-lg-0 p-3">
-                      <i className="uil-file fs-2 text-center bg-danger rounded-circle">📄</i>
-                      <div className="ms-3">
-                        <div className="d-flex align-items-center">
-                          <h3 className="mb-0">34</h3> <span className="d-block ms-2">Projects</span>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {showTaskManager ? (
+              <TaskManager onClose={() => setShowTaskManager(false)} />
+            ) : showCalendar ? (
+              <StudyCalendar onClose={() => setShowCalendar(false)} />
+            ) : showDiary ? (
+              <Diary onClose={() => setShowDiary(false)} />
+            ) : activeTab === 'library' && (
+              <div className="space-y-6">
+                {/* Search and Filters */}
+                <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Search modules..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      />
+                    </div>
+                    
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    >
+                      {categories.map(category => (
+                        <option key={category} value={category} className="bg-slate-800">
+                          {category === 'all' ? 'All Categories' : category}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    <select
+                      value={selectedDifficulty}
+                      onChange={(e) => setSelectedDifficulty(e.target.value)}
+                      className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    >
+                      {difficulties.map(difficulty => (
+                        <option key={difficulty} value={difficulty} className="bg-slate-800">
+                          {difficulty === 'all' ? 'All Levels' : difficulty}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Modules Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredModules.map(module => (
+                    <div
+                      key={module.id}
+                      className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden hover:border-violet-500/50 transition-all group cursor-pointer"
+                      onClick={() => handleModuleClick(module)}
+                    >
+                      <div className="relative">
+                        <img 
+                          src={module.thumbnail} 
+                          alt={module.title}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="absolute top-3 right-3 flex space-x-2">
+                          {module.isBookmarked && (
+                            <button className="p-2 bg-black/50 rounded-lg hover:bg-black/70 transition-colors">
+                              <Bookmark className="w-4 h-4 text-yellow-400 fill-current" />
+                            </button>
+                          )}
+                          <button 
+                            className="p-2 bg-black/50 rounded-lg hover:bg-black/70 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBookmark(module.id);
+                            }}
+                          >
+                            <Bookmark className="w-4 h-4" />
+                          </button>
                         </div>
-                        <p className="fs-normal mb-0">Lorem ipsum dolor sit amet</p>
+                        <div className="absolute bottom-3 left-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}>
+                            {module.difficulty}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-6">
+                        <div className="flex items-center space-x-2 mb-3">
+                          {getCategoryIcon(module.category)}
+                          <span className="text-sm text-gray-300">{module.category}</span>
+                          <div className="flex items-center space-x-1 ml-auto">
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="text-sm">{module.rating}</span>
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-semibold mb-2 group-hover:text-violet-400 transition-colors">
+                          {module.title}
+                        </h3>
+                        
+                        <p className="text-sm text-gray-300 mb-4 line-clamp-2">
+                          {module.description}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-2">
+                            {getTypeIcon(module.type)}
+                            <span className="text-sm text-gray-400">{module.duration}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-400">
+                              {module.lastAccessed ? formatTimeAgo(module.lastAccessed) : 'Never'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-300">Progress</span>
+                            <span className="text-violet-400">{module.progress}%</span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-violet-500 to-purple-600 h-2 rounded-full transition-all"
+                              style={{ width: `${module.progress}%` }}
+                            />
+                      </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400">{module.instructor}</span>
+                          {module.isCompleted && (
+                            <div className="flex items-center space-x-1 text-green-400">
+                              <Trophy className="w-4 h-4" />
+                              <span className="text-sm">Completed</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                  ))}
                   </div>
-                  <div className="col-lg-4">
-                    <div className="box d-flex rounded-2 align-items-center p-3">
-                      <i className="uil-users-alt fs-2 text-center bg-success rounded-circle">👥</i>
-                      <div className="ms-3">
-                        <div className="d-flex align-items-center">
-                          <h3 className="mb-0">5,245</h3> <span className="d-block ms-2">Users</span>
                         </div>
-                        <p className="fs-normal mb-0">Lorem ipsum dolor sit amet</p>
+            )}
+
+            {activeTab === 'progress' && (
+              <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                <h2 className="text-2xl font-bold mb-6">Learning Progress</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6">
+                    <div className="flex items-center space-x-3">
+                      <Trophy className="w-8 h-8 text-white" />
+                      <div>
+                        <p className="text-sm text-green-100">Modules Completed</p>
+                        <p className="text-2xl font-bold text-white">12</p>
+                      </div>
+                        </div>
+                        </div>
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl p-6">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="w-8 h-8 text-white" />
+                      <div>
+                        <p className="text-sm text-blue-100">Study Time</p>
+                        <p className="text-2xl font-bold text-white">8.5h</p>
+                      </div>
+                        </div>
+                        </div>
+                  <div className="bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl p-6">
+                    <div className="flex items-center space-x-3">
+                      <TrendingUp className="w-8 h-8 text-white" />
+                      <div>
+                        <p className="text-sm text-purple-100">Current Streak</p>
+                        <p className="text-2xl font-bold text-white">7 days</p>
                       </div>
                     </div>
                   </div>
                 </div>
-              </section>
-
-              <section className="charts">
-                <div className="row">
-                  <div className="col-lg-6">
-                    <div className="chart-container">
-                      <h3 className="fs-6 mb-3">Learning Progress</h3>
-                      <canvas ref={chartRef1}></canvas>
-                    </div>
-                  </div>
-                  <div className="col-lg-6">
-                    <div className="chart-container">
-                      <h3 className="fs-6 mb-3">Performance Metrics</h3>
-                      <canvas ref={chartRef2}></canvas>
+                
+                {/* Progress Chart Placeholder */}
+                <div className="bg-white/5 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold mb-4">Weekly Progress</h3>
+                  <div className="h-64 flex items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <BarChart3 className="w-12 h-12 mx-auto mb-2" />
+                      <p>Progress chart will be displayed here</p>
                     </div>
                   </div>
                 </div>
-              </section>
+              </div>
+            )}
 
-              <section className="admins">
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="box">
-                      <div className="admin d-flex align-items-center rounded-2 p-3 mb-4">
-                        <div className="img">
-                          <img className="img-fluid rounded-pill"
-                               width="75" height="75"
-                               src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148906966/small/1501685402/enhance"
-                               alt="admin" />
-                        </div>
-                        <div className="ms-3">
-                          <h3 className="fs-5 mb-1">Joge Lucky</h3>
-                          <p className="mb-0">Lorem ipsum dolor sit amet consectetur elit.</p>
-                        </div>
-                      </div>
-                      <div className="admin d-flex align-items-center rounded-2 p-3 mb-4">
-                        <div className="img">
-                          <img className="img-fluid rounded-pill"
-                               width="75" height="75"
-                               src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148907137/small/1501685404/enhance"
-                               alt="admin" />
-                        </div>
-                        <div className="ms-3">
-                          <h3 className="fs-5 mb-1">Joge Lucky</h3>
-                          <p className="mb-0">Lorem ipsum dolor sit amet consectetur elit.</p>
-                        </div>
-                      </div>
-                      <div className="admin d-flex align-items-center rounded-2 p-3">
-                        <div className="img">
-                          <img className="img-fluid rounded-pill"
-                               width="75" height="75"
-                               src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148907019/small/1501685403/enhance"
-                               alt="admin" />
-                        </div>
-                        <div className="ms-3">
-                          <h3 className="fs-5 mb-1">Joge Lucky</h3>
-                          <p className="mb-0">Lorem ipsum dolor sit amet consectetur elit.</p>
-                        </div>
+            {activeTab === 'bookmarks' && (
+              <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                <h2 className="text-2xl font-bold mb-6">Bookmarked Modules</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {learningModules.filter(m => m.isBookmarked).map(module => (
+                    <div key={module.id} className="bg-white/5 rounded-xl p-4">
+                      <h3 className="font-semibold mb-2">{module.title}</h3>
+                      <p className="text-sm text-gray-300 mb-3">{module.description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">{module.duration}</span>
+                        <button className="text-violet-400 hover:text-violet-300">
+                          <Play className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="box">
-                      <div className="admin d-flex align-items-center rounded-2 p-3 mb-4">
-                        <div className="img">
-                          <img className="img-fluid rounded-pill"
-                               width="75" height="75"
-                               src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148907114/small/1501685404/enhance"
-                               alt="admin" />
-                        </div>
-                        <div className="ms-3">
-                          <h3 className="fs-5 mb-1">Joge Lucky</h3>
-                          <p className="mb-0">Lorem ipsum dolor sit amet consectetur elit.</p>
-                        </div>
-                      </div>
-                      <div className="admin d-flex align-items-center rounded-2 p-3 mb-4">
-                        <div className="img">
-                          <img className="img-fluid rounded-pill"
-                               width="75" height="75"
-                               src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148907086/small/1501685404/enhance"
-                               alt="admin" />
-                        </div>
-                        <div className="ms-3">
-                          <h3 className="fs-5 mb-1">Joge Lucky</h3>
-                          <p className="mb-0">Lorem ipsum dolor sit amet consectetur elit.</p>
-                        </div>
-                      </div>
-                      <div className="admin d-flex align-items-center rounded-2 p-3">
-                        <div className="img">
-                          <img className="img-fluid rounded-pill"
-                               width="75" height="75"
-                               src="https://uniim1.shutterfly.com/ng/services/mediarender/THISLIFE/021036514417/media/23148907008/medium/1501685726/enhance"
-                               alt="admin" />
-                        </div>
-                        <div className="ms-3">
-                          <h3 className="fs-5 mb-1">Joge Lucky</h3>
-                          <p className="mb-0">Lorem ipsum dolor sit amet consectetur elit.</p>
-                        </div>
-                      </div>
-                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'calendar' && (
+              <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                <h2 className="text-2xl font-bold mb-6">Study Calendar</h2>
+                <div className="h-96 flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <Calendar className="w-12 h-12 mx-auto mb-2" />
+                    <p>Calendar view will be displayed here</p>
                   </div>
                 </div>
-              </section>
+              </div>
+            )}
 
-              <section className="statis text-center">
-                <div className="row">
-                  <div className="col-md-6 col-lg-3 mb-4 mb-lg-0">
-                    <div className="box bg-primary p-3">
-                      <i className="uil-eye">👁️</i>
-                      <h3>5,154</h3>
-                      <p className="lead">Page views</p>
+            {activeTab === 'stats' && (
+              <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                <h2 className="text-2xl font-bold mb-6">Detailed Statistics</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/5 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4">Category Performance</h3>
+                    <div className="space-y-3">
+                      {['Memory', 'Logic', 'Focus', 'Creativity'].map(category => (
+                        <div key={category} className="flex items-center justify-between">
+                          <span className="text-sm">{category}</span>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-20 bg-white/10 rounded-full h-2">
+                              <div className="bg-violet-500 h-2 rounded-full" style={{ width: `${Math.random() * 100}%` }} />
+                            </div>
+                            <span className="text-sm text-gray-300">85%</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="col-md-6 col-lg-3 mb-4 mb-lg-0">
-                    <div className="box bg-danger p-3">
-                      <i className="uil-user">👤</i>
-                      <h3>245</h3>
-                      <p className="lead">User registered</p>
+                  
+                  <div className="bg-white/5 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4">Study Habits</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Average Session</span>
+                        <span className="text-sm text-gray-300">25 min</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Best Time</span>
+                        <span className="text-sm text-gray-300">Morning</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Completion Rate</span>
+                        <span className="text-sm text-gray-300">78%</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="col-md-6 col-lg-3 mb-4 mb-md-0">
-                    <div className="box bg-warning p-3">
-                      <i className="uil-shopping-cart">🛒</i>
-                      <h3>5,154</h3>
-                      <p className="lead">Product sales</p>
-                    </div>
-                  </div>
-                  <div className="col-md-6 col-lg-3">
-                    <div className="box bg-success p-3">
-                      <i className="uil-feedback">💬</i>
-                      <h3>5,154</h3>
-                      <p className="lead">Transactions</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section className="charts">
-                <div className="chart-container p-3">
-                  <h3 className="fs-6 mb-3">Learning Growth</h3>
-                  <div style={{ height: '300px' }}>
-                    <canvas ref={chartRef3} width="100%"></canvas>
-                  </div>
-                </div>
-              </section>
-            </>
-          )}
-
-          {activeSection === 'calendar' && (
-            <div className="welcome">
-              <div className="content">
-                <h1 className="fs-3">Calendar</h1>
-                <p className="mb-0">Manage your study schedule and events</p>
-              </div>
-              <div style={{ marginTop: '1.5rem' }}>
-                <Calendar onDateSelect={(date) => console.log('Selected date:', date)} />
               </div>
             </div>
           )}
-
-          {activeSection === 'library' && (
-            <div className="welcome">
-              <div className="content">
-                <h1 className="fs-3">Library</h1>
-                <p className="mb-0">Access your learning resources and materials</p>
               </div>
-              <div style={{ marginTop: '1.5rem', color: 'var(--dk-gray-300)' }}>
-                <p>Library content coming soon...</p>
+              </div>
+            </div>
+
+      {/* Current Module Player */}
+      {currentModule && (
+        <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-white/10">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center space-x-4">
+              <img 
+                src={currentModule.thumbnail} 
+                alt={currentModule.title}
+                className="w-16 h-16 rounded-lg object-cover"
+              />
+              
+              <div className="flex-1">
+                <h3 className="font-semibold">{currentModule.title}</h3>
+                <p className="text-sm text-gray-300">{currentModule.instructor}</p>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <button onClick={toggleMute} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                  {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </button>
+                
+                <button onClick={togglePlayPause} className="p-3 bg-violet-600 hover:bg-violet-700 rounded-full transition-colors">
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                </button>
+                
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                  <SkipForward className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 max-w-md">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-gray-300">
+                    {Math.floor(currentTime / 60)}:{(currentTime % 60).toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-gray-300">
+                    {Math.floor(totalTime / 60)}:{(totalTime % 60).toString().padStart(2, '0')}
+                  </span>
+              </div>
+                <div className="w-full bg-white/10 rounded-full h-2">
+                  <div 
+                    className="bg-violet-500 h-2 rounded-full transition-all"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+              </div>
+              </div>
+              
+              <button 
+                onClick={() => setCurrentModule(null)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
               </div>
             </div>
           )}
-
-          {activeSection === 'projects' && (
-            <div className="welcome">
-              <div className="content">
-                <h1 className="fs-3">Future Projects</h1>
-                <p className="mb-0">Plan and track your upcoming learning projects</p>
-              </div>
-              <div style={{ marginTop: '1.5rem', color: 'var(--dk-gray-300)' }}>
-                <p>Future projects content coming soon...</p>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'tools' && (
-            <div className="welcome">
-              <div className="content">
-                <h1 className="fs-3">Study Tools</h1>
-                <p className="mb-0">Access various tools to enhance your learning experience</p>
-              </div>
-              <div style={{ marginTop: '1.5rem', color: 'var(--dk-gray-300)' }}>
-                <p>Study tools content coming soon...</p>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'performance' && (
-            <div className="welcome">
-              <div className="content">
-                <h1 className="fs-3">Your Study Performance</h1>
-                <p className="mb-0">Track your learning progress and achievements</p>
-              </div>
-              <div style={{ marginTop: '1.5rem', color: 'var(--dk-gray-300)' }}>
-                <p>Performance tracking content coming soon...</p>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'studies' && (
-            <div className="welcome">
-              <div className="content">
-                <h1 className="fs-3">Your Studies</h1>
-                <p className="mb-0">Overview of your current and completed studies</p>
-              </div>
-              <div style={{ marginTop: '1.5rem', color: 'var(--dk-gray-300)' }}>
-                <p>Studies overview content coming soon...</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
     </div>
   );
 };

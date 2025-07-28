@@ -90,17 +90,33 @@ export const PostProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const [channels] = useState([
-    "Stop & Go Adventure",
-    "Pattern Detective",
+    // Memory Games
     "Memory Galaxy",
-    "Number Quest",
-    "Letter Safari",
-    "AI Story Creator",
     "Starbloom Forest Adventure",
-    "Fuzzling's Advanced Playpen",
+    
+    // Focus Games
+    "Stop & Go Adventure",
     "Berry Blaster",
+    
+    // Logic Games
+    "Pattern Detective",
+    "Number Quest",
+    "The Cube",
+    "Crossroad Fun",
+    "Fuzzling's Advanced Playpen",
+    
+    // Language Games
+    "Letter Safari",
+    
+    // Creativity Games
+    "AI Story Creator",
     "Happy Builder",
-    "General Discussion"
+    
+    // General Discussion
+    "General Discussion",
+    "Tips & Strategies",
+    "Parent Resources",
+    "Success Stories"
   ]);
 
   // Save posts to localStorage whenever posts change

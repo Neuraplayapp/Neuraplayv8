@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { X, Minimize2, Maximize2, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
+import { recordGameSession } from '../../utils/analyticsService';
 import PremiumStar from '../PremiumStar';
 import { useUser } from '../../contexts/UserContext';
 import { Star, Trophy } from 'lucide-react';
@@ -91,7 +92,6 @@ const FuzzlingAdvancedGame: React.FC<FuzzlingAdvancedGameProps> = ({ onClose }) 
   // Add ref to remember last mouse X position
   const lastMouseXRef = useRef<number | null>(null);
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentView, setCurrentView] = useState<'main-menu' | 'game' | 'post-game'>('main-menu');
   const [gameError, setGameError] = useState<string | null>(null);
   const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
@@ -671,8 +671,6 @@ const FuzzlingAdvancedGame: React.FC<FuzzlingAdvancedGameProps> = ({ onClose }) 
   // Game control functions
   const startGame = () => setCurrentView('game');
   const returnToMainMenu = () => setCurrentView('main-menu');
-  const toggleFullscreen = () => setIsFullscreen(f => !f);
-  const toggleMusic = () => setMetaState(prev => ({ ...prev, musicEnabled: !prev.musicEnabled }));
 
   // Meta-progression functions
   const purchaseTalent = useCallback((talentName: string, cost: number) => {
@@ -885,51 +883,13 @@ const FuzzlingAdvancedGame: React.FC<FuzzlingAdvancedGameProps> = ({ onClose }) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`bg-gray-800 rounded-lg shadow-2xl ${isFullscreen ? 'w-full h-full' : 'w-4/5 h-4/5'} relative flex flex-col`}>
+      <div className="bg-gray-800 rounded-lg shadow-2xl w-4/5 h-4/5 relative flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-4 bg-gray-700 rounded-t-lg">
           <h2 className="text-4xl font-extrabold text-cyan-300 drop-shadow-[0_0_16px_#22d3ee] tracking-wide pl-2" style={{ textShadow: '0 0 16px #22d3ee, 0 0 4px #ffe066, 0 0 2px #fff' }}>
             Fuzzling's <span className="text-yellow-300">Advanced Playpen</span>
           </h2>
           <div className="flex items-center space-x-2">
-            {/* Volume control: speaker icon and slider */}
-            <div
-              className="relative"
-              onMouseEnter={() => setShowVolume(true)}
-              onMouseLeave={() => setShowVolume(false)}
-              onClick={() => setShowVolume((v) => !v)}
-              style={{ display: 'inline-block' }}
-            >
-              <button className="p-2 text-white hover:bg-gray-600 rounded focus:outline-none">
-                {musicVolume > 0 ? <Volume2 size={20} /> : <VolumeX size={20} />}
-              </button>
-              {showVolume && (
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={musicVolume}
-                  onChange={e => setMusicVolume(Number(e.target.value))}
-                  className="absolute left-1/2 -translate-x-1/2 mt-2 w-24 h-2 bg-gray-400 rounded-lg appearance-none focus:outline-none"
-                  style={{ zIndex: 100 }}
-                />
-              )}
-            </div>
-            <select
-              value={currentTrackIndex}
-              onChange={selectMusicTrack}
-              className="p-2 rounded bg-gray-700 text-white border border-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-400"
-              style={{ minWidth: 120 }}
-              title="Select Music Track"
-            >
-              {musicTracks.map((track, idx) => (
-                <option key={track.name} value={idx}>{track.name}</option>
-              ))}
-            </select>
-            <button onClick={toggleFullscreen} className="p-2 text-white hover:bg-gray-600 rounded">
-              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
             <button onClick={onClose} className="p-2 text-white hover:bg-gray-600 rounded">
               <X size={20} />
             </button>

@@ -90,7 +90,7 @@ const AIAssistant: React.FC = () => {
             // Build conversation history for chat
             const conversationHistory = messages
                 .filter(msg => !msg.image) // Exclude image messages from history
-                .slice(-6); // Keep last 6 messages (3 exchanges)
+                .slice(-8); // Keep last 8 messages (4 exchanges) for better context
             
             const messagesForAPI = [];
             

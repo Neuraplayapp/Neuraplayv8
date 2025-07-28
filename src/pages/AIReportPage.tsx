@@ -2,7 +2,9 @@ import React, { useState, useLayoutEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { Link } from 'react-router-dom';
 import { FileText, Loader2, ArrowLeft, Star, Trophy, Target, Brain, Zap, Crown, TrendingUp, Activity, Award, Sparkles } from 'lucide-react';
-import { gsap } from 'gsap';
+// Use the globally loaded GSAP from CDN
+declare const gsap: any;
+import { AnalyticsService, UserAnalytics } from '../utils/analyticsService';
 
 const AIReportPage: React.FC = () => {
   const { user } = useUser();
@@ -30,80 +32,142 @@ const AIReportPage: React.FC = () => {
     setReport('');
 
     try {
-      // Prepare performance data
-      const performanceData = {
-        username: user.username,
-        age: user.age,
-        rank: user.profile.rank,
-        totalXP: user.profile.xp,
-        totalStars: user.profile.stars,
-        gamesPlayed: Object.keys(user.profile.gameProgress).length,
-        gameProgress: user.profile.gameProgress
-      };
+      // Generate comprehensive analytics
+      console.log('User data for analytics:', user);
+      
+      // Validate user data structure
+      if (!user.profile || !user.profile.gameProgress) {
+        console.error('Invalid user data structure:', user);
+        throw new Error('User data is incomplete. Please refresh the page and try again.');
+      }
+      
+      // Check if user has any game progress
+      const hasGameProgress = Object.keys(user.profile.gameProgress).length > 0;
+      console.log('User has game progress:', hasGameProgress);
+      console.log('Game progress keys:', Object.keys(user.profile.gameProgress));
+      
+      if (!hasGameProgress) {
+        console.log('No game progress found, using fallback data');
+        // Add some basic game progress for testing
+        user.profile.gameProgress = {
+          'memory-sequence': { level: 1, stars: 5, bestScore: 80, timesPlayed: 3, playTime: 300 },
+          'starbloom-adventure': { level: 1, stars: 3, bestScore: 70, timesPlayed: 2, playTime: 200 }
+        };
+      }
+      
+      let analytics: UserAnalytics;
+      try {
+        analytics = AnalyticsService.analyzeUserData(user);
+        console.log('Analytics generated:', analytics);
+      } catch (analyticsError) {
+        console.error('Error generating analytics:', analyticsError);
+        throw new Error('Failed to analyze user data. Please try again.');
+      }
 
-      const prompt = `As an educational psychologist, analyze this child's learning performance data and create a comprehensive, positive report highlighting their cognitive development, strengths, and achievements. Focus on growth mindset and encouragement.
+      const prompt = `Create a comprehensive learning report for ${analytics.user.username} (${analytics.user.age || 'Not specified'} years old).
 
-Child Profile:
-- Name: ${performanceData.username}
-- Age: ${performanceData.age || 'Not specified'}
-- Current Rank: ${performanceData.rank}
-- Total Experience Points: ${performanceData.totalXP}
-- Stars Earned: ${performanceData.totalStars}
-- Games Completed: ${performanceData.gamesPlayed}
+KEY ACHIEVEMENTS:
+- Rank: ${analytics.overallStats.currentRank}
+- Total XP: ${analytics.overallStats.totalXP}
+- Stars Earned: ${analytics.overallStats.totalStars}
+- Games Played: ${analytics.overallStats.totalGamesPlayed}
+- Completion Rate: ${analytics.overallStats.completionRate.toFixed(1)}%
 
-Game Performance Details:
-${JSON.stringify(performanceData.gameProgress, null, 2)}
+COGNITIVE PROFILE:
+- Learning Style: ${analytics.cognitiveProfile.learningStyle}
+- Overall Progress: ${(analytics.cognitiveProfile.overallProgress * 100).toFixed(1)}%
+- Consistency: ${analytics.cognitiveProfile.consistency.toFixed(1)}%
 
-Please provide a warm, encouraging report that:
-1. Celebrates specific achievements and progress
-2. Identifies cognitive strengths demonstrated
-3. Suggests areas for continued growth
-4. Provides positive reinforcement for parents
-5. Uses child-friendly language that could be shared with the learner
+STRENGTHS (${analytics.cognitiveProfile.strengths.length}):
+${analytics.cognitiveProfile.strengths.slice(0, 5).map(s => `- ${s.name}`).join('\n')}
 
-Keep the tone professional yet warm, focusing on the child's unique learning journey and potential.`;
+AREAS TO IMPROVE (${analytics.cognitiveProfile.areasForImprovement.length}):
+${analytics.cognitiveProfile.areasForImprovement.slice(0, 3).map(s => `- ${s.name}`).join('\n')}
 
+TOP GAMES:
+${analytics.gameAnalytics.slice(0, 5).map(game => `- ${game.gameName}: ${game.progress.toFixed(1)}% progress, ${game.successRate.toFixed(1)}% success rate`).join('\n')}
+
+Create an encouraging, professional report that celebrates achievements, explains cognitive strengths in child-friendly terms, suggests specific areas for growth, and provides actionable recommendations for continued development. Use warm, encouraging language suitable for both parents and children.`;
+
+      console.log('Generated prompt:', prompt);
+
+      console.log('Making API call to /.netlify/functions/api...');
       const response = await fetch('/.netlify/functions/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          task_type: 'summarization',
-          input_data: prompt
+          task_type: 'chat',
+          input_data: {
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an educational psychologist specializing in child cognitive development. Create comprehensive, positive reports highlighting cognitive development, strengths, and achievements. Focus on growth mindset and encouragement. Use professional yet warm language suitable for parents and children.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
+          }
         })
       });
 
+      console.log('API call completed');
+      console.log('API Response status:', response.status);
+      console.log('API Response headers:', response.headers);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ error: 'Failed to get response' }));
+        console.error('API Error response:', errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Full API result:', result);
+      console.log('Result type:', typeof result);
+      console.log('Result is array:', Array.isArray(result));
+      console.log('Result length:', Array.isArray(result) ? result.length : 'Not an array');
+      if (Array.isArray(result) && result.length > 0) {
+        console.log('First result item:', result[0]);
+        console.log('First result keys:', Object.keys(result[0]));
+      }
       
       if (result.error) {
+        console.error('API returned error:', result.error);
         throw new Error(result.error);
       }
 
-      // Extract the generated text from the response
+      // Extract the generated text from the response - using the same pattern as AIAssistant
       let generatedReport = '';
-      console.log('AI Report result:', result);
+      console.log('Extracting generated text from response...');
       
       if (result[0] && result[0].generated_text) {
-        generatedReport = result[0].generated_text.replace(prompt, '').trim();
+        console.log('Found generated_text in result[0]');
+        generatedReport = result[0].generated_text;
       } else if (result[0] && result[0].summary_text) {
+        console.log('Found summary_text in result[0]');
         generatedReport = result[0].summary_text;
       } else if (typeof result === 'string') {
+        console.log('Result is a string');
         generatedReport = result;
       } else if (result && result.generated_text) {
-        generatedReport = result.generated_text.replace(prompt, '').trim();
+        console.log('Found generated_text in result');
+        generatedReport = result.generated_text;
       } else if (result && result.summary_text) {
+        console.log('Found summary_text in result');
         generatedReport = result.summary_text;
       } else if (result && result.error) {
+        console.error('Found error in result');
         throw new Error(result.error);
       } else {
         console.log('Fallback report - result:', result);
         generatedReport = 'Report generated successfully! Your child is making excellent progress in their learning journey.';
       }
+
+      console.log('Final generated report length:', generatedReport.length);
+      console.log('Generated report preview:', generatedReport.substring(0, 200) + '...');
 
       setReport(generatedReport);
     } catch (error) {
@@ -116,25 +180,36 @@ Keep the tone professional yet warm, focusing on the child's unique learning jou
 
   if (!user) {
     return (
-      <div className="min-h-screen text-slate-200 pt-24 pb-12">
-        <div className="container mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto">
-            <div className={`${glassPanelStyle} p-12 rounded-2xl`}>
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                <FileText className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-4xl font-bold text-white mb-4">Access Required</h2>
-              <p className="text-xl text-slate-300 mb-8">
-                Please register to access your personalized AI learning report.
-              </p>
-              <Link 
-                to="/registration" 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold px-8 py-4 rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
-                Get Started
-              </Link>
-            </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="flex items-center justify-center mb-8">
+            <img 
+              src="/assets/images/Mascot.png" 
+              alt="NeuraPlay Mascot" 
+              className="w-32 h-32 object-contain"
+            />
           </div>
+          <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
+          <p className="text-lg text-gray-300 mb-8">
+            Please log in to access your personalized AI learning report and track your cognitive development.
+          </p>
+          <div className="space-y-4">
+            <Link 
+              to="/forum-registration" 
+              className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              Create Account
+            </Link>
+            <Link 
+              to="/login" 
+              className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+            >
+              Log In
+            </Link>
+          </div>
+          <p className="text-sm text-gray-400 mt-6">
+            Join thousands of learners discovering the joy of cognitive development!
+          </p>
         </div>
       </div>
     );
@@ -215,10 +290,153 @@ Keep the tone professional yet warm, focusing on the child's unique learning jou
               <div className="text-center">
                 <button
                   onClick={generateReport}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold px-8 py-4 rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-3 mx-auto"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold px-8 py-4 rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-3 mx-auto mb-4"
                 >
                   <Sparkles className="w-5 h-5" />
                   Generate AI Report
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('Testing API...');
+                      const response = await fetch('/.netlify/functions/api', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          task_type: 'chat',
+                          input_data: {
+                            messages: [
+                              { role: 'system', content: 'You are a helpful AI assistant.' },
+                              { role: 'user', content: 'Hello, can you respond with a simple test message?' }
+                            ]
+                          }
+                        })
+                      });
+                      const result = await response.json();
+                      console.log('Test API result:', result);
+                      alert('API test successful! Check console for details.');
+                    } catch (error) {
+                      console.error('API test failed:', error);
+                      alert('API test failed: ' + error.message);
+                    }
+                  }}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold px-6 py-2 rounded-full hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto"
+                >
+                  Test API Connection
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('Testing simple API call...');
+                      const response = await fetch('/.netlify/functions/api', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          task_type: 'chat',
+                          input_data: 'Hello, this is a simple test.'
+                        })
+                      });
+                      const result = await response.json();
+                      console.log('Simple test API result:', result);
+                      alert('Simple API test successful! Check console for details.');
+                    } catch (error) {
+                      console.error('Simple API test failed:', error);
+                      alert('Simple API test failed: ' + error.message);
+                    }
+                  }}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold px-6 py-2 rounded-full hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto mt-2"
+                >
+                  Test Simple API Call
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('Testing user data and analytics...');
+                      console.log('Current user:', user);
+                      
+                      if (!user) {
+                        alert('No user data available');
+                        return;
+                      }
+                      
+                      // Create a test user with minimal data if needed
+                      let testUser = user;
+                      if (!user.profile || !user.profile.gameProgress) {
+                        console.log('Creating test user data...');
+                        testUser = {
+                          ...user,
+                          profile: {
+                            avatar: 'default',
+                            rank: 'New Learner',
+                            xp: 100,
+                            xpToNextLevel: 200,
+                            stars: 5,
+                            about: 'Test user',
+                            gameProgress: {
+                              'memory-sequence': { level: 1, stars: 5, bestScore: 80, timesPlayed: 3, playTime: 300 },
+                              'starbloom-adventure': { level: 1, stars: 3, bestScore: 70, timesPlayed: 2, playTime: 200 }
+                            }
+                          }
+                        };
+                      }
+                      
+                      // Test analytics generation
+                      const analytics = AnalyticsService.analyzeUserData(testUser);
+                      console.log('Analytics test result:', analytics);
+                      alert('Analytics test successful! Check console for details.');
+                    } catch (error) {
+                      console.error('Analytics test failed:', error);
+                      alert('Analytics test failed: ' + error.message);
+                    }
+                  }}
+                  className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold px-6 py-2 rounded-full hover:from-yellow-700 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto mt-2"
+                >
+                  Test Analytics Generation
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('Testing API response format...');
+                      const response = await fetch('/.netlify/functions/api', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          task_type: 'chat',
+                          input_data: {
+                            messages: [
+                              { role: 'system', content: 'You are a helpful AI assistant.' },
+                              { role: 'user', content: 'Generate a short test response.' }
+                            ]
+                          }
+                        })
+                      });
+                      
+                      console.log('Response status:', response.status);
+                      console.log('Response headers:', response.headers);
+                      
+                      const result = await response.json();
+                      console.log('Raw API response:', result);
+                      console.log('Response type:', typeof result);
+                      console.log('Is array:', Array.isArray(result));
+                      console.log('Array length:', Array.isArray(result) ? result.length : 'N/A');
+                      
+                      if (Array.isArray(result) && result.length > 0) {
+                        console.log('First item:', result[0]);
+                        console.log('First item keys:', Object.keys(result[0]));
+                        console.log('Generated text:', result[0].generated_text);
+                      }
+                      
+                      alert('API response format test completed! Check console for details.');
+                    } catch (error) {
+                      console.error('API response format test failed:', error);
+                      alert('API response format test failed: ' + error.message);
+                    }
+                  }}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold px-6 py-2 rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto mt-2"
+                >
+                  Test API Response Format
                 </button>
               </div>
             )}

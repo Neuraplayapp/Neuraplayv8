@@ -1,9 +1,9 @@
 import React, { useState, useLayoutEffect, useRef, useMemo } from 'react';
 import { useUser } from '../contexts/UserContext';
-import { gsap } from 'gsap';
+// Use the globally loaded GSAP from CDN
+declare const gsap: any;
 import { Gamepad2, BarChart, Users, Star, Brain, Sparkles, Trophy, Target, FileText, CheckSquare, TrendingUp, Award, Zap, Crown, Target as TargetIcon, Brain as BrainIcon, Heart, Activity } from 'lucide-react';
-import TaskManager from '../components/TaskManager';
-import HorizontalFilmstrip from '../components/HorizontalFilmstrip';
+
 import { Link } from 'react-router-dom';
 import CrossroadFunGame from '../components/games/CrossroadFunGame';
 import MemorySequenceGame from '../components/games/MemorySequenceGame';
@@ -21,6 +21,10 @@ import FuzzlingGame from '../components/games/FuzzlingGame';
 import TheCubeGame from '../components/games/TheCubeGame';
 import AIGame from '../components/AIGame';
 import GameInfoModal, { GameInfo } from '../components/GameInfoModal';
+import GameWrapper from '../components/GameWrapper';
+
+import PlasmaBall from '../components/PlasmaBall';
+import PlasmaBackground from '../components/PlasmaBackground';
 // Import your other components like GameModal and ALL your game components
 // import StackerGame from '../components/games/StackerGame';
 
@@ -32,6 +36,7 @@ const PlaygroundPage: React.FC = () => {
     const [selectedGame, setSelectedGame] = useState<string | null>(null);
     const [infoGame, setInfoGame] = useState<GameInfo | null>(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
+
     const contentRef = useRef<HTMLDivElement>(null);
 
     const games = useMemo(() => [
@@ -245,7 +250,7 @@ const PlaygroundPage: React.FC = () => {
             difficulty: 'Hard',
             duration: '5-30 min',
             ageRange: '8-16',
-            image: '/assets/images/Neuraplaybrain.png',
+            image: '/assets/images/Thecube.png',
             features: ['3D graphics', 'Multiple cube sizes', 'Timer and statistics', 'Customizable themes'],
             instructions: 'Drag to rotate the cube, use settings to change size and theme. Double tap to start!',
         }
@@ -260,30 +265,86 @@ const PlaygroundPage: React.FC = () => {
 
     const handleGameClose = () => setSelectedGame(null);
 
+
+
     useLayoutEffect(() => {
         if (contentRef.current) {
             gsap.fromTo(contentRef.current, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out', delay: 0.1 });
         }
     }, [mainView, playCategory]);
 
-    if (!user) return <div className="min-h-screen flex items-center justify-center text-white">Please log in.</div>;
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-6">
+            <div className="flex items-center justify-center mb-8">
+              <img 
+                src="/assets/images/Mascot.png" 
+                alt="NeuraPlay Mascot" 
+                className="w-32 h-32 object-contain"
+              />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
+            <p className="text-lg text-gray-300 mb-8">
+              Please log in to access the playground and start your learning adventure.
+            </p>
+            <div className="space-y-4">
+              <Link 
+                to="/forum-registration" 
+                className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                Create Account
+              </Link>
+              <Link 
+                to="/login" 
+                className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+              >
+                Log In
+              </Link>
+            </div>
+            <p className="text-sm text-gray-400 mt-6">
+              Join thousands of learners discovering the joy of cognitive development!
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     const glassPanelStyle = "bg-black/20 border border-white/10 backdrop-blur-md";
 
     const renderGameGrid = () => (
         selectedGame ? (
-            <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center">
+            <GameWrapper 
+                gameId={selectedGame} 
+                onClose={handleGameClose}
+                showVolumeSlider={true}
+                showGameControls={true}
+                volume={0.7}
+                onVolumeChange={(volume) => {
+                    // Handle volume change for all games
+                    console.log('Volume changed to:', volume);
+                }}
+                showSkipControls={selectedGame === 'starbloom-adventure'}
+                onSkipBack={() => {
+                    // Handle skip back for story games
+                    console.log('Skip back');
+                }}
+                onSkipForward={() => {
+                    // Handle skip forward for story games
+                    console.log('Skip forward');
+                }}
+            >
                 {selectedGame === 'memory-sequence' && <MemorySequenceGame onClose={handleGameClose} />}
                 {selectedGame === 'starbloom-adventure' && <StarbloomAdventureGame onClose={handleGameClose} />}
                 {selectedGame === 'inhibition' && <InhibitionGame onClose={handleGameClose} />}
-                {selectedGame === 'berry-blaster' && <BerryBlasterGame onClose={handleGameClose} />}
+                {selectedGame === 'berry-blaster' && <BerryBlasterGame onRequestFullscreen={() => {}} />}
                 {selectedGame === 'pattern-matching' && <PatternMatchingGame onClose={handleGameClose} />}
                 {selectedGame === 'counting-adventure' && <CountingAdventureGame onClose={handleGameClose} />}
                 {selectedGame === 'fuzzling-advanced' && <FuzzlingAdvancedGame onClose={handleGameClose} />}
                 {selectedGame === 'letter-hunt' && <LetterHuntGame onClose={handleGameClose} />}
                 {selectedGame === 'mountain-climber' && <MountainClimberGame onClose={handleGameClose} />}
-                {selectedGame === 'stacker' && <StackerGame onClose={handleGameClose} onGameEnd={() => {}} />}
-                {selectedGame === 'happy-builder' && <HappyBuilderGame onClose={handleGameClose} />}
+                {selectedGame === 'stacker' && <StackerGame onGameEnd={() => {}} onClose={handleGameClose} />}
+                {selectedGame === 'happy-builder' && <HappyBuilderGame />}
                 {selectedGame === 'fuzzling' && <FuzzlingGame onClose={handleGameClose} />}
                 {selectedGame === 'crossroad-fun' && <CrossroadFunGame onClose={handleGameClose} />}
                 {selectedGame === 'the-cube' && <TheCubeGame onClose={handleGameClose} />}
@@ -295,41 +356,53 @@ const PlaygroundPage: React.FC = () => {
                 ].includes(selectedGame) && (
                   <div className="text-white text-xl">This game is not yet implemented.</div>
                 )}
-                <button className="mt-6 px-6 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-bold hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg" onClick={() => setSelectedGame(null)}>Back to Games</button>
-            </div>
+            </GameWrapper>
         ) : (
             <>
                 <h2 className="text-2xl font-bold text-slate-100 mb-4">Category: {playCategory}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredGames.map(game => (
-                        <div
-                            key={game.id}
-                            className={`${glassPanelStyle} rounded-2xl overflow-hidden cursor-pointer group`}
-                            onClick={() => {
-                                setInfoGame(gameDetails[game.id]);
-                                setShowInfoModal(true);
-                            }}
-                        >
-                            <div className={`h-36 bg-gradient-to-br ${game.color} flex items-center justify-center text-white text-5xl transition-transform duration-300 group-hover:scale-110`}>{game.icon}</div>
-                            <div className="p-5"><h3 className="font-bold text-lg text-white">{game.title}</h3></div>
-                        </div>
-                    ))}
+                    {filteredGames.map(game => {
+                        // Special handling for the cube game to use image instead of gradient
+                        const isCubeGame = game.id === 'the-cube';
+                        
+                        return (
+                            <div
+                                key={game.id}
+                                className={`${glassPanelStyle} rounded-2xl overflow-hidden cursor-pointer group`}
+                                onClick={() => {
+                                    setInfoGame(gameDetails[game.id]);
+                                    setShowInfoModal(true);
+                                }}
+                            >
+                                {isCubeGame ? (
+                                    <div className="relative h-36 overflow-hidden">
+                                        <img 
+                                            src="/assets/images/Thecube.png" 
+                                            alt="The Cube Game"
+                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+                                        <div className="absolute top-3 right-3 bg-black/50 rounded-lg px-2 py-1">
+                                            <span className="text-xs font-medium text-white">3D Puzzle</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className={`h-36 bg-gradient-to-br ${game.color} flex items-center justify-center text-white text-5xl transition-transform duration-300 group-hover:scale-110`}>
+                                        {game.icon}
+                                    </div>
+                                )}
+                                <div className="p-5">
+                                    <h3 className="font-bold text-lg text-white">{game.title}</h3>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </>
         )
     );
 
-    const renderTaskManager = () => (
-        <div className="w-full h-full flex flex-col">
-            <TaskManager onClose={() => setIsTaskManagerOpen(false)} />
-        </div>
-    );
 
-    const renderFilmstrip = () => (
-        <div className="w-full h-full flex flex-col">
-            <HorizontalFilmstrip className="w-full h-full" height="h-full" />
-        </div>
-    );
 
     const renderProfile = () => (
         <div className="space-y-6">
@@ -396,6 +469,28 @@ const PlaygroundPage: React.FC = () => {
                                 <h4 className="font-semibold text-white">Progress Analytics</h4>
                                 <p className="text-sm text-slate-400">Real-time performance tracking</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Plasma Icon Info */}
+            <div className={`${glassPanelStyle} p-6 rounded-2xl`}>
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-white">Plasma Icon</h3>
+                        <p className="text-slate-400">Look for the floating plasma icon around the playground!</p>
+                    </div>
+                </div>
+                <div className="p-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <Sparkles className="w-6 h-6 text-indigo-400" />
+                        <div>
+                            <h4 className="font-semibold text-white">Interactive Plasma Animation</h4>
+                            <p className="text-sm text-slate-400">Click the floating plasma icon to see achievement modals</p>
                         </div>
                     </div>
                 </div>
@@ -518,7 +613,18 @@ const PlaygroundPage: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen text-slate-200 pt-24 pb-12">
+        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative">
+            {/* Plasma Background */}
+            <PlasmaBackground />
+            
+            {/* Plasma Ball in Bottom Left */}
+            <div className="plasma-ball-bottom-left">
+                <PlasmaBall 
+                    size={150} 
+                    className="plasma-ball-interactive"
+                />
+            </div>
+            
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
                     <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white">The Playground</h1>
@@ -536,13 +642,11 @@ const PlaygroundPage: React.FC = () => {
                     </aside>
                     <main className="flex-1">
                         <div className={`${glassPanelStyle} p-2 flex items-center mb-4 rounded-xl`}>
-                            {['play', 'profile', 'social', 'tasks', 'filmstrip'].map(view => (
+                            {['play', 'profile', 'social'].map(view => (
                                 <button key={view} onClick={() => setMainView(view)} className={`flex-1 py-2 rounded-lg font-bold capitalize transition-colors flex items-center justify-center gap-2 ${mainView === view ? 'bg-white/20 text-white' : 'text-violet-300 hover:text-white'}`}>
                                     {view === 'play' && <Gamepad2 size={18}/>}
                                     {view === 'profile' && <BarChart size={18}/>}
                                     {view === 'social' && <Users size={18}/>}
-                                    {view === 'tasks' && <CheckSquare size={18}/>}
-                                    {view === 'filmstrip' && <Star size={18}/>}
                                     {view}
                                 </button>
                             ))}
@@ -551,8 +655,6 @@ const PlaygroundPage: React.FC = () => {
                             {mainView === 'play' && renderGameGrid()}
                             {mainView === 'profile' && renderProfile()}
                             {mainView === 'social' && <div className="p-4 text-white"><h2 className="text-3xl font-bold">Social & Friends</h2></div>}
-                            {mainView === 'tasks' && renderTaskManager()}
-                            {mainView === 'filmstrip' && renderFilmstrip()}
                         </div>
                     </main>
                 </div>
@@ -563,6 +665,7 @@ const PlaygroundPage: React.FC = () => {
                 onClose={() => setShowInfoModal(false)}
                 onPlay={handlePlayGame}
             />
+
         </div>
     );
 };

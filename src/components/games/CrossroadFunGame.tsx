@@ -244,15 +244,13 @@ function Player() {
   return playerContainer;
 }
 
-const CrossroadFunGame: React.FC = () => {
+const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { user, addXP, addStars, updateGameProgress, recordGameSession } = useUser();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [hasPlayedGameOverSound, setHasPlayedGameOverSound] = useState(false);
   const [hasPlayedHighScoreSound, setHasPlayedHighScoreSound] = useState(false);
   
@@ -337,11 +335,11 @@ const CrossroadFunGame: React.FC = () => {
 
   // Mute/unmute all sounds
   useEffect(() => {
-    if (gameOverSoundRef.current) gameOverSoundRef.current.muted = isMuted;
-    if (backgroundMusicRef.current) backgroundMusicRef.current.muted = isMuted;
-    if (jumpSoundRef.current) jumpSoundRef.current.muted = isMuted;
-    if (highScoreSoundRef.current) highScoreSoundRef.current.muted = isMuted;
-  }, [isMuted]);
+    if (gameOverSoundRef.current) gameOverSoundRef.current.muted = false; // Changed to false as per new_code
+    if (backgroundMusicRef.current) backgroundMusicRef.current.muted = false; // Changed to false as per new_code
+    if (jumpSoundRef.current) jumpSoundRef.current.muted = false; // Changed to false as per new_code
+    if (highScoreSoundRef.current) highScoreSoundRef.current.muted = false; // Changed to false as per new_code
+  }, []); // Removed isMuted from dependency array
 
   // Play high score sound when a new high score is achieved
   useEffect(() => {
@@ -833,18 +831,6 @@ const CrossroadFunGame: React.FC = () => {
     };
   }, []);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      canvasRef.current?.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(() => {});
-    } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      }).catch(() => {});
-    }
-  };
-
   const endGame = () => {
     setGameOver(true);
     
@@ -860,9 +846,20 @@ const CrossroadFunGame: React.FC = () => {
 
   return (
     <div className="relative w-full h-full min-h-[500px] bg-gradient-to-br from-violet-900 to-blue-900 flex flex-col items-center justify-center overflow-hidden">
+      {/* Crosswalk Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+        style={{
+          backgroundImage: 'url(/assets/images/crosswalk.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          pointerEvents: 'none'
+        }}
+      />
+      
       <canvas 
         ref={canvasRef} 
-        className="game w-full h-full" 
+        className="game w-full h-full relative z-10" 
         style={{ 
           minHeight: 400, 
           minWidth: 400, 
@@ -876,63 +873,6 @@ const CrossroadFunGame: React.FC = () => {
         <div className="text-xl font-bold">Score: {score}</div>
         <div className="text-sm text-yellow-300">High Score: {highScore}</div>
       </div>
-
-      {/* Top-right controls and info */}
-      <div className="absolute top-2 right-2 flex flex-col items-end gap-2 z-10">
-        <div className="flex flex-row gap-2">
-          {/* Fullscreen Button */}
-          <button
-            onClick={toggleFullscreen}
-            className="text-white bg-black/50 p-2 rounded hover:bg-black/70 transition-colors"
-            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-          >
-            {isFullscreen ? (
-              <span role="img" aria-label="Exit Fullscreen">⛶</span>
-            ) : (
-              <span role="img" aria-label="Enter Fullscreen">⛶</span>
-            )}
-          </button>
-          {/* Mute Button */}
-          <button
-            onClick={() => setIsMuted(m => !m)}
-            className="text-white bg-black/50 p-2 rounded hover:bg-black/70 transition-colors"
-            aria-label={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {!isMuted ? (
-              <span role="img" aria-label="Sound On">🔊</span>
-            ) : (
-              <span role="img" aria-label="Sound Off">🔇</span>
-            )}
-          </button>
-        </div>
-        {/* Controls Info */}
-        <div className="text-white text-xs bg-black/50 p-2 rounded">
-          <div>Arrow Keys or WASD</div>
-          <div>to move</div>
-        </div>
-      </div>
-
-      {/* Game Over Modal */}
-      {gameOver && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
-          <div className="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm mx-4">
-            <h1 className="text-2xl font-bold mb-4 text-gray-800">Game Over</h1>
-            <div className="mb-4 text-gray-700">
-              <p className="text-lg mb-2">Your score: <span className="font-bold text-blue-600">{finalScore}</span></p>
-              <p className="text-sm mb-2">High score: <span className="font-bold text-yellow-600">{highScore}</span></p>
-              {finalScore >= highScore && finalScore > 0 && (
-                <p className="text-sm text-green-600 font-bold">🎉 New High Score! 🎉</p>
-              )}
-            </div>
-            <button
-              onClick={initializeGame}
-              className="bg-red-500 text-white px-6 py-3 rounded font-bold hover:bg-red-600 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

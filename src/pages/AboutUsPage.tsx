@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
-import { gsap } from 'gsap';
+// Use the globally loaded GSAP from CDN
+declare const gsap: any;
 import { Brain, Target, Sparkles, Users, Award, Heart, Star, Shield, Zap } from 'lucide-react';
 import ContactForm from '../components/ContactForm';
 
@@ -24,7 +25,7 @@ const AboutUsPage: React.FC = () => {
       name: "Mrs. Alifya S.T.",
       role: "Board Approved Clinical Psychologist and Trauma Expert",
       bio: "Leading our clinical approach with expertise in trauma-informed care and child psychology",
-      avatar: "/assets/placeholder.png",
+      avatar: "/assets/images/alfiya.png",
       linkedin: "https://www.linkedin.com/in/alifya-st"
     },
     {
@@ -67,7 +68,7 @@ const AboutUsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen text-slate-200 pt-24 pb-12">
+    <div className="min-h-screen text-slate-200 pt-24 pb-12 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
       <div className="container mx-auto px-6">
         <div ref={contentRef} className="text-center mb-12">
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-4">About Neuraplay</h1>

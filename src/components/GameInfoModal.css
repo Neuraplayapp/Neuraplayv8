@@ -1,480 +1,349 @@
-/* GameInfoModal Styles - Scoped to modal only */
-.game-info-modal {
-  background: transparent;
-}
-
-.game-info-modal * {
-  margin: 0;
-  padding: 0;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  text-rendering: geometricPrecision;
-  box-sizing: border-box;
-}
-
-.game-info-modal *::-webkit-scrollbar {
-  display: none;
-}
-
-.game-info-modal h1, 
-.game-info-modal p {
-  font-family: "Hanken Grotesk", sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-  color: #fff;
-}
-
-.game-info-modal h1 {
-  font-size: 40px;
-  font-weight: 400;
-  letter-spacing: -0.05em;
-}
-
-.game-info-modal p {
-  font-size: 16px;
-  letter-spacing: 0em;
-  line-height: 140%;
-}
-
-.game-info-modal p.bold {
-  font-weight: 400;
-  color: rgba(255,255,255,0.65);
-}
-
-.game-info-modal p.light {
-  font-weight: 400;
-  color: rgba(255,255,255,0.45);
-}
-
-.game-info-modal main {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  padding: 16px;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-  background: transparent;
-}
-
-.game-info-modal .content-wrapper {
+/* Game Modal Overlay */
+.game-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 0%;
-  background: transparent;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
 }
 
-.game-info-modal .content {
-  position: relative;
-  width: 90vw;
-  max-width: 800px;
-  height: 80vh;
-  max-height: 700px;
-  border-radius: 24px;
-  -webkit-border-radius: 24px;
-  overflow: hidden;
-  background: rgba(22, 22, 22, 0.95);
-  box-shadow: inset 0 0 150px rgba(52,46,45,0.8);
-  border: 2px solid rgba(35, 33, 32, 0.8);
-  backdrop-filter: blur(10px);
-  transform: translate3d(0,0,0) scale(1);
-  filter: blur(0px) brightness(1);
-  will-change: transform, filter;
-  -webkit-will-change: transform, filter;
-  transition: 0.6s cubic-bezier(.17,1,.33,1);
+.game-modal-container {
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.game-info-modal .content.active {
-  transform: translate3d(0,0,0) scale(1);
-  filter: blur(0px) brightness(1);
-  box-shadow: inset 0 0 150px rgba(52,46,45,0.6);
-  background: rgba(15, 15, 15, 0.95);
-  backdrop-filter: blur(15px);
-}
-
-.game-info-modal .main-content {
+.game-modal-content {
   position: relative;
   width: 100%;
   height: 100%;
+  max-width: 800px;
+  max-height: 700px;
   border-radius: 24px;
-  -webkit-border-radius: 24px;
+  background: rgba(15, 15, 15, 0.95);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 0 100px rgba(255, 255, 255, 0.05);
   overflow: hidden;
-  transform: translate3d(0,0,0) scale(1);
-  filter: blur(0px) brightness(1);
-  will-change: transform, filter;
-  -webkit-will-change: transform, filter;
-  transition: 0.6s cubic-bezier(.17,1,.33,1);
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.game-info-modal .content.active .main-content {
-  transform: translate3d(0,0,0) scale(0.9);
-  filter: blur(16px) brightness(0.7);
-  transition: 0.3s ease-out;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Add .blurred for main-content when overlay is open */
-.game-info-modal .main-content.blurred {
-  transform: translate3d(0,0,0) scale(0.9);
-  filter: blur(16px) brightness(0.7);
-  transition: 0.3s ease-out;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Modal overlay for fade/slide-in animation */
-.game-info-modal .modal-overlay {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s cubic-bezier(.17,1,.33,1);
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 10;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.game-info-modal .modal-overlay.open {
-  opacity: 1;
-  pointer-events: all;
-  transition: opacity 0.4s cubic-bezier(.17,1,.33,1);
+  flex-direction: column;
 }
 
-/* Ensure overlays are not blurred */
-.game-info-modal .song-modal,
-.game-info-modal .song-modal.active {
-  filter: none !important;
-  background: rgba(39, 35, 34, 0.9);
-  color: #fff;
+.game-modal-content.expanded {
+  max-width: 1000px;
+  max-height: 90vh;
 }
 
-/* Close button styling */
-.game-info-modal .modal-close-button {
+/* Close Button */
+.modal-close-btn {
   position: absolute;
   top: 16px;
   right: 16px;
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(39, 35, 34, 0.9);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border: 2px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
   z-index: 20;
+  color: white;
   overflow: hidden;
 }
 
-.game-info-modal .modal-close-button:hover {
-  background: rgba(39, 35, 34, 1);
-  border: 2px solid rgba(255,255,255,0.4);
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.1);
 }
 
-.game-info-modal .modal-close-button:active {
+.modal-close-btn:active {
   transform: scale(0.95);
 }
 
-/* Ripple effect */
-.game-info-modal .ripple-effect {
+/* Ripple Effect */
+.ripple-effect {
   position: absolute;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
   transform: scale(0);
-  animation: ripple 0.6s linear;
   pointer-events: none;
 }
 
-@keyframes ripple {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
-.game-info-modal .photo-wrapper {
-  position: relative;
-  height: 40%;
-  width: 100%;
-  max-height: 300px;
-  border-radius: 24px 24px 0 0;
+/* Main Content */
+.modal-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 24px;
   overflow: hidden;
 }
 
-.game-info-modal .photo {
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  background: transparent;
-  border-radius: 24px 24px 0 0;
-}
-
-.game-info-modal .main-info {
+/* Image Section */
+.modal-image-section {
   position: relative;
-  width: 100%;
-  z-index: 1;
-  display: flex;
-  flex-flow: column;
-  gap: 32px;
-  padding: 32px;
-  border-radius: 0 0 24px 24px;
+  height: 200px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.game-info-modal .title-container {
-  display: flex;
+.modal-game-image {
   width: 100%;
-  justify-content: space-between;
-  align-items: center;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.3s ease;
 }
 
-.game-info-modal h1 {
-  color: #ffffff;
-  font-weight: 600;
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+}
+
+.game-title h1 {
   font-size: 32px;
-  margin: 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-
-.game-info-modal p {
-  color: #ffffff;
-  font-weight: 400;
-  font-size: 18px;
-  margin: 0;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-.game-info-modal p.bold {
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 20px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-.game-info-modal p.light {
-  color: #cccccc;
-  font-weight: 400;
-  font-size: 16px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-/* Restore strong text shadow and font weight for legibility */
-.game-info-modal h1, .game-info-modal .section-title {
-  text-shadow: 0 2px 4px rgba(0,0,0,0.7);
   font-weight: 700;
-  color: #fff;
-}
-.game-info-modal p, .game-info-modal .description-text, .game-info-modal .skills-text, .game-info-modal .features-text, .game-info-modal .instructions-text {
-  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
-  font-weight: 400;
-  color: #e0e0e0;
-}
-.game-info-modal p.bold {
-  font-weight: 600;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
-}
-.game-info-modal p.light {
-  font-weight: 400;
-  color: #cccccc;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  color: white;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.game-info-modal .title-info {
+.game-meta {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.game-meta span {
+  opacity: 0.7;
+}
+
+/* Action Cards */
+.modal-actions {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+  flex: 1;
+  overflow-y: auto;
   padding-right: 8px;
 }
 
-@media screen and (max-width: 600px) {
-  .game-info-modal .title-info {
-    display: none;
-  }
-}
-
-.game-info-modal .songs {
-  display: flex;
-  flex-direction: column;
-  justify-content: stretch;
-  gap: 16px;
-}
-
-/* New Card-based Design */
-.game-info-modal .song-card {
-  position: relative;
+.action-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-width: 100%;
-  min-height: 80px;
-  border-radius: 20px;
-  border: 2px solid rgba(255,255,255,0.1);
-  padding: 0 24px;
-  margin: 0;
-  box-shadow: inset 0 0 0px 0 rgba(255,255,255,0.15);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
   overflow: hidden;
 }
 
-.game-info-modal .song-card:hover {
-  box-shadow: inset 0 0 128px 0 rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.1);
-  border: 2px solid rgba(255,255,255,0.2);
+.action-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
-.game-info-modal .song-card:active {
-  transform: translateY(0px) scale(0.98);
+.action-card:active {
+  transform: translateY(0);
 }
 
-.game-info-modal .card-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 16px;
+.play-card {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
-.game-info-modal .card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.about-card {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.stats-card {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 146, 60, 0.2) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.card-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
 }
 
-.game-info-modal .card-text {
+.card-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.game-info-modal .card-text .bold {
+.card-content h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: white;
+  margin: 0;
 }
 
-.game-info-modal .card-text .light {
+.card-content p {
   font-size: 14px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
 }
 
-/* Stats Grid */
-.game-info-modal .stats-grid {
+.action-card svg:last-child {
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.action-card:hover svg:last-child {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateX(4px);
+}
+
+/* Quick Stats */
+.quick-stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-top: 16px;
 }
 
-.game-info-modal .stat-card {
-  background: rgba(255,255,255,0.1);
-  border-radius: 16px;
-  padding: 16px;
-  text-align: center;
-  border: 1px solid rgba(255,255,255,0.2);
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
-.game-info-modal .stat-card:hover {
-  background: rgba(255,255,255,0.15);
+.stat-item:hover {
+  background: rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.game-info-modal .stat-value {
-  font-size: 24px;
+.stat-value {
+  font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 4px;
+  color: white;
 }
 
-.game-info-modal .stat-label {
+.stat-label {
   font-size: 12px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* Overlay Cards */
-.game-info-modal .overlay-card {
+/* Modal Overlay */
+.modal-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 10;
+}
+
+.overlay-content {
   width: 100%;
   height: 100%;
-  border-radius: 24px;
-  background: rgba(39, 35, 34, 0.95);
+  max-width: 900px;
+  max-height: 80vh;
+  border-radius: 20px;
+  background: rgba(15, 15, 15, 0.95);
   backdrop-filter: blur(20px);
-  border: 2px solid rgba(255,255,255,0.1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 5;
 }
 
-.game-info-modal .overlay-header {
+.overlay-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.game-info-modal .header-content {
+.header-content {
   display: flex;
   align-items: center;
   gap: 12px;
+  color: white;
 }
 
-.game-info-modal .header-content h2 {
+.header-content h2 {
   font-size: 24px;
   font-weight: 600;
-  color: #ffffff;
   margin: 0;
 }
 
-.game-info-modal .close-overlay-btn {
+.close-overlay-btn {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: white;
   transition: all 0.2s ease;
-  overflow: hidden;
 }
 
-.game-info-modal .close-overlay-btn:hover {
-  background: rgba(255,255,255,0.2);
+.close-overlay-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
 }
 
-.game-info-modal .overlay-content {
+.overlay-body {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
@@ -483,199 +352,232 @@
   gap: 24px;
 }
 
-.game-info-modal .game-info-section,
-.game-info-modal .about-section,
-.game-info-modal .stats-section {
-  background: rgba(255,255,255,0.05);
+.content-section {
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   padding: 20px;
-  border: 1px solid rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.game-info-modal .game-info-section h3,
-.game-info-modal .about-section h3,
-.game-info-modal .stats-section h3 {
+.content-section h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 12px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  color: white;
+  margin: 0 0 12px 0;
 }
 
-.game-info-modal .game-info-section p,
-.game-info-modal .about-section p {
+.content-section p {
   font-size: 16px;
   line-height: 1.6;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   margin: 0;
 }
 
-/* Play Button Section */
-.game-info-modal .play-button-section {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-}
-
-.game-info-modal .play-button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 50px;
-  padding: 16px 32px;
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  overflow: hidden;
-}
-
-.game-info-modal .play-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-}
-
-.game-info-modal .play-button:active {
-  transform: translateY(0);
-}
-
-/* Game Details Grid */
-.game-info-modal .game-details-grid {
+/* Details Grid */
+.details-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 
-.game-info-modal .detail-item {
+.detail-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.game-info-modal .detail-label {
+.detail-label {
   font-size: 12px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.game-info-modal .detail-value {
-  font-size: 14px;
-  color: #ffffff;
+.detail-value {
+  font-size: 16px;
+  color: white;
   font-weight: 500;
 }
 
-/* Stats Grid Large */
-.game-info-modal .stats-grid-large {
+/* Stats Grid */
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
-  margin-top: 16px;
 }
 
-.game-info-modal .stat-card-large {
-  background: rgba(255,255,255,0.1);
+.stat-card-large {
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 20px;
   text-align: center;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
-.game-info-modal .stat-card-large:hover {
-  background: rgba(255,255,255,0.15);
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+.stat-card-large:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
-.game-info-modal .stat-value-large {
+.stat-value-large {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: white;
   margin-bottom: 8px;
 }
 
-.game-info-modal .stat-label-large {
+.stat-label-large {
   font-size: 14px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* Game Info Grid */
-.game-info-modal .game-info-grid {
+/* Info Grid */
+.info-grid {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.game-info-modal .info-item {
+.info-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.game-info-modal .info-item:last-child {
+.info-item:last-child {
   border-bottom: none;
 }
 
-.game-info-modal .info-label {
+.info-label {
   font-size: 14px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
 }
 
-.game-info-modal .info-value {
+.info-value {
   font-size: 14px;
-  color: #ffffff;
-  font-weight: 600;
+  color: white;
+  font-weight: 500;
+}
+
+/* Scrollbar Styling */
+.overlay-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overlay-body::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.overlay-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.overlay-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.modal-actions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-actions::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.modal-actions::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.modal-actions::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .game-info-modal .content {
-    width: 95vw;
-    height: 85vh;
+  .game-modal-content {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
   }
   
-  .game-info-modal .stats-grid {
+  .modal-main-content {
+    padding: 16px;
+  }
+  
+  .quick-stats {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .game-info-modal .stats-grid-large {
+  .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .game-info-modal .game-details-grid {
+  .details-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .game-title h1 {
+    font-size: 24px;
+  }
+  
+  .modal-image-section {
+    height: 150px;
   }
 }
 
 @media (max-width: 480px) {
-  .game-info-modal .stats-grid {
-    grid-template-columns: 1fr;
+  .game-modal-overlay {
+    padding: 8px;
   }
   
-  .game-info-modal .stats-grid-large {
-    grid-template-columns: 1fr;
+  .modal-main-content {
+    padding: 12px;
+    gap: 16px;
   }
   
-  .game-info-modal .card-content {
-    gap: 12px;
+  .action-card {
+    padding: 16px;
   }
   
-  .game-info-modal .card-icon {
+  .card-icon {
     width: 40px;
     height: 40px;
+  }
+  
+  .card-content h3 {
+    font-size: 16px;
+  }
+  
+  .card-content p {
+    font-size: 12px;
+  }
+  
+  .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .stat-item {
+    padding: 8px;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+  
+  .stat-label {
+    font-size: 10px;
   }
 } 

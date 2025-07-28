@@ -1,13 +1,52 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { Star, UserPlus, UserMinus, Edit2, Check, X, Users, ShieldAlert, UserX } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import AIAssistant from '../components/AIAssistant';
 
 const ProfilePage: React.FC = () => {
   const { user, setUser } = useUser();
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Show login prompt if user is not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="flex items-center justify-center mb-8">
+            <img 
+              src="/assets/images/Mascot.png" 
+              alt="NeuraPlay Mascot" 
+              className="w-32 h-32 object-contain"
+            />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
+          <p className="text-lg text-gray-300 mb-8">
+            Please log in to view and manage your profile.
+          </p>
+          <div className="space-y-4">
+            <Link 
+              to="/forum-registration" 
+              className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              Create Account
+            </Link>
+            <Link 
+              to="/login" 
+              className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+            >
+              Log In
+            </Link>
+          </div>
+          <p className="text-sm text-gray-400 mt-6">
+            Join thousands of learners discovering the joy of cognitive development!
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
   // For demo, just use the current user if id matches username, otherwise fake user
   const isMe = user && id === user.username;
   // TODO: Replace with real user lookup
