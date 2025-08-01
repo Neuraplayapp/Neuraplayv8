@@ -21,6 +21,7 @@ import {
   Award
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface StudySession {
   id: string;
@@ -42,6 +43,7 @@ interface StudyCalendarProps {
 
 const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
   const { user } = useUser();
+  const { isDarkMode, isBrightMode, isDarkGradient, isWhitePurpleGradient } = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [sessions, setSessions] = useState<StudySession[]>([]);
@@ -205,8 +207,102 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Get theme-appropriate background classes
+  const getBackgroundClasses = () => {
+    if (isDarkGradient) {
+      return "min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white";
+    } else if (isWhitePurpleGradient) {
+      return "min-h-screen bg-gradient-to-br from-white via-purple-50 to-indigo-50 text-gray-900";
+    } else if (isBrightMode) {
+      return "min-h-screen bg-white text-black";
+    } else if (isDarkMode) {
+      return "min-h-screen bg-gray-900 text-white";
+    } else {
+      return "min-h-screen bg-white text-gray-900";
+    }
+  };
+
+  // Get theme-appropriate card background classes
+  const getCardBackgroundClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "bg-purple-900/40 backdrop-blur-md border border-purple-700/30";
+    } else if (isBrightMode) {
+      return "bg-white/90 backdrop-blur-md border border-gray-200";
+    } else {
+      return "bg-white/80 backdrop-blur-md border border-gray-200";
+    }
+  };
+
+  // Get theme-appropriate text classes
+  const getTextClasses = (type: 'primary' | 'secondary' | 'tertiary' = 'primary') => {
+    if (isDarkMode || isDarkGradient) {
+      switch (type) {
+        case 'primary': return 'text-white';
+        case 'secondary': return 'text-gray-300';
+        case 'tertiary': return 'text-gray-400';
+        default: return 'text-white';
+      }
+    } else {
+      switch (type) {
+        case 'primary': return 'text-gray-900';
+        case 'secondary': return 'text-gray-700';
+        case 'tertiary': return 'text-gray-600';
+        default: return 'text-gray-900';
+      }
+    }
+  };
+
+  // Get theme-appropriate calendar day classes
+  const getCalendarDayClasses = (isToday: boolean, isSelected: boolean) => {
+    if (isDarkMode || isDarkGradient) {
+      return `h-32 bg-white/10 rounded-lg p-2 cursor-pointer transition-all hover:bg-white/20 ${
+        isToday ? 'ring-2 ring-violet-500' : ''
+      } ${isSelected ? 'bg-violet-500/20' : ''}`;
+    } else {
+      return `h-32 bg-gray-50 rounded-lg p-2 cursor-pointer transition-all hover:bg-gray-100 ${
+        isToday ? 'ring-2 ring-violet-500' : ''
+      } ${isSelected ? 'bg-violet-100' : ''}`;
+    }
+  };
+
+  // Get theme-appropriate empty day classes
+  const getEmptyDayClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "h-32 bg-white/5 rounded-lg";
+    } else {
+      return "h-32 bg-gray-50 rounded-lg";
+    }
+  };
+
+  // Get theme-appropriate modal classes
+  const getModalClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "bg-slate-800";
+    } else {
+      return "bg-white";
+    }
+  };
+
+  // Get theme-appropriate modal input classes
+  const getModalInputClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500";
+    } else {
+      return "w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500";
+    }
+  };
+
+  // Get theme-appropriate modal button classes
+  const getModalButtonClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors";
+    } else {
+      return "flex-1 px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white p-6">
+    <div className={`${getBackgroundClasses()} p-6`}>
       <motion.div 
         className="max-w-7xl mx-auto"
         initial={{ opacity: 0, y: 20 }}
@@ -220,8 +316,8 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
               <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Study Calendar</h1>
-              <p className="text-gray-300">Plan and track your learning sessions</p>
+              <h1 className={`text-3xl font-bold ${getTextClasses('primary')}`}>Study Calendar</h1>
+              <p className={`${getTextClasses('secondary')}`}>Plan and track your learning sessions</p>
             </div>
           </div>
           
@@ -240,29 +336,29 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigateMonth('prev')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${isDarkMode || isDarkGradient ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           
-          <h2 className="text-2xl font-bold">
+          <h2 className={`text-2xl font-bold ${getTextClasses('primary')}`}>
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
           
           <button
             onClick={() => navigateMonth('next')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${isDarkMode || isDarkGradient ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
           >
             <ChevronRight className="w-6 h-6" />
           </button>
         </div>
 
         {/* Calendar Grid */}
-        <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+        <div className={`${getCardBackgroundClasses()} rounded-2xl p-6`}>
           {/* Week Days Header */}
           <div className="grid grid-cols-7 gap-2 mb-4">
             {weekDays.map(day => (
-              <div key={day} className="text-center font-semibold text-gray-300 py-2">
+              <div key={day} className={`text-center font-semibold py-2 ${getTextClasses('secondary')}`}>
                 {day}
               </div>
             ))}
@@ -272,7 +368,7 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
           <div className="grid grid-cols-7 gap-2">
             {/* Empty cells for days before the first day of the month */}
             {Array.from({ length: startingDay }, (_, i) => (
-              <div key={`empty-${i}`} className="h-32 bg-white/5 rounded-lg"></div>
+              <div key={`empty-${i}`} className={getEmptyDayClasses()}></div>
             ))}
 
             {/* Days of the month */}
@@ -287,9 +383,7 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
                 <motion.div
                   key={day}
                   onClick={() => setSelectedDate(date)}
-                  className={`h-32 bg-white/10 rounded-lg p-2 cursor-pointer transition-all hover:bg-white/20 ${
-                    isToday ? 'ring-2 ring-violet-500' : ''
-                  } ${isSelected ? 'bg-violet-500/20' : ''}`}
+                  className={getCalendarDayClasses(isToday, isSelected)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -443,14 +537,14 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-slate-800 rounded-2xl p-6 w-full max-w-md mx-4"
+              className={`${getModalClasses()} rounded-2xl p-6 w-full max-w-md mx-4`}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold">
+                <h3 className={`text-xl font-bold ${getTextClasses('primary')}`}>
                   {isEditMode ? 'Edit Session' : 'Add Study Session'}
                 </h3>
                 <button
@@ -474,44 +568,44 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
                 className="space-y-4"
               >
                 <div>
-                  <label className="block text-sm font-medium mb-2">Title</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Title</label>
                   <input
                     type="text"
                     name="title"
                     defaultValue={currentSession?.title || ''}
                     required
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Description</label>
                   <textarea
                     name="description"
                     defaultValue={currentSession?.description || ''}
                     rows={3}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Date</label>
+                    <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Date</label>
                     <input
                       type="date"
                       name="date"
                       defaultValue={currentSession?.date || selectedDate?.toISOString().split('T')[0] || ''}
                       required
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className={getModalInputClasses()}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Type</label>
+                    <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Type</label>
                     <select
                       name="type"
                       defaultValue={currentSession?.type || 'learning'}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className={getModalInputClasses()}
                     >
                       <option value="learning">Learning</option>
                       <option value="game">Game</option>
@@ -525,34 +619,34 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Start Time</label>
+                    <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Start Time</label>
                     <input
                       type="time"
                       name="startTime"
                       defaultValue={currentSession?.startTime || ''}
                       required
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className={getModalInputClasses()}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">End Time</label>
+                    <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>End Time</label>
                     <input
                       type="time"
                       name="endTime"
                       defaultValue={currentSession?.endTime || ''}
                       required
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className={getModalInputClasses()}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Priority</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Priority</label>
                   <select
                     name="priority"
                     defaultValue={currentSession?.priority || 'medium'}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -561,12 +655,12 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Notes (Optional)</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Notes (Optional)</label>
                   <textarea
                     name="notes"
                     defaultValue={currentSession?.notes || ''}
                     rows={2}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
@@ -574,7 +668,7 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({ onClose }) => {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors"
+                    className={getModalButtonClasses()}
                   >
                     Cancel
                   </button>

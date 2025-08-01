@@ -27,6 +27,7 @@ import {
   Share2
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface DiaryEntry {
   id: string;
@@ -48,6 +49,7 @@ interface DiaryProps {
 
 const Diary: React.FC<DiaryProps> = ({ onClose }) => {
   const { user } = useUser();
+  const { isDarkMode, isBrightMode, isDarkGradient, isWhitePurpleGradient } = useTheme();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -201,8 +203,98 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
     currentPage * entriesPerPage
   );
 
+  // Get theme-appropriate background classes
+  const getBackgroundClasses = () => {
+    if (isDarkGradient) {
+      return "min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white";
+    } else if (isWhitePurpleGradient) {
+      return "min-h-screen bg-gradient-to-br from-white via-purple-50 to-indigo-50 text-gray-900";
+    } else if (isBrightMode) {
+      return "min-h-screen bg-white text-black";
+    } else if (isDarkMode) {
+      return "min-h-screen bg-gray-900 text-white";
+    } else {
+      return "min-h-screen bg-white text-gray-900";
+    }
+  };
+
+  // Get theme-appropriate card background classes
+  const getCardBackgroundClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "bg-purple-900/40 backdrop-blur-md border border-purple-700/30";
+    } else if (isBrightMode) {
+      return "bg-white/90 backdrop-blur-md border border-gray-200";
+    } else {
+      return "bg-white/80 backdrop-blur-md border border-gray-200";
+    }
+  };
+
+  // Get theme-appropriate text classes
+  const getTextClasses = (type: 'primary' | 'secondary' | 'tertiary' = 'primary') => {
+    if (isDarkMode || isDarkGradient) {
+      switch (type) {
+        case 'primary': return 'text-white';
+        case 'secondary': return 'text-gray-300';
+        case 'tertiary': return 'text-gray-400';
+        default: return 'text-white';
+      }
+    } else {
+      switch (type) {
+        case 'primary': return 'text-gray-900';
+        case 'secondary': return 'text-gray-700';
+        case 'tertiary': return 'text-gray-600';
+        default: return 'text-gray-900';
+      }
+    }
+  };
+
+  // Get theme-appropriate input classes
+  const getInputClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500";
+    } else {
+      return "w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500";
+    }
+  };
+
+  // Get theme-appropriate select classes
+  const getSelectClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500";
+    } else {
+      return "px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500";
+    }
+  };
+
+  // Get theme-appropriate modal classes
+  const getModalClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "bg-slate-800";
+    } else {
+      return "bg-white";
+    }
+  };
+
+  // Get theme-appropriate modal input classes
+  const getModalInputClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500";
+    } else {
+      return "w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500";
+    }
+  };
+
+  // Get theme-appropriate modal button classes
+  const getModalButtonClasses = () => {
+    if (isDarkMode || isDarkGradient) {
+      return "flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors";
+    } else {
+      return "flex-1 px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white p-6">
+    <div className={`${getBackgroundClasses()} p-6`}>
       <motion.div 
         className="max-w-6xl mx-auto"
         initial={{ opacity: 0, y: 20 }}
@@ -216,8 +308,8 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Learning Diary</h1>
-              <p className="text-gray-300">Reflect on your learning journey</p>
+              <h1 className={`text-3xl font-bold ${getTextClasses('primary')}`}>Learning Diary</h1>
+              <p className={`${getTextClasses('secondary')}`}>Reflect on your learning journey</p>
             </div>
           </div>
           
@@ -233,23 +325,23 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10 mb-6">
+        <div className={`${getCardBackgroundClasses()} rounded-2xl p-6 mb-6`}>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDarkMode || isDarkGradient ? 'text-gray-400' : 'text-gray-500'}`} />
               <input
                 type="text"
                 placeholder="Search entries..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className={getInputClasses()}
               />
             </div>
             
             <select
               value={selectedMood}
               onChange={(e) => setSelectedMood(e.target.value)}
-              className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className={getSelectClasses()}
             >
               <option value="all">All Moods</option>
               <option value="happy">Happy</option>
@@ -269,15 +361,15 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-black/20 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-black/30 transition-all cursor-pointer"
+              className={`${getCardBackgroundClasses()} rounded-2xl p-6 hover:bg-black/30 transition-all cursor-pointer`}
               onClick={() => openEditModal(entry)}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   {getMoodIcon(entry.mood)}
                   <div>
-                    <h3 className="text-xl font-semibold">{entry.title}</h3>
-                    <p className="text-sm text-gray-400">{new Date(entry.date).toLocaleDateString()}</p>
+                    <h3 className={`text-xl font-semibold ${getTextClasses('primary')}`}>{entry.title}</h3>
+                    <p className={`text-sm ${getTextClasses('tertiary')}`}>{new Date(entry.date).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -298,7 +390,7 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
                 </div>
               </div>
 
-              <p className="text-gray-300 mb-4 leading-relaxed">{entry.content}</p>
+              <p className={`${getTextClasses('secondary')} mb-4 leading-relaxed`}>{entry.content}</p>
 
               {entry.learningReflection && (
                 <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -306,7 +398,7 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
                     <Lightbulb className="w-4 h-4 text-blue-400" />
                     <span className="text-sm font-medium text-blue-400">Learning Reflection</span>
                   </div>
-                  <p className="text-sm text-gray-300">{entry.learningReflection}</p>
+                  <p className={`text-sm ${getTextClasses('secondary')}`}>{entry.learningReflection}</p>
                 </div>
               )}
 
@@ -334,7 +426,7 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
                     </span>
                   ))}
                 </div>
-                <div className="flex items-center space-x-2 text-xs text-gray-400">
+                <div className={`flex items-center space-x-2 text-xs ${getTextClasses('tertiary')}`}>
                   <Clock className="w-3 h-3" />
                   <span>{new Date(entry.updatedAt).toLocaleDateString()}</span>
                 </div>
@@ -343,7 +435,7 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
           ))}
 
           {paginatedEntries.length === 0 && (
-            <div className="text-center text-gray-400 py-12">
+            <div className={`text-center py-12 ${getTextClasses('tertiary')}`}>
               <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p className="text-lg mb-2">No entries found</p>
               <p className="text-sm">Start writing your learning journey!</p>
@@ -362,7 +454,7 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
               <ChevronLeft className="w-5 h-5" />
             </button>
             
-            <span className="text-sm text-gray-300">
+            <span className={`text-sm ${getTextClasses('secondary')}`}>
               Page {currentPage} of {totalPages}
             </span>
             
@@ -387,14 +479,14 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-slate-800 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+              className={`${getModalClasses()} rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto`}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold">
+                <h3 className={`text-xl font-bold ${getTextClasses('primary')}`}>
                   {isEditMode ? 'Edit Entry' : 'New Diary Entry'}
                 </h3>
                 <button
@@ -419,21 +511,21 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
               >
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Date</label>
+                    <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Date</label>
                     <input
                       type="date"
                       name="date"
                       defaultValue={currentEntry?.date || new Date().toISOString().split('T')[0]}
                       required
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className={getModalInputClasses()}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Mood</label>
+                    <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Mood</label>
                     <select
                       name="mood"
                       defaultValue={currentEntry?.mood || 'neutral'}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className={getModalInputClasses()}
                     >
                       <option value="happy">Happy</option>
                       <option value="excited">Excited</option>
@@ -445,57 +537,57 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Title</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Title</label>
                   <input
                     type="text"
                     name="title"
                     defaultValue={currentEntry?.title || ''}
                     required
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Content</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Content</label>
                   <textarea
                     name="content"
                     defaultValue={currentEntry?.content || ''}
                     rows={6}
                     required
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Learning Reflection (Optional)</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Learning Reflection (Optional)</label>
                   <textarea
                     name="learningReflection"
                     defaultValue={currentEntry?.learningReflection || ''}
                     rows={3}
                     placeholder="What did you learn today? What insights did you gain?"
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Goals (Optional)</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Goals (Optional)</label>
                   <textarea
                     name="goals"
                     defaultValue={currentEntry?.goals?.join(', ') || ''}
                     rows={2}
                     placeholder="Enter goals separated by commas"
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Tags (Optional)</label>
+                  <label className={`block text-sm font-medium mb-2 ${getTextClasses('primary')}`}>Tags (Optional)</label>
                   <input
                     type="text"
                     name="tags"
                     defaultValue={currentEntry?.tags?.join(', ') || ''}
                     placeholder="Enter tags separated by commas"
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={getModalInputClasses()}
                   />
                 </div>
 
@@ -505,9 +597,13 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
                     name="isPrivate"
                     id="isPrivate"
                     defaultChecked={currentEntry?.isPrivate || false}
-                    className="w-4 h-4 text-violet-500 bg-white/10 border-white/20 rounded focus:ring-violet-500"
+                    className={`w-4 h-4 text-violet-500 rounded focus:ring-violet-500 ${
+                      isDarkMode || isDarkGradient 
+                        ? 'bg-white/10 border-white/20' 
+                        : 'bg-gray-50 border-gray-300'
+                    }`}
                   />
-                  <label htmlFor="isPrivate" className="text-sm text-gray-300">
+                  <label htmlFor="isPrivate" className={`text-sm ${getTextClasses('secondary')}`}>
                     Make this entry private
                   </label>
                 </div>
@@ -516,7 +612,7 @@ const Diary: React.FC<DiaryProps> = ({ onClose }) => {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors"
+                    className={getModalButtonClasses()}
                   >
                     Cancel
                   </button>

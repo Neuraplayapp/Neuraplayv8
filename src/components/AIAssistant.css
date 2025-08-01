@@ -1,14 +1,17 @@
 /* --- AIAssistant.css --- */
 :root {
-  --hue1: 255; /* Purple */
-  --hue2: 285; /* Magenta */
+  --hue1: 270; /* Light purple */
+  --hue2: 280; /* Slightly darker purple */
   --radius: 22px;
+  --frosted-white: rgba(255, 255, 255, 0.85);
+  --frosted-light-purple: rgba(147, 51, 234, 0.1);
+  --frosted-border: rgba(255, 255, 255, 0.3);
 }
 
 #ai-teacher-menu {
   /* Core styles for the glass panel */
   font-family: 'Nunito', 'Segoe UI', 'Arial Rounded MT Bold', 'Helvetica Neue', sans-serif;
-  color: #c7d2fe; /* indigo-200 */
+  color: #1f2937; /* Dark gray for better contrast */
   position: fixed;
   bottom: 6.5rem; /* Position above the FAB */
   right: 1.5rem;
@@ -16,11 +19,14 @@
   max-width: 350px;
   height: 500px;
   border-radius: var(--radius);
-  border: 1px solid hsl(var(--hue2), 12%, 40%);
+  border: 2px solid #1f2937; /* Thicker black border for light mode */
   padding: 0;
-  background: linear-gradient(hsl(240 30% 15% / 0.7));
+  background: var(--frosted-white);
   backdrop-filter: blur(16px);
-  box-shadow: hsl(var(--hue2) 50% 2% / 0.5) 0px 10px 36px -14px;
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   z-index: 100;
   display: flex;
 
@@ -47,37 +53,210 @@
 #ai-teacher-menu h3 {
   font-size: 1.5rem !important;
   font-weight: 900 !important;
-  color: #fbbf24 !important; /* Amber color for child appeal */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: #7c3aed !important; /* Purple for child appeal */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 #ai-teacher-menu p {
   font-size: 1.1rem !important;
   font-weight: 700 !important;
   line-height: 1.4 !important;
-  color: #fef3c7 !important; /* Light amber for better readability */
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  color: #374151 !important; /* Dark gray for better readability */
+  text-shadow: none;
 }
 
-/* Input styling from the example */
-#ai-teacher-menu input {
+/* Input styling */
+#ai-teacher-menu input,
+.ai-input-field {
   width: 100%;
-  background: hsl(var(--hue1) 0% 40% / 0.1);
-  border: 1px solid hsl(var(--hue2) 13% 18.5% / 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(147, 51, 234, 0.2);
   border-radius: 99px; /* rounded-full */
   padding: 0.75rem 1.25rem;
-  color: white;
+  color: #1f2937;
   font-size: 1rem;
   font-weight: 600;
   font-family: 'Nunito', 'Segoe UI', 'Arial Rounded MT Bold', 'Helvetica Neue', sans-serif;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
-#ai-teacher-menu input::placeholder { 
-  color: #fbbf24; 
+
+#ai-teacher-menu input:focus,
+.ai-input-field:focus {
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
+  border-color: #7c3aed;
+  outline: none;
+}
+
+#ai-teacher-menu input::placeholder,
+.ai-input-field::placeholder { 
+  color: #6b7280; 
   font-weight: 600;
   font-size: 1rem;
 }
 
-/* Shine & Glow Effects (adapted from your example) */
+.ai-send-button {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  transition: all 0.3s ease;
+}
+
+.ai-send-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+}
+
+.ai-send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Fullscreen mode styles */
+#ai-teacher-menu.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  z-index: 1000;
+}
+
+/* Ensure plasma modal is properly positioned in fullscreen */
+#ai-teacher-menu.fullscreen .inner {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#ai-teacher-menu.fullscreen .flex-1 {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* Context tabs styles */
+.ai-context-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid var(--frosted-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  min-height: 60px; /* Ensure consistent height */
+}
+
+.ai-context-tab {
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #374151; /* Dark text for light mode */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 0.875rem;
+}
+
+.ai-context-tab.active {
+  color: #7c3aed;
+  border-bottom-color: #7c3aed;
+  background: rgba(147, 51, 234, 0.1);
+}
+
+.ai-context-tab:hover {
+  color: #7c3aed;
+  background: rgba(147, 51, 234, 0.05);
+}
+
+/* Fullscreen header */
+.ai-fullscreen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--frosted-border);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  min-height: 80px; /* Thicker navbar to accommodate plasma modal */
+}
+
+.ai-fullscreen-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937; /* Dark text for light mode */
+}
+
+.ai-fullscreen-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ai-fullscreen-button {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--frosted-border);
+  border-radius: 0.5rem;
+  color: #374151; /* Dark text for light mode */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  font-weight: 600;
+}
+
+.ai-fullscreen-button:hover {
+  background: rgba(147, 51, 234, 0.1);
+  color: #7c3aed;
+  border-color: #7c3aed;
+}
+
+/* Message styles */
+.ai-message-user {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  color: white;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+.ai-message-assistant {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+  border: 1px solid var(--frosted-border);
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  animation: messageSlideIn 0.3s ease-out;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@keyframes messageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shine & Glow Effects - Updated for light theme */
 #ai-teacher-menu .shine, #ai-teacher-menu .glow { --hue: var(--hue1); }
 #ai-teacher-menu .shine-bottom, #ai-teacher-menu .glow-bottom { --hue: var(--hue2); }
 
@@ -92,7 +271,7 @@
   right: -1px;
   top: -1px;
   z-index: 1;
-  background: conic-gradient(from -45deg, transparent 12%, hsl(var(--hue), 80%, 70%), transparent 50%) border-box;
+  background: conic-gradient(from -45deg, transparent 12%, rgba(147, 51, 234, 0.3), transparent 50%) border-box;
   mask: linear-gradient(transparent, transparent), linear-gradient(white, white);
   mask-clip: padding-box, border-box;
   mask-composite: subtract;
@@ -107,4 +286,185 @@
   bottom: -1px;
   left: -1px;
   right: auto;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  #ai-teacher-menu {
+    background: rgba(30, 41, 59, 0.85);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  #ai-teacher-menu input,
+  .ai-input-field {
+    background: rgba(30, 41, 59, 0.9);
+    color: #f8fafc;
+    border-color: rgba(147, 51, 234, 0.3);
+  }
+  
+  #ai-teacher-menu input::placeholder,
+  .ai-input-field::placeholder {
+    color: #9ca3af;
+  }
+  
+  .ai-send-button {
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  }
+  
+  .ai-send-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+  }
+  
+  .ai-message-assistant {
+    background: rgba(30, 41, 59, 0.9);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .ai-context-tabs {
+    background: rgba(30, 41, 59, 0.9);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .ai-context-tab {
+    color: #9ca3af;
+  }
+  
+  .ai-context-tab.active {
+    color: #a78bfa;
+    border-bottom-color: #a78bfa;
+    background: rgba(147, 51, 234, 0.2);
+  }
+  
+  .ai-fullscreen-header {
+    background: rgba(30, 41, 59, 0.95);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .ai-fullscreen-title {
+    color: #f8fafc;
+  }
+  
+  .ai-fullscreen-button {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #9ca3af;
+  }
+  
+  .ai-fullscreen-button:hover {
+    background: rgba(147, 51, 234, 0.2);
+    color: #a78bfa;
+    border-color: #a78bfa;
+  }
+}
+
+/* Theme-aware text colors */
+.ai-fullscreen-title,
+.ai-fullscreen-button,
+.ai-context-tab {
+  transition: color 0.3s ease;
+}
+
+/* Light theme (default) */
+.ai-fullscreen-title {
+  color: #1f2937;
+}
+
+.ai-fullscreen-button {
+  color: #374151;
+}
+
+.ai-context-tab {
+  color: #374151;
+}
+
+/* Dark theme */
+[data-theme="dark"] .ai-fullscreen-title,
+.dark .ai-fullscreen-title,
+#ai-teacher-menu.dark .ai-fullscreen-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .ai-fullscreen-button,
+.dark .ai-fullscreen-button,
+#ai-teacher-menu.dark .ai-fullscreen-button {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .ai-context-tab,
+.dark .ai-context-tab,
+#ai-teacher-menu.dark .ai-context-tab {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .ai-context-tab.active,
+.dark .ai-context-tab.active,
+#ai-teacher-menu.dark .ai-context-tab.active {
+  color: #a78bfa;
+}
+
+[data-theme="dark"] .ai-fullscreen-button:hover,
+.dark .ai-fullscreen-button:hover,
+#ai-teacher-menu.dark .ai-fullscreen-button:hover {
+  color: #a78bfa;
+}
+
+/* Ensure proper text contrast in all themes */
+#ai-teacher-menu.dark .ai-fullscreen-header {
+  background: rgba(30, 41, 59, 0.95);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+#ai-teacher-menu.dark .ai-context-tabs {
+  background: rgba(30, 41, 59, 0.9);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+#ai-teacher-menu.dark .ai-message-assistant {
+  background: rgba(30, 41, 59, 0.9);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+#ai-teacher-menu.dark .ai-input-field {
+  background: rgba(30, 41, 59, 0.9);
+  color: #f8fafc;
+  border-color: rgba(147, 51, 234, 0.3);
+}
+
+#ai-teacher-menu.dark .ai-input-field::placeholder {
+  color: #9ca3af;
+}
+
+/* Try asking me cards - black text in light mode */
+#ai-teacher-menu .text-amber-300 {
+  color: #1f2937 !important; /* Black text for light mode */
+}
+
+#ai-teacher-menu .text-amber-200 {
+  color: #1f2937 !important; /* Black text for light mode */
+}
+
+/* Dark mode overrides for try asking me cards */
+#ai-teacher-menu.dark .text-amber-300 {
+  color: #fbbf24 !important; /* Amber text for dark mode */
+}
+
+#ai-teacher-menu.dark .text-amber-200 {
+  color: #fef3c7 !important; /* Light amber text for dark mode */
+}
+
+/* Fullscreen toggle button - black text in light mode */
+#ai-teacher-menu .bg-white\/20 {
+  color: #1f2937 !important; /* Black text for light mode */
+}
+
+#ai-teacher-menu.dark .bg-white\/20 {
+  color: #f8fafc !important; /* White text for dark mode */
+}
+
+/* Dark mode border override */
+#ai-teacher-menu.dark {
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Thinner white border for dark mode */
 } 

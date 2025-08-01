@@ -8,6 +8,7 @@ import UniformLetterReveal from '../components/UniformLetterReveal';
 import SignUpChoiceModal from '../components/SignUpChoiceModal';
 import RegularSignUpModal from '../components/RegularSignUpModal';
 import LoginModal from '../components/LoginModal';
+import VideoDiagnostics from '../components/VideoDiagnostics';
 import { useTheme } from '../contexts/ThemeContext';
 import Footer from '../components/Footer';
 
@@ -700,7 +701,7 @@ const NewHomePage: React.FC = () => {
                         <Users className="w-10 h-10 text-white" />
                       </div>
                       <h5 className="font-bold text-xl mb-3">Parent Approved</h5>
-                      <p className="text-gray-600 dark:text-gray-300">Trusted by 10,000+ families worldwide with proven results</p>
+                      <p className="text-gray-600 dark:text-gray-300">Join a growing family with more than ever active users!</p>
                     </div>
                   </div>
                 </div>
@@ -753,7 +754,35 @@ const NewHomePage: React.FC = () => {
                         style={{ objectPosition: 'center 20%' }}
                         onClick={(e) => {
                           const video = e.target as HTMLVideoElement;
-                          video.play();
+                          video.play().catch(err => {
+                            console.log('Video play failed:', err);
+                            // Show fallback or retry
+                          });
+                        }}
+                        onError={(e) => {
+                          console.error('Video failed to load:', e);
+                          const videoElement = e.target as HTMLVideoElement;
+                          const container = videoElement.closest('.p-0');
+                          if (container) {
+                            container.innerHTML = `
+                              <div class="w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center">
+                                <div class="text-center text-white">
+                                  <div class="text-6xl mb-4">🎬</div>
+                                  <h3 class="text-xl font-bold mb-2">Video Unavailable</h3>
+                                  <p class="text-sm opacity-80">Click to try again</p>
+                                </div>
+                              </div>
+                            `;
+                            container.addEventListener('click', () => {
+                              location.reload();
+                            });
+                          }
+                        }}
+                        onLoadStart={() => {
+                          console.log('Video loading started');
+                        }}
+                        onCanPlay={() => {
+                          console.log('Video can play');
                         }}
                         onEnded={(e) => {
                           // Move current card back
@@ -794,7 +823,34 @@ const NewHomePage: React.FC = () => {
                         style={{ objectPosition: 'center 20%' }}
                         onClick={(e) => {
                           const video = e.target as HTMLVideoElement;
-                          video.play();
+                          video.play().catch(err => {
+                            console.log('Video play failed:', err);
+                          });
+                        }}
+                        onError={(e) => {
+                          console.error('Video failed to load:', e);
+                          const videoElement = e.target as HTMLVideoElement;
+                          const container = videoElement.closest('.p-0');
+                          if (container) {
+                            container.innerHTML = `
+                              <div class="w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center">
+                                <div class="text-center text-white">
+                                  <div class="text-6xl mb-4">🎬</div>
+                                  <h3 class="text-xl font-bold mb-2">Video Unavailable</h3>
+                                  <p class="text-sm opacity-80">Click to try again</p>
+                                </div>
+                              </div>
+                            `;
+                            container.addEventListener('click', () => {
+                              location.reload();
+                            });
+                          }
+                        }}
+                        onLoadStart={() => {
+                          console.log('Video loading started');
+                        }}
+                        onCanPlay={() => {
+                          console.log('Video can play');
                         }}
                         onEnded={(e) => {
                           // Move current card back
@@ -835,7 +891,34 @@ const NewHomePage: React.FC = () => {
                         style={{ objectPosition: 'center 20%' }}
                         onClick={(e) => {
                           const video = e.target as HTMLVideoElement;
-                          video.play();
+                          video.play().catch(err => {
+                            console.log('Video play failed:', err);
+                          });
+                        }}
+                        onError={(e) => {
+                          console.error('Video failed to load:', e);
+                          const videoElement = e.target as HTMLVideoElement;
+                          const container = videoElement.closest('.p-0');
+                          if (container) {
+                            container.innerHTML = `
+                              <div class="w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center">
+                                <div class="text-center text-white">
+                                  <div class="text-6xl mb-4">🎬</div>
+                                  <h3 class="text-xl font-bold mb-2">Video Unavailable</h3>
+                                  <p class="text-sm opacity-80">Click to try again</p>
+                                </div>
+                              </div>
+                            `;
+                            container.addEventListener('click', () => {
+                              location.reload();
+                            });
+                          }
+                        }}
+                        onLoadStart={() => {
+                          console.log('Video loading started');
+                        }}
+                        onCanPlay={() => {
+                          console.log('Video can play');
                         }}
                         onEnded={(e) => {
                           // Move current card back
@@ -876,7 +959,34 @@ const NewHomePage: React.FC = () => {
                         style={{ objectPosition: 'center 20%' }}
                         onClick={(e) => {
                           const video = e.target as HTMLVideoElement;
-                          video.play();
+                          video.play().catch(err => {
+                            console.log('Video play failed:', err);
+                          });
+                        }}
+                        onError={(e) => {
+                          console.error('Video failed to load:', e);
+                          const videoElement = e.target as HTMLVideoElement;
+                          const container = videoElement.closest('.p-0');
+                          if (container) {
+                            container.innerHTML = `
+                              <div class="w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center">
+                                <div class="text-center text-white">
+                                  <div class="text-6xl mb-4">🎬</div>
+                                  <h3 class="text-xl font-bold mb-2">Video Unavailable</h3>
+                                  <p class="text-sm opacity-80">Click to try again</p>
+                                </div>
+                              </div>
+                            `;
+                            container.addEventListener('click', () => {
+                              location.reload();
+                            });
+                          }
+                        }}
+                        onLoadStart={() => {
+                          console.log('Video loading started');
+                        }}
+                        onCanPlay={() => {
+                          console.log('Video can play');
                         }}
                         onEnded={(e) => {
                           // Move current card back
@@ -1063,7 +1173,7 @@ const NewHomePage: React.FC = () => {
               <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 text-gray-600 text-sm sm:text-lg px-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>10,000+ Families Trust Us</span>
+                  <span>Join a growing family with more than ever active users!</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -1172,8 +1282,8 @@ const NewHomePage: React.FC = () => {
                       <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Users className="w-8 h-8 text-white" />
                       </div>
-                      <h5 className="font-bold text-lg mb-2">10,000+ Families</h5>
-                      <p className="text-sm">Trust us with their children's development</p>
+                      <h5 className="font-bold text-lg mb-2">Join a growing family</h5>
+                      <p className="text-sm">With more than ever active users!</p>
                     </div>
                     <div className="text-center">
                       <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1337,6 +1447,7 @@ const NewHomePage: React.FC = () => {
         </section>
         
         <Footer />
+        <VideoDiagnostics />
       </div>
 
       {/* Modals */}

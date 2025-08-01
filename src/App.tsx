@@ -1,33 +1,28 @@
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { useUser } from './contexts/UserContext';
-import { AIAgentProvider } from './contexts/AIAgentContext';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AIAgentProvider } from './contexts/AIAgentContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 
-// Import your page components
-import HomePage from './pages/HomePage';
+// Pages
+import ParentHomePage from './pages/ParentHomePage';
 import PlaygroundPage from './pages/PlaygroundPage';
+import DashboardPage from './pages/DashboardPage';
 import ForumPage from './pages/ForumPage';
 import ForumRegistrationPage from './pages/ForumRegistrationPage';
 import RegistrationPage from './pages/RegistrationPage';
+import SignInPage from './pages/SignInPage';
 import AIReportPage from './pages/AIReportPage';
 import AboutUsPage from './pages/AboutUsPage';
-import DashboardPage from './pages/DashboardPage';
 import CountingTestPage from './pages/CountingTestPage';
 import TestPage from './pages/TestPage';
+import ProfilePage from './pages/ProfilePage';
 import EnhancedTextRevealExample from './components/EnhancedTextRevealExample';
-import UserProfilePage from './pages/UserProfilePage';
-import SignInPage from './pages/SignInPage';
-import NewHomePage from './pages/NewHomePage';
-// ... other page imports
 
-// Import the AI Assistant and Header
-import AIAssistant from './components/AIAssistant';
+// Components
 import Header from './components/Header';
-
-
-
-
+import AIAssistant from './components/AIAssistant';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const { user } = useUser();
@@ -36,12 +31,15 @@ function App() {
   return (
     <ThemeProvider>
       <AIAgentProvider>
+        {/* Scroll to top on route change */}
+        <ScrollToTop />
+        
         {/* Navigation Header */}
         <Header />
 
         <main id="main-content">
           <Routes>
-            <Route path="/" element={<NewHomePage />} />
+            <Route path="/" element={<ParentHomePage />} />
             <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/forum" element={<ForumPage />} />
@@ -53,18 +51,13 @@ function App() {
             <Route path="/counting-test" element={<CountingTestPage />} />
             <Route path="/test" element={<TestPage />} />
             <Route path="/text-reveal" element={<EnhancedTextRevealExample />} />
-            <Route path="/profile/:username" element={<UserProfilePage />} />
-            <Route path="/old-home" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             {/* ... etc */}
           </Routes>
         </main>
 
-
-
         {/* The AI Assistant is a global component, visible to anyone who is signed in */}
         {user && <AIAssistant />}
-        
-        {/* AI Agent is now working properly - debug button removed */}
       </AIAgentProvider>
     </ThemeProvider>
   );

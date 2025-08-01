@@ -4,31 +4,31 @@
 export const lightThemeConfig = {
   // Features Section Configuration
   features: {
-    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
+    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
     textColors: {
       primary: 'text-gray-900',
       secondary: 'text-gray-600',
-      accent: 'text-purple-600'
+      accent: 'text-blue-600'
     },
     cards: {
       inactive: {
         background: 'bg-white',
         text: 'text-gray-800',
-        border: 'border-gray-200',
+        border: 'border-blue-200',
         shadow: 'shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]',
         hoverShadow: 'hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)]',
-        hoverBorder: 'hover:border-purple-500'
+        hoverBorder: 'hover:border-blue-500'
       },
       active: {
-        background: 'bg-gradient-to-r from-purple-600 to-blue-600',
+        background: 'bg-gradient-to-r from-blue-600 to-purple-600',
         text: 'text-white',
-        border: 'border-purple-500',
+        border: 'border-blue-500',
         shadow: 'shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1)]'
       }
     },
     descriptionBox: {
       background: 'bg-white',
-      border: 'border-gray-200',
+      border: 'border-blue-200',
       shadow: 'shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)]',
       text: 'text-gray-800'
     }
@@ -36,7 +36,7 @@ export const lightThemeConfig = {
   
   // Videos Section Configuration
   videos: {
-    background: 'bg-gradient-to-br from-purple-100 to-indigo-100',
+    background: 'bg-gradient-to-br from-blue-50 to-indigo-50',
     textColors: {
       primary: 'text-gray-900',
       secondary: 'text-gray-600'
@@ -45,14 +45,14 @@ export const lightThemeConfig = {
   
   // Footer Configuration
   footer: {
-    background: 'bg-gradient-to-br from-gray-50 to-gray-100',
+    background: 'bg-gradient-to-br from-blue-50 to-indigo-50',
     text: 'text-gray-800',
-    border: 'border-gray-200'
+    border: 'border-blue-200'
   },
   
   // Hero Section Configuration
   hero: {
-    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
+    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
     textColors: {
       primary: 'text-gray-900',
       secondary: 'text-gray-600'
@@ -63,36 +63,36 @@ export const lightThemeConfig = {
   modals: {
     background: 'bg-white',
     overlay: 'bg-black/50',
-    border: 'border-gray-200',
+    border: 'border-blue-200',
     shadow: 'shadow-2xl',
     text: {
       primary: 'text-gray-900',
       secondary: 'text-gray-600',
-      accent: 'text-purple-600'
+      accent: 'text-blue-600'
     },
     button: {
-      primary: 'bg-purple-600 hover:bg-purple-700 text-white',
+      primary: 'bg-blue-600 hover:bg-blue-700 text-white',
       secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800',
-      outline: 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+      outline: 'border border-blue-300 hover:bg-blue-50 text-gray-700'
     }
   },
   
   // Dropdown Configurations
   dropdowns: {
     background: 'bg-white',
-    border: 'border-gray-200',
+    border: 'border-blue-200',
     shadow: 'shadow-lg',
     text: {
       primary: 'text-gray-900',
       secondary: 'text-gray-600',
-      hover: 'hover:bg-gray-50'
+      hover: 'hover:bg-blue-50'
     }
   },
   
   // Settings Panel Configuration
   settings: {
     background: 'bg-white',
-    border: 'border-gray-200',
+    border: 'border-blue-200',
     shadow: 'shadow-xl',
     text: {
       primary: 'text-gray-900',
@@ -100,32 +100,32 @@ export const lightThemeConfig = {
       label: 'text-gray-700'
     },
     input: {
-      background: 'bg-gray-50',
-      border: 'border-gray-300',
+      background: 'bg-blue-50',
+      border: 'border-blue-300',
       text: 'text-gray-900',
-      focus: 'focus:border-purple-500 focus:ring-purple-500'
+      focus: 'focus:border-blue-500 focus:ring-blue-500'
     }
   },
   
   // Global Light Theme Colors
   colors: {
-    primary: '#8b5cf6', // Purple-600
+    primary: '#2563eb', // Blue-600
     secondary: '#6b7280', // Gray-500
     accent: '#f59e0b', // Amber-500
     background: '#ffffff',
-    surface: '#f8fafc',
+    surface: '#f0f9ff',
     text: '#1f2937',
     textSecondary: '#6b7280',
-    border: '#e5e7eb',
+    border: '#bfdbfe',
     shadow: 'rgba(0, 0, 0, 0.1)'
   },
   
   // Gradient Definitions
   gradients: {
-    hero: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
-    features: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
-    videos: 'bg-gradient-to-br from-purple-100 to-indigo-100',
-    footer: 'bg-gradient-to-br from-gray-50 to-gray-100'
+    hero: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
+    features: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
+    videos: 'bg-gradient-to-br from-blue-50 to-indigo-50',
+    footer: 'bg-gradient-to-br from-blue-50 to-indigo-50'
   },
   
   // Animation and Effects

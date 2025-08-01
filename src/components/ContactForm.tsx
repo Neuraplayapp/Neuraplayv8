@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ContactFormProps {
   variant?: 'footer' | 'about';
 }
 
 const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
+  const { isDarkMode } = useTheme();
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
   const [contactError, setContactError] = useState('');
@@ -57,7 +59,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
                   value={contactForm.name}
                   onChange={handleContactChange}
                   required
-                  className="w-full p-4 rounded-xl border border-violet-300 bg-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-violet-400"
+                  className={`w-full p-4 rounded-xl border border-violet-300 bg-white/10 ${isDarkMode ? 'text-white' : 'text-black'} placeholder-slate-400 focus:outline-none focus:border-violet-400`}
                 />
               </div>
               <div>
@@ -68,7 +70,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
                   value={contactForm.email}
                   onChange={handleContactChange}
                   required
-                  className="w-full p-4 rounded-xl border border-violet-300 bg-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-violet-400"
+                  className={`w-full p-4 rounded-xl border border-violet-300 bg-white/10 ${isDarkMode ? 'text-white' : 'text-black'} placeholder-slate-400 focus:outline-none focus:border-violet-400`}
                 />
               </div>
               <div>
@@ -79,7 +81,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
                   onChange={handleContactChange}
                   required
                   rows={5}
-                  className="w-full p-4 rounded-xl border border-violet-300 bg-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-violet-400"
+                  className={`w-full p-4 rounded-xl border border-violet-300 bg-white/10 ${isDarkMode ? 'text-white' : 'text-black'} placeholder-slate-400 focus:outline-none focus:border-violet-400`}
                 />
               </div>
               {contactError && <div className="text-red-400 text-center font-bold">{contactError}</div>}
@@ -109,7 +111,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
                 value={contactForm.name}
                 onChange={handleContactChange}
                 required
-                className="w-full p-4 rounded-xl border border-violet-300 bg-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-violet-400"
+                className={`w-full p-4 rounded-xl border border-violet-300 bg-white/10 ${isDarkMode ? 'text-white' : 'text-black'} placeholder-slate-400 focus:outline-none focus:border-violet-400`}
                 placeholder="Enter your name"
               />
             </div>
@@ -121,7 +123,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
                 value={contactForm.email}
                 onChange={handleContactChange}
                 required
-                className="w-full p-4 rounded-xl border border-violet-300 bg-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-violet-400"
+                className={`w-full p-4 rounded-xl border border-violet-300 bg-white/10 ${isDarkMode ? 'text-white' : 'text-black'} placeholder-slate-400 focus:outline-none focus:border-violet-400`}
                 placeholder="Enter your email"
               />
             </div>
@@ -134,7 +136,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'about' }) => {
               onChange={handleContactChange}
               required
               rows={5}
-              className="w-full p-4 rounded-xl border border-violet-300 bg-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-violet-400"
+              className={`w-full p-4 rounded-xl border border-violet-300 bg-white/10 ${isDarkMode ? 'text-white' : 'text-black'} placeholder-slate-400 focus:outline-none focus:border-violet-400`}
               placeholder="Tell us about your questions or how we can help..."
             />
           </div>

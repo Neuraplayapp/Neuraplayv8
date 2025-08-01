@@ -8,8 +8,7 @@ import BlurTextReveal from '../components/BlurTextReveal';
 import CardReveal from '../components/CardReveal';
 import SequentialVideoScrubber from '../components/SequentialVideoScrubber';
 import PlasmaBall from '../components/PlasmaBall';
-import DynamicIslandAIAgent from '../components/DynamicIslandAIAgent';
-import UniversalAIAgent from '../components/UniversalAIAgent';
+
 import ElevenLabsAIAssistant from '../components/ElevenLabsAIAssistant';
 import AIAssistant from '../components/AIAssistant';
 import AIGame from '../components/AIGame';
@@ -560,8 +559,7 @@ const TestPage: React.FC = () => {
                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
                  <h3 className="text-xl font-bold text-white mb-4">AI & Assistant Components</h3>
                  <ul className="text-white/70 space-y-2 text-left">
-                   <li>• DynamicIslandAIAgent</li>
-                   <li>• UniversalAIAgent</li>
+                   
                    <li>• ElevenLabsAIAssistant</li>
                    <li>• AIAssistant</li>
                    <li>• AIGame</li>

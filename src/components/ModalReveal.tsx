@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Declare GSAP types
 declare const gsap: any;
@@ -63,6 +64,7 @@ const ModalReveal: React.FC<ModalRevealProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     if (!isOpen || typeof gsap === 'undefined' || !gsap.registerPlugin) return;
@@ -313,9 +315,11 @@ const ModalReveal: React.FC<ModalRevealProps> = ({
 
   // Render title based on reveal type
   const renderTitle = () => {
+    const textColor = isDarkMode ? 'text-white' : 'text-gray-900';
+    
     if (revealType === 'letter') {
       return (
-        <div ref={titleRef} className="text-2xl font-bold text-white mb-6">
+        <div ref={titleRef} className={`text-2xl font-bold ${textColor} mb-6`}>
           {title.split('').map((char, index) => (
             <span
               key={index}
@@ -331,7 +335,7 @@ const ModalReveal: React.FC<ModalRevealProps> = ({
       );
     } else if (revealType === 'word') {
       return (
-        <div ref={titleRef} className="text-2xl font-bold text-white mb-6">
+        <div ref={titleRef} className={`text-2xl font-bold ${textColor} mb-6`}>
           {title.split(' ').map((word, index) => (
             <span
               key={index}
@@ -344,7 +348,7 @@ const ModalReveal: React.FC<ModalRevealProps> = ({
       );
     } else {
       return (
-        <div ref={titleRef} className="text-2xl font-bold text-white mb-6">
+        <div ref={titleRef} className={`text-2xl font-bold ${textColor} mb-6`}>
           {title}
         </div>
       );
@@ -354,29 +358,39 @@ const ModalReveal: React.FC<ModalRevealProps> = ({
   return (
     <div
       ref={backdropRef}
-      className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 isolate ${backdropClassName}`}
+      className={`fixed inset-0 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 isolate ${backdropClassName}`}
       onClick={handleBackdropClick}
       style={{ 
         backdropFilter: backdropBlur ? 'blur(8px)' : 'none',
-        WebkitBackdropFilter: backdropBlur ? 'blur(8px)' : 'none'
+        WebkitBackdropFilter: backdropBlur ? 'blur(8px)' : 'none',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)'
+          : 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #f3e8ff 100%)'
       }}
     >
       <div
         ref={modalRef}
-        className={`bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20 isolate ${modalClassName} ${className}`}
+        className={`rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border isolate backdrop-blur-xl ${
+          isDarkMode 
+            ? 'border-white/20 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)]' 
+            : 'border-gray-200 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)]'
+        } ${modalClassName} ${className}`}
         style={{ 
           transform: 'translateZ(0)',
-          willChange: 'transform, opacity'
+          willChange: 'transform, opacity',
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)'
+            : 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #f3e8ff 100%)'
         }}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-white/20">
+        <div className={`flex justify-between items-center p-6 border-b ${isDarkMode ? 'border-white/20' : 'border-gray-200'}`}>
           {renderTitle()}
           {showCloseButton && (
             <button
               ref={closeButtonRef}
               onClick={handleClose}
-              className="text-white/60 hover:text-white text-2xl font-bold transition-colors p-2 rounded-full hover:bg-white/10"
+              className={`${isDarkMode ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} text-2xl font-bold transition-colors p-2 rounded-full`}
               disabled={isAnimating}
             >
               ×
@@ -391,10 +405,14 @@ const ModalReveal: React.FC<ModalRevealProps> = ({
 
         {/* Footer */}
         {showCloseButton && (
-          <div className="flex justify-end p-6 border-t border-white/20">
+          <div className={`flex justify-end p-6 border-t ${isDarkMode ? 'border-white/20' : 'border-gray-200'}`}>
             <button
               onClick={handleClose}
-              className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-300 font-semibold border border-white/20"
+              className={`px-6 py-3 rounded-xl transition-all duration-300 font-semibold border ${
+                isDarkMode 
+                  ? 'bg-white/10 hover:bg-white/20 text-white border-white/20' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+              }`}
               disabled={isAnimating}
             >
               {closeButtonText}

@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Brain, LogOut } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
+import SettingsDropdown from './SettingsDropdown';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header: React.FC = () => {
   const { user, setUser } = useUser();
@@ -16,7 +18,7 @@ const Header: React.FC = () => {
 
   const handleUserClick = () => {
     if (user) {
-      navigate(`/profile/${user.username}`);
+      navigate(`/profile`);
     }
   };
 
@@ -24,7 +26,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header id="navigation" className="bg-white dark:bg-gray-900 sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 shadow-lg">
+      <header id="navigation" className="bg-purple-100 dark:bg-gray-900 sticky top-0 z-40 border-b border-purple-300 dark:border-gray-700 shadow-lg">
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
           <Link to="/" className="text-3.6xl font-black tracking-tighter flex items-center gap-2 text-purple-900 dark:text-white drop-shadow-lg">
             <Brain className="w-9.6 h-9.6 text-purple-900 dark:text-white drop-shadow-lg" />
@@ -36,7 +38,7 @@ const Header: React.FC = () => {
               to="/" 
               className={`hover:text-purple-700 dark:hover:text-purple-300 transition-colors ${isActive('/') ? 'text-purple-700 dark:text-purple-300' : ''}`}
             >
-              Home
+              Homepage
             </Link>
             <Link 
               to="/playground" 
@@ -71,6 +73,8 @@ const Header: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-4">
+            <NotificationDropdown />
+            <SettingsDropdown />
             {user ? (
               <div className="flex items-center gap-4">
                 <div 

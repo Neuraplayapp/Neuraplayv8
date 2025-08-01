@@ -1,5 +1,6 @@
 import React, { useState, useLayoutEffect, useRef, useMemo, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
 import { Gamepad2, BarChart, Users, Star, Brain, Sparkles, Trophy, Target, FileText, CheckSquare, TrendingUp, Award, Zap, Crown, Target as TargetIcon, Brain as BrainIcon, Heart, Activity } from 'lucide-react';
@@ -30,6 +31,7 @@ import PlasmaBackground from '../components/PlasmaBackground';
 
 const PlaygroundPage: React.FC = () => {
     const { user } = useUser();
+    const { isDarkMode } = useTheme();
     const [mainView, setMainView] = useState('play');
     const [playCategory, setPlayCategory] = useState('All');
     const [isTaskManagerOpen, setIsTaskManagerOpen] = useState(false);
@@ -230,7 +232,9 @@ const PlaygroundPage: React.FC = () => {
         },
     };
 
-    const glassPanelStyle = "bg-white/10 backdrop-blur-md border border-white/20";
+    const glassPanelStyle = isDarkMode 
+        ? "bg-white/10 backdrop-blur-md border border-white/20" 
+        : "bg-white/80 backdrop-blur-md border border-purple-200/50";
 
     const handlePlayGame = () => {
         if (infoGame) {
@@ -293,14 +297,16 @@ const PlaygroundPage: React.FC = () => {
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                 playCategory === category
                                     ? 'bg-violet-600 text-white'
-                                    : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                                    : isDarkMode 
+                                        ? 'bg-white/10 text-slate-300 hover:bg-white/20'
+                                        : 'bg-white/60 text-gray-700 hover:bg-white/80'
                             }`}
                         >
                             {category}
                         </button>
                     ))}
                 </div>
-                <h2 className="text-2xl font-bold text-slate-100 mb-4">Category: {playCategory}</h2>
+                <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>Category: {playCategory}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredGames.map((game, index) => {
@@ -343,7 +349,7 @@ const PlaygroundPage: React.FC = () => {
                                 </div>
                             )}
                             <div className="p-5">
-                                <h3 className="font-bold text-lg text-white">{game.title}</h3>
+                                <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{game.title}</h3>
                             </div>
                         </div>
                     );
@@ -534,19 +540,29 @@ const PlaygroundPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
+        <div className={`min-h-screen text-slate-200 pt-24 pb-12 relative ${
+            isDarkMode 
+                ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900' 
+                : 'bg-gradient-to-br from-purple-100 via-violet-200 to-indigo-100'
+        }`}>
             
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white">The Playground</h1>
-                    <p className="text-xl text-violet-300 mt-2">Your learning adventure starts here, {user?.username}.</p>
+                    <h1 className={`text-5xl md:text-6xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>The Playground</h1>
+                    <p className={`text-xl mt-2 ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>Your learning adventure starts here, {user?.username}.</p>
                 </div>
                 <div className="flex flex-col lg:flex-row gap-4">
                     <aside className="lg:w-48 flex-shrink-0">
                         <div className="sticky top-32">
                             <nav className={`${glassPanelStyle} p-3 rounded-xl space-y-1`}>
                                 {gameCategories.map(cat => (
-                                    <button key={cat} onClick={() => setPlayCategory(cat)} className={`w-full text-left p-2 rounded-lg font-semibold transition-all text-sm ${playCategory === cat ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-slate-300'}`}>{cat}</button>
+                                    <button key={cat} onClick={() => setPlayCategory(cat)} className={`w-full text-left p-2 rounded-lg font-semibold transition-all text-sm ${
+                                    playCategory === cat 
+                                        ? isDarkMode ? 'bg-white/20 text-white' : 'bg-violet-600 text-white'
+                                        : isDarkMode 
+                                            ? 'hover:bg-white/10 text-slate-300' 
+                                            : 'hover:bg-white/60 text-gray-700'
+                                }`}>{cat}</button>
                                 ))}
                             </nav>
                         </div>
@@ -554,7 +570,13 @@ const PlaygroundPage: React.FC = () => {
                     <main className="flex-1">
                         <div className={`${glassPanelStyle} p-2 flex items-center mb-4 rounded-xl`}>
                             {['play', 'profile', 'social'].map(view => (
-                                <button key={view} onClick={() => setMainView(view)} className={`flex-1 py-2 rounded-lg font-bold capitalize transition-colors flex items-center justify-center gap-2 ${mainView === view ? 'bg-white/20 text-white' : 'text-violet-300 hover:text-white'}`}>
+                                <button key={view} onClick={() => setMainView(view)} className={`flex-1 py-2 rounded-lg font-bold capitalize transition-colors flex items-center justify-center gap-2 ${
+                                    mainView === view 
+                                        ? isDarkMode ? 'bg-white/20 text-white' : 'bg-violet-600 text-white'
+                                        : isDarkMode 
+                                            ? 'text-violet-300 hover:text-white' 
+                                            : 'text-violet-600 hover:text-violet-800'
+                                }`}>
                                     {view === 'play' && <Gamepad2 size={18}/>}
                                     {view === 'profile' && <BarChart size={18}/>}
                                     {view === 'social' && <Users size={18}/>}
@@ -565,7 +587,7 @@ const PlaygroundPage: React.FC = () => {
                         <div ref={contentRef} className={`${glassPanelStyle} p-4 min-h-[500px] rounded-2xl overflow-hidden`}>
                             {mainView === 'play' && renderGameGrid()}
                             {mainView === 'profile' && renderProfile()}
-                            {mainView === 'social' && <div className="p-4 text-white"><h2 className="text-3xl font-bold">Social & Friends</h2></div>}
+                            {mainView === 'social' && <div className={`p-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><h2 className="text-3xl font-bold">Social & Friends</h2></div>}
                             {mainView === 'game' && selectedGame && (
                                 <div className="relative">
                                     <button

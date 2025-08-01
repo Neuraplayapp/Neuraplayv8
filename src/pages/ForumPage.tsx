@@ -1,25 +1,87 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { usePost } from '../contexts/PostContext';
-import { MessageCircle, ThumbsUp, ThumbsDown, Reply, Send, Plus, Users, Star, TrendingUp, Heart, Share2, Bookmark, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, ThumbsUp, ThumbsDown, Reply, Send, Plus, Users, Star, TrendingUp, Heart, Share2, Bookmark, MoreHorizontal, Sparkles, Bot } from 'lucide-react';
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
 import { Link } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 
 const ForumPage: React.FC = () => {
     const { user } = useUser();
     const { posts, channels, addPost, addReply, votePost, voteReply } = usePost();
+    const { isDarkMode } = useTheme();
     const [selectedChannel, setSelectedChannel] = useState('What I Learned Today');
     const [newPostTitle, setNewPostTitle] = useState('');
     const [newPostContent, setNewPostContent] = useState('');
     const [showNewPostForm, setShowNewPostForm] = useState(false);
     const [expandedPost, setExpandedPost] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
+    const [showAIPrompt, setShowAIPrompt] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
     const contentRef = useRef<HTMLDivElement>(null);
 
-    const glassPanelStyle = "bg-black/20 border border-white/10 backdrop-blur-md";
+    // Dynamic background and styling based on theme
+    const forumBackground = isDarkMode 
+        ? "bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900" 
+        : "bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-100";
+    
+    const glassPanelStyle = isDarkMode 
+        ? "bg-black/20 border border-white/10 backdrop-blur-md" 
+        : "bg-white/80 border border-blue-200/50 backdrop-blur-md shadow-lg";
+    
     const brightYellowGradient = "bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500";
+    
+    // Channel color mapping for light mode
+    const channelColors = {
+        'What I Learned Today': {
+            bg: 'bg-gradient-to-r from-blue-500 to-purple-600',
+            text: 'text-white',
+            border: 'border-blue-400'
+        },
+        'Neuroscience Insights': {
+            bg: 'bg-gradient-to-r from-green-500 to-emerald-600',
+            text: 'text-white',
+            border: 'border-green-400'
+        },
+        'Cognitive Development': {
+            bg: 'bg-gradient-to-r from-orange-500 to-red-500',
+            text: 'text-white',
+            border: 'border-orange-400'
+        },
+        'Learning Strategies': {
+            bg: 'bg-gradient-to-r from-purple-500 to-pink-500',
+            text: 'text-white',
+            border: 'border-purple-400'
+        },
+        'Memory Techniques': {
+            bg: 'bg-gradient-to-r from-indigo-500 to-blue-500',
+            text: 'text-white',
+            border: 'border-indigo-400'
+        },
+        'Brain Training': {
+            bg: 'bg-gradient-to-r from-teal-500 to-cyan-500',
+            text: 'text-white',
+            border: 'border-teal-400'
+        }
+    };
+    
+    // AI Assistant prompts for different themes
+    const aiPrompts = {
+        light: [
+            "Help me write a post about my learning breakthrough in a positive, encouraging tone",
+            "Suggest a title for my post about cognitive development",
+            "Help me formulate a question about neuroscience in a friendly way",
+            "Create an engaging introduction for my learning journey post"
+        ],
+        dark: [
+            "Help me craft a deep, thoughtful post about my cognitive insights",
+            "Suggest a compelling title for my neuroscience discovery",
+            "Help me frame a complex learning question in an accessible way",
+            "Create an introspective introduction for my learning breakthrough"
+        ]
+    };
 
     const filteredPosts = posts.filter(post => post.channel === selectedChannel);
 
@@ -76,7 +138,7 @@ const ForumPage: React.FC = () => {
 
     if (!user) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900 text-white flex items-center justify-center">
+        <div className={`min-h-screen ${forumBackground} text-white flex items-center justify-center`}>
           <div className="text-center max-w-md mx-auto px-6">
             <div className="flex items-center justify-center mb-8">
               <img 
@@ -86,7 +148,7 @@ const ForumPage: React.FC = () => {
               />
             </div>
             <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
-            <p className="text-lg text-gray-300 mb-8">
+            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-8`}>
               Please log in to join the community forum and share your learning journey.
             </p>
             <div className="space-y-4">
@@ -98,12 +160,12 @@ const ForumPage: React.FC = () => {
               </Link>
               <Link 
                 to="/login" 
-                className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+                className={`inline-block w-full bg-transparent border-2 ${isDarkMode ? 'border-white/20' : 'border-gray-300'} text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300`}
               >
                 Log In
               </Link>
             </div>
-            <p className="text-sm text-gray-400 mt-6">
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-6`}>
               Join thousands of learners discovering the joy of cognitive development!
             </p>
           </div>
@@ -112,13 +174,13 @@ const ForumPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900">
+        <div className={`min-h-screen pt-24 pb-12 relative ${forumBackground}`}>
             
             <div className="container mx-auto px-6">
                 {/* Header Section */}
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white">Community Forum</h1>
-                    <p className="text-xl text-violet-300 mt-2">Share breakthroughs, ask for advice, and grow together.</p>
+                    <h1 className={`text-5xl md:text-6xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Community Forum</h1>
+                    <p className={`text-xl ${isDarkMode ? 'text-violet-300' : 'text-blue-600'} mt-2`}>Share breakthroughs, ask for advice, and grow together.</p>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -136,46 +198,63 @@ const ForumPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white">{user.username}</h3>
-                                        <p className="text-sm text-violet-300">{user.profile?.rank || 'Learner'}</p>
+                                        <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{user.username}</h3>
+                                        <p className={`text-sm ${isDarkMode ? 'text-violet-300' : 'text-blue-600'}`}>{user.profile?.rank || 'Learner'}</p>
                                     </div>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <div className="text-center">
-                                        <div className="text-yellow-400 font-bold">{user.profile?.xp || 0}</div>
-                                        <div className="text-slate-400">XP</div>
+                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{user.profile?.xp || 0}</div>
+                                        <div className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>XP</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-yellow-400 font-bold">{user.profile?.stars || 0}</div>
-                                        <div className="text-slate-400">Stars</div>
+                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{user.profile?.stars || 0}</div>
+                                        <div className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Stars</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-yellow-400 font-bold">{posts.filter(p => p.author === user.username).length}</div>
-                                        <div className="text-slate-400">Posts</div>
+                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{posts.filter(p => p.author === user.username).length}</div>
+                                        <div className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Posts</div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Channels */}
                             <div className={`${glassPanelStyle} p-4 rounded-2xl`}>
-                                <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-                                    <MessageCircle size={20} className="text-yellow-400" />
+                                <h3 className={`font-bold text-xl mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    <MessageCircle size={20} className="text-purple-600 dark:text-yellow-400" />
                                     Channels
                                 </h3>
                                 <div className="space-y-2">
-                                    {channels.map(channel => (
-                                        <button 
-                                            key={channel} 
-                                            onClick={() => setSelectedChannel(channel)} 
-                                            className={`w-full text-left py-3 px-4 rounded-lg font-semibold transition-all ${
-                                                selectedChannel === channel 
-                                                    ? 'bg-gradient-to-r from-yellow-400/20 to-amber-500/20 text-yellow-300 border border-yellow-400/30' 
-                                                    : 'hover:bg-white/10 text-slate-300'
-                                            }`}
-                                        >
-                                            {channel}
-                                        </button>
-                                    ))}
+                                    {channels.map(channel => {
+                                        const channelColor = channelColors[channel as keyof typeof channelColors];
+                                        return (
+                                            <button 
+                                                key={channel} 
+                                                onClick={() => setSelectedChannel(channel)} 
+                                                className={`w-full text-left py-3 px-4 rounded-lg font-semibold transition-all ${
+                                                    selectedChannel === channel 
+                                                        ? isDarkMode
+                                                            ? 'bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-300 border border-purple-400/30'
+                                                            : `${channelColor?.bg} ${channelColor?.text} border ${channelColor?.border} shadow-lg`
+                                                        : isDarkMode
+                                                            ? `hover:bg-white/10 text-slate-300`
+                                                            : `hover:bg-gray-50 text-gray-700 border-l-4`
+                                                }`}
+                                                style={{
+                                                    borderLeftColor: selectedChannel !== channel && !isDarkMode ? 
+                                                        channel === 'What I Learned Today' ? '#3b82f6' :
+                                                        channel === 'Neuroscience Insights' ? '#10b981' :
+                                                        channel === 'Cognitive Development' ? '#f97316' :
+                                                        channel === 'Learning Strategies' ? '#8b5cf6' :
+                                                        channel === 'Memory Techniques' ? '#6366f1' :
+                                                        channel === 'Brain Training' ? '#14b8a6' : '#6b7280'
+                                                    : undefined
+                                                }}
+                                            >
+                                                {channel}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -186,15 +265,15 @@ const ForumPage: React.FC = () => {
                         {/* New Post Form */}
                         <div className={`${glassPanelStyle} p-6 rounded-2xl`}>
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-2xl font-bold text-white">
-                                    Share in <span className="text-yellow-400">{selectedChannel}</span>
+                                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    Share in <span className="text-purple-600 dark:text-yellow-400">{selectedChannel}</span>
                                 </h2>
                                 <button
                                     onClick={() => setShowNewPostForm(!showNewPostForm)}
                                     className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                                         showNewPostForm 
                                             ? 'bg-red-500/20 text-red-300 border border-red-400/30' 
-                                            : 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black hover:from-yellow-500 hover:to-amber-600'
+                                            : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
                                     }`}
                                 >
                                     {showNewPostForm ? 'Cancel' : <Plus size={16} />}
@@ -204,25 +283,95 @@ const ForumPage: React.FC = () => {
 
                             {showNewPostForm && (
                                 <div className="space-y-4">
+                                    {/* AI Assistant Prompt Section */}
+                                    <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-black/30 border border-white/20' : 'bg-blue-50 border border-blue-200'}`}>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Bot className="w-5 h-5 text-purple-500" />
+                                            <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>AI Writing Assistant</span>
+                                            <button
+                                                onClick={() => setShowAIPrompt(!showAIPrompt)}
+                                                className="ml-auto text-sm text-purple-500 hover:text-purple-400"
+                                            >
+                                                {showAIPrompt ? 'Hide' : 'Show'} Prompts
+                                            </button>
+                                        </div>
+                                        
+                                        {showAIPrompt && (
+                                            <div className="space-y-2 mb-3">
+                                                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                    Choose a prompt to help you write your post:
+                                                </p>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    {aiPrompts[isDarkMode ? 'dark' : 'light'].map((prompt, index) => (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => setAiPrompt(prompt)}
+                                                            className={`text-left p-3 rounded-lg border transition-all ${
+                                                                aiPrompt === prompt
+                                                                    ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300'
+                                                                    : 'bg-white/50 dark:bg-white/10 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-white/20'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-start gap-2">
+                                                                <Sparkles className="w-4 h-4 mt-0.5 text-purple-500" />
+                                                                <span className="text-sm">{prompt}</span>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {aiPrompt && (
+                                            <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-purple-900/20 border border-purple-500/30' : 'bg-purple-50 border border-purple-200'}`}>
+                                                <div className="flex items-start gap-2">
+                                                    <Bot className="w-4 h-4 mt-0.5 text-purple-500" />
+                                                    <div className="flex-1">
+                                                        <p className={`text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>
+                                                            Selected Prompt:
+                                                        </p>
+                                                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            {aiPrompt}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setAiPrompt('')}
+                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <input
                                         type="text"
                                         placeholder="Post title..."
                                         value={newPostTitle}
                                         onChange={(e) => setNewPostTitle(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20"
+                                        className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-purple-400/20 ${
+                                            isDarkMode 
+                                                ? 'bg-white/10 border-white/20 text-white placeholder-slate-400 focus:border-purple-400' 
+                                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-400'
+                                        }`}
                                     />
                                     <textarea
                                         placeholder="Share your thoughts..."
                                         value={newPostContent}
                                         onChange={(e) => setNewPostContent(e.target.value)}
                                         rows={4}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 resize-none"
+                                        className={`w-full px-4 py-3 rounded-xl border resize-none focus:ring-2 focus:ring-purple-400/20 ${
+                                            isDarkMode 
+                                                ? 'bg-white/10 border-white/20 text-white placeholder-slate-400 focus:border-purple-400' 
+                                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-400'
+                                        }`}
                                     />
                                     <div className="flex justify-end">
                                         <button
                                             onClick={handleSubmitPost}
                                             disabled={!newPostTitle.trim() || !newPostContent.trim()}
-                                            className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-semibold rounded-lg hover:from-yellow-500 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                            className="px-6 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                                         >
                                             <Send size={16} />
                                             Post
@@ -247,8 +396,8 @@ const ForumPage: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-white">{post.author}</h3>
-                                                <p className="text-sm text-slate-400">{formatDate(post.createdAt)}</p>
+                                                <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{post.author}</h3>
+                                                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>{formatDate(post.createdAt)}</p>
                                             </div>
                                         </div>
                                         <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">

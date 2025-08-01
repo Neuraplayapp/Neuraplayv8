@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
 import { Brain, Target, Sparkles, Users, Award, Heart, Star, Shield, Zap } from 'lucide-react';
@@ -7,9 +8,12 @@ import ContactForm from '../components/ContactForm';
 
 const AboutUsPage: React.FC = () => {
   const { user } = useUser();
+  const { isDarkMode } = useTheme();
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const glassPanelStyle = "bg-black/20 border border-white/10 backdrop-blur-md";
+  const glassPanelStyle = isDarkMode 
+    ? "bg-black/50 backdrop-blur-xl border-2 border-white/30 shadow-[0_10px_20px_-12px_rgba(255,255,255,0.1)] hover:shadow-[0_15px_30px_-12px_rgba(255,255,255,0.15)]" 
+    : "bg-white/90 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.35)]";
 
   useLayoutEffect(() => {
     if (contentRef.current) {
@@ -25,7 +29,7 @@ const AboutUsPage: React.FC = () => {
       name: "Mrs. Alifya S.T.",
       role: "Board Approved Clinical Psychologist and Trauma Expert",
       bio: "Leading our clinical approach with expertise in trauma-informed care and child psychology",
-      avatar: "/assets/images/alfiya.png",
+      avatar: "/assets/images/Alfiya.png",
       linkedin: "https://www.linkedin.com/in/alifya-st"
     },
     {
@@ -67,37 +71,65 @@ const AboutUsPage: React.FC = () => {
     }
   ];
 
+  const globalStyles = `
+    .dark-hero-gradient {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    }
+    
+    .light-hero-gradient {
+      background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #f3e8ff 100%);
+    }
+  `;
+
   return (
-    <div className="min-h-screen text-slate-200 pt-24 pb-12 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+    <>
+      <style>{globalStyles}</style>
+      <div className={`min-h-screen pt-24 pb-12 ${
+        isDarkMode ? 'dark-hero-gradient' : 'light-hero-gradient'
+      }`}>
       <div className="container mx-auto px-6">
         <div ref={contentRef} className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-4">About Neuraplay</h1>
-          <p className="text-xl text-violet-300 max-w-3xl mx-auto">
+          <h1 className={`text-5xl md:text-6xl font-bold tracking-tight mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>About Neuraplay</h1>
+          <p className={`text-xl max-w-3xl mx-auto ${
+            isDarkMode ? 'text-violet-300' : 'text-purple-600'
+          }`}>
             We're on a mission to unlock every child's potential through scientifically-backed, AI-powered learning experiences.
           </p>
         </div>
 
         {/* Mission Section */}
         <div className={`${glassPanelStyle} p-8 rounded-2xl mb-8`}>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-4">Our Mission</h2>
-            <p className="text-lg text-slate-300 max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl font-bold mb-4 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>Our Mission</h2>
+            <p className={`text-lg max-w-4xl mx-auto ${
+              isDarkMode ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               At Neuraplay, we believe every child is a genius waiting to be discovered. 
               Through the power of neuropsychology and artificial intelligence, we create 
               personalized learning experiences that adapt to each child's unique cognitive profile.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="grid md:grid-cols-2 gap-8 items-center mt-8">
             <div>
-              <h3 className="text-2xl font-bold text-white mb-4">The Science Behind Our Approach</h3>
-              <p className="text-slate-300 mb-4">
+              <h3 className={`text-2xl font-bold mb-4 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>The Science Behind Our Approach</h3>
+              <p className={`mb-4 ${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Our platform is built on decades of neuropsychological research, combining 
                 proven cognitive training methods with cutting-edge AI technology. Each game 
                 and activity is designed to target specific cognitive functions while maintaining 
                 the joy and wonder of childhood learning.
               </p>
-              <p className="text-slate-300">
+              <p className={`${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 We work closely with leading experts in child development, neuropsychology, 
                 and educational technology to ensure our platform delivers measurable cognitive 
                 improvements while keeping children engaged and motivated.
@@ -113,15 +145,23 @@ const AboutUsPage: React.FC = () => {
 
         {/* Values Section */}
         <div className={`${glassPanelStyle} p-8 rounded-2xl mb-8`}>
-          <h2 className="text-3xl font-bold text-white text-center mb-8">Our Values</h2>
+          <h2 className={`text-3xl font-bold text-center mb-8 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Our Values</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {values.map((value, index) => (
-              <div key={index} className="text-center p-6 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+              <div key={index} className={`text-center p-6 rounded-xl transition-all ${
+                isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-50/50 hover:bg-gray-100/50'
+              }`}>
                 <div className="flex justify-center mb-4">
                   {value.icon}
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{value.title}</h3>
-                <p className="text-slate-300 text-sm">{value.description}</p>
+                <h3 className={`text-xl font-bold mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>{value.title}</h3>
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                }`}>{value.description}</p>
               </div>
             ))}
           </div>
@@ -129,18 +169,30 @@ const AboutUsPage: React.FC = () => {
 
         {/* Team Section */}
         <div className={`${glassPanelStyle} p-8 rounded-2xl mb-8`}>
-          <h2 className="text-3xl font-bold text-white text-center mb-8">Meet Our Team</h2>
+          <h2 className={`text-3xl font-bold text-center mb-8 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Meet Our Team</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {teamMembers.map((member, index) => (
-              <div key={index} className="text-center p-6 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+              <div key={index} className={`text-center p-6 rounded-xl transition-all ${
+                isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-50/50 hover:bg-gray-100/50'
+              }`}>
                 <img 
                   src={member.avatar} 
                   alt={member.name}
-                  className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-violet-200"
+                  className={`w-24 h-24 rounded-full mx-auto mb-4 border-4 ${
+                    isDarkMode ? 'border-violet-200' : 'border-purple-300'
+                  }`}
                 />
-                <h3 className="text-xl font-bold text-white mb-2">{member.name}</h3>
-                <p className="text-violet-300 font-semibold mb-3">{member.role}</p>
-                <p className="text-slate-300 text-sm mb-4">{member.bio}</p>
+                <h3 className={`text-xl font-bold mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>{member.name}</h3>
+                <p className={`font-semibold mb-3 ${
+                  isDarkMode ? 'text-violet-300' : 'text-purple-600'
+                }`}>{member.role}</p>
+                <p className={`text-sm mb-4 ${
+                  isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                }`}>{member.bio}</p>
                 {member.linkedin && (
                   <a 
                     href={member.linkedin}
@@ -162,8 +214,12 @@ const AboutUsPage: React.FC = () => {
         {/* Impact Section */}
         <div className={`${glassPanelStyle} p-8 rounded-2xl mb-8`}>
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-4">Our Impact</h2>
-            <p className="text-lg text-slate-300 max-w-4xl mx-auto">
+            <h2 className={`text-3xl font-bold mb-4 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>Our Impact</h2>
+            <p className={`text-lg max-w-4xl mx-auto ${
+              isDarkMode ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Since our launch, we've helped thousands of children develop essential cognitive skills 
               while having fun and building confidence in their learning abilities.
             </p>
@@ -171,24 +227,34 @@ const AboutUsPage: React.FC = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="text-4xl font-bold text-violet-400 mb-2">10,000+</div>
-              <div className="text-slate-300">Children Empowered</div>
+              <div className="text-4xl font-bold text-violet-400 mb-2">Join a growing family</div>
+              <div className={`${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`}>With more than ever active users!</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-green-400 mb-2">95%</div>
-              <div className="text-slate-300">Parent Satisfaction</div>
+              <div className={`${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`}>Parent Satisfaction</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-blue-400 mb-2">41</div>
-              <div className="text-slate-300">Cognitive Skills Targeted</div>
+              <div className={`${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`}>Cognitive Skills Targeted</div>
             </div>
           </div>
         </div>
 
         {/* Contact Section */}
         <div className={`${glassPanelStyle} p-8 rounded-2xl text-center`}>
-          <h2 className="text-3xl font-bold text-white mb-4">Get in Touch</h2>
-          <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
+          <h2 className={`text-3xl font-bold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-black'
+          }`}>Get in Touch</h2>
+          <p className={`mb-6 max-w-2xl mx-auto ${
+            isDarkMode ? 'text-white' : 'text-black'
+          }`}>
             Have questions about our platform or want to learn more about how we can help your child? 
             We'd love to hear from you.
           </p>
@@ -196,6 +262,7 @@ const AboutUsPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

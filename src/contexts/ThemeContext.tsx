@@ -53,10 +53,10 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Initialize theme from localStorage or default to auto
+  // Initialize theme from localStorage or default to light
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('theme') as Theme;
-    return stored || 'auto';
+    return stored || 'light';
   });
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -71,8 +71,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [colorBlindMode, setColorBlindMode] = useState('none');
   const [textSpacing, setTextSpacing] = useState('normal');
 
-  // Determine if we're in dark mode based on theme and system preference
-  const isDarkMode = theme === 'dark' || (theme === 'auto' && (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches));
+  // Function to determine if it's dark based on user's timezone
+  const isDarkBasedOnTimezone = () => {
+    if (typeof window === 'undefined') return false;
+    
+    const now = new Date();
+    const hour = now.getHours();
+    // Consider dark mode from 6 PM (18:00) to 6 AM (06:00)
+    return hour >= 18 || hour < 6;
+  };
+
+  // Determine if we're in dark mode based on theme and timezone/system preference
+  const isDarkMode = theme === 'dark' || (theme === 'auto' && isDarkBasedOnTimezone());
   const isBrightMode = theme === 'bright';
   const isDarkGradient = theme === 'dark-gradient';
   const isWhitePurpleGradient = theme === 'white-purple-gradient';
@@ -198,17 +208,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [theme, animationsEnabled, isDarkMode, isBrightMode, isDarkGradient, isWhitePurpleGradient, fontSize, highContrast, reducedMotion, focusIndicators, keyboardNavigation, colorBlindMode, textSpacing]);
 
-  // Listen for system theme changes when in auto mode
+  // Listen for time changes when in auto mode to update theme based on timezone
   useEffect(() => {
     if (theme === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => {
-        // Trigger re-render by updating state
+      // Check for time changes every minute
+      const interval = setInterval(() => {
+        // Force re-render to check if time has changed
         setTheme('auto');
-      };
+      }, 60000); // Check every minute
       
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+      return () => clearInterval(interval);
     }
   }, [theme]);
 

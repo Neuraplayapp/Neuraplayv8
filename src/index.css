@@ -1,6 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 1) 0%, rgba(59, 130, 246, 1) 100%);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Dark Mode Scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 1) 0%, rgba(59, 130, 246, 1) 100%);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+}
+
+.dark ::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Theme-aware scrollbar for different themes */
+.theme-light ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-light ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-dark ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.6) rgba(255, 255, 255, 0.1);
+}
+
+.dark * {
+  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for specific containers */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.6) rgba(255, 255, 255, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(0, 0, 0, 0.3);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+}
 
 /* Prevent flash of unstyled content during theme initialization */
 html:not([data-theme]) {
@@ -374,6 +515,65 @@ html.theme-white-purple-gradient {
   animation: gradientShift 3s ease infinite;
 }
 
+/* Light theme button enhancements */
+.theme-light .bg-purple-600 {
+  background-color: #9333ea !important;
+}
+
+.theme-light .bg-purple-600:hover,
+.theme-light .hover\:bg-purple-700:hover {
+  background-color: #a855f7 !important;
+}
+
+.theme-light .text-purple-600 {
+  color: #9333ea !important;
+}
+
+/* Light theme gradient button enhancements */
+.theme-light .from-purple-500 {
+  --tw-gradient-from: #9333ea !important;
+}
+
+.theme-light .to-purple-600 {
+  --tw-gradient-to: #9333ea !important;
+}
+
+.theme-light .hover\:from-purple-600:hover {
+  --tw-gradient-from: #a855f7 !important;
+}
+
+.theme-light .hover\:to-purple-700:hover {
+  --tw-gradient-to: #a855f7 !important;
+}
+
+.theme-light .hover\:to-purple-900:hover {
+  --tw-gradient-to: #a855f7 !important;
+}
+
+/* Light theme card borders for About Us page */
+.theme-light .glass-panel,
+.theme-light [class*="glassPanelStyle"],
+.theme-light .bg-white\/90,
+.theme-light .backdrop-blur-xl {
+  border: 1px solid #9ca3af !important;
+}
+
+.theme-light .glass-panel:hover,
+.theme-light [class*="glassPanelStyle"]:hover,
+.theme-light .bg-white\/90:hover,
+.theme-light .backdrop-blur-xl:hover {
+  border: 1px solid #9ca3af !important;
+}
+
+/* More specific targeting for About Us page cards */
+.theme-light div[class*="bg-white"] {
+  border: 1px solid #9ca3af !important;
+}
+
+.theme-light div[class*="backdrop-blur"] {
+  border: 1px solid #9ca3af !important;
+}
+
 /* Bright theme button enhancements */
 .theme-bright .bg-purple-600 {
   background-color: #ff6b6b !important;
@@ -389,11 +589,37 @@ html.theme-white-purple-gradient {
 
 /* Dark theme enhancements */
 .theme-dark .bg-purple-600 {
+  background-color: #9333ea !important;
+}
+
+.theme-dark .bg-purple-600:hover,
+.theme-dark .hover\:bg-purple-700:hover {
   background-color: #a855f7 !important;
 }
 
-.theme-dark .bg-purple-600:hover {
-  background-color: #9333ea !important;
+/* Dark theme gradient button enhancements */
+.theme-dark .from-purple-500 {
+  --tw-gradient-from: #9333ea !important;
+}
+
+.theme-dark .to-purple-600 {
+  --tw-gradient-to: #9333ea !important;
+}
+
+.theme-dark .to-purple-800 {
+  --tw-gradient-to: #9333ea !important;
+}
+
+.theme-dark .hover\:from-purple-600:hover {
+  --tw-gradient-from: #a855f7 !important;
+}
+
+.theme-dark .hover\:to-purple-700:hover {
+  --tw-gradient-to: #a855f7 !important;
+}
+
+.theme-dark .hover\:to-purple-900:hover {
+  --tw-gradient-to: #a855f7 !important;
 }
 
 .theme-dark .text-purple-600 {
@@ -406,6 +632,23 @@ html.theme-white-purple-gradient {
 .theme-bright {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+}
+
+/* Theme background for pages */
+.theme-background {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.theme-background .card,
+.theme-background [class*="backdrop-blur"] {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+.theme-card {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
 }
 
 /* Header theme adjustments */

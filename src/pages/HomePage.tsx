@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Brain, Target, Sparkles, Star, Heart, Trophy, Zap, Users, BookOpen, Gamepad2, ChevronDown, UserPlus, X } from 'lucide-react';
+import { Brain, Target, Sparkles, Star, Heart, Trophy, Zap, Users, BookOpen, Gamepad2, ChevronDown, UserPlus, X, Shield, Award, Clock } from 'lucide-react';
 import PlasmaHeroPerformance from '../components/PlasmaHeroPerformance';
 import Footer from '../components/Footer';
 import BouncyLetters from '../components/BouncyLetters';
@@ -44,11 +44,11 @@ const HomePage: React.FC = () => {
     ];
 
     useEffect(() => {
-        // Initialize GSAP ScrollTrigger animations
+        // Simplified GSAP ScrollTrigger animations
         if (typeof gsap !== 'undefined' && gsap.registerPlugin) {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Optimized Scene 1: Continuous parallax layers for hero section
+            // Simplified hero parallax
             const heroScene = gsap.timeline();
             ScrollTrigger.create({
                 animation: heroScene,
@@ -58,33 +58,22 @@ const HomePage: React.FC = () => {
                 scrub: 1
             });
 
-            // Optimized parallax layers with reduced complexity
-            heroScene.to(".parallax-layer-1", { y: -200, ease: "none" }, 0);
-            heroScene.to(".parallax-layer-2", { y: -300, rotation: 10, ease: "none" }, 0);
-            heroScene.to(".parallax-layer-3", { y: -150, ease: "none" }, 0);
-            heroScene.to(".hero-content", { y: -100, opacity: 0.8 }, 0);
+            heroScene.to(".hero-content", { y: -50, opacity: 0.9 }, 0);
 
-            // Optimized Features section - simplified card animations
+            // Simplified Features section - gentle fade in
             const featuresAnimation = gsap.timeline();
             
-            // Initial state - cards hidden and transformed
             gsap.set(".feature-card", {
-                y: 150,
-                opacity: 0,
-                scale: 0.7,
-                rotationX: 45,
-                transformOrigin: "center bottom"
+                y: 30,
+                opacity: 0
             });
             
-            // Optimized staggered card reveal
             featuresAnimation.to(".feature-card", {
                 y: 0,
                 opacity: 1,
-                scale: 1,
-                rotationX: 0,
-                duration: 1.4,
-                stagger: 0.3,
-                ease: "back.out(1.7)"
+                duration: 0.8,
+                stagger: 0.2,
+                ease: "power2.out"
             });
             
             ScrollTrigger.create({
@@ -95,26 +84,20 @@ const HomePage: React.FC = () => {
                 toggleActions: "play none none none"
             });
 
-            // Optimized Videos section - simplified animations
+            // Simplified Videos section
             const videosAnimation = gsap.timeline();
             
-            // Initial state for video cards
-            gsap.set("#videos .enhanced-hover", {
-                y: 80,
-                opacity: 0,
-                scale: 0.8,
-                rotationY: 20
+            gsap.set("#videos .video-card", {
+                y: 40,
+                opacity: 0
             });
             
-            // Optimized video cards reveal
-            videosAnimation.to("#videos .enhanced-hover", {
+            videosAnimation.to("#videos .video-card", {
                 y: 0,
                 opacity: 1,
-                scale: 1,
-                rotationY: 0,
-                duration: 1.5,
+                duration: 0.8,
                 stagger: 0.3,
-                ease: "back.out(1.6)"
+                ease: "power2.out"
             });
             
             ScrollTrigger.create({
@@ -125,27 +108,20 @@ const HomePage: React.FC = () => {
                 toggleActions: "play none none none"
             });
             
-            // Optimized Content section - simplified card reveal
+            // Simplified Content section
             const contentAnimation = gsap.timeline();
             
-            // Initial state - cards hidden with simplified transforms
             gsap.set(".content-card", {
-                y: 120,
-                opacity: 0,
-                scale: 0.6,
-                rotationY: 25,
-                transformOrigin: "center center"
+                y: 30,
+                opacity: 0
             });
             
-            // Optimized card reveal
             contentAnimation.to(".content-card", {
                 y: 0,
                 opacity: 1,
-                scale: 1,
-                rotationY: 0,
-                duration: 1.6,
-                stagger: 0.25,
-                ease: "back.out(1.8)"
+                duration: 0.8,
+                stagger: 0.2,
+                ease: "power2.out"
             });
             
             ScrollTrigger.create({
@@ -156,26 +132,20 @@ const HomePage: React.FC = () => {
                 toggleActions: "play none none none"
             });
 
-            // Optimized CTA section - simplified animations
+            // Simplified CTA section
             const ctaAnimation = gsap.timeline();
             
-            // Initial state for CTA elements
-            gsap.set("#cta .enhanced-hover", {
-                y: 60,
-                opacity: 0,
-                scale: 0.9,
-                rotationX: 15
+            gsap.set("#cta .cta-element", {
+                y: 30,
+                opacity: 0
             });
             
-            // Optimized CTA elements reveal
-            ctaAnimation.to("#cta .enhanced-hover", {
+            ctaAnimation.to("#cta .cta-element", {
                 y: 0,
                 opacity: 1,
-                scale: 1,
-                rotationX: 0,
-                duration: 1.4,
+                duration: 0.8,
                 stagger: 0.2,
-                ease: "back.out(1.7)"
+                ease: "power2.out"
             });
             
             ScrollTrigger.create({
@@ -186,27 +156,20 @@ const HomePage: React.FC = () => {
                 toggleActions: "play none none none"
             });
             
-            // Optimized Releases section - simplified card animations
+            // Simplified Releases section
             const releasesAnimation = gsap.timeline();
             
-            // Initial state - cards hidden with simplified entrance
             gsap.set(".release-card", {
-                y: 100,
-                opacity: 0,
-                scale: 0.5,
-                rotationZ: 15,
-                transformOrigin: "center bottom"
+                y: 30,
+                opacity: 0
             });
             
-            // Optimized card reveal
             releasesAnimation.to(".release-card", {
                 y: 0,
                 opacity: 1,
-                scale: 1,
-                rotationZ: 0,
-                duration: 1.8,
-                stagger: 0.2,
-                ease: "elastic.out(1, 0.5)"
+                duration: 0.8,
+                stagger: 0.15,
+                ease: "power2.out"
             });
             
             ScrollTrigger.create({
@@ -281,16 +244,15 @@ const HomePage: React.FC = () => {
             border-radius: 4px;
         }
         
-        /* Optimized animations with will-change for better performance */
+        /* Simplified animations */
         .fade-in-up {
             animation: fadeInUp 0.8s ease-out forwards;
-            will-change: transform, opacity;
         }
         
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
@@ -300,13 +262,12 @@ const HomePage: React.FC = () => {
         
         .slide-in-left {
             animation: slideInLeft 0.8s ease-out forwards;
-            will-change: transform, opacity;
         }
         
         @keyframes slideInLeft {
             from {
                 opacity: 0;
-                transform: translateX(-50px);
+                transform: translateX(-30px);
             }
             to {
                 opacity: 1;
@@ -316,13 +277,12 @@ const HomePage: React.FC = () => {
         
         .slide-in-right {
             animation: slideInRight 0.8s ease-out forwards;
-            will-change: transform, opacity;
         }
         
         @keyframes slideInRight {
             from {
                 opacity: 0;
-                transform: translateX(50px);
+                transform: translateX(30px);
             }
             to {
                 opacity: 1;
@@ -330,15 +290,14 @@ const HomePage: React.FC = () => {
             }
         }
         
-        /* Optimized hover effects with transform3d for hardware acceleration */
+        /* Simplified hover effects */
         .enhanced-hover {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
+            transition: all 0.3s ease;
         }
         
         .enhanced-hover:hover {
-            transform: translate3d(0, -4px, 0) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         
         .card-glow {
@@ -347,16 +306,7 @@ const HomePage: React.FC = () => {
         }
         
         .card-glow:hover {
-            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
-        }
-        
-        /* Optimized 3D transforms */
-        .feature-card,
-        .content-card,
-        .release-card {
-            transform-style: preserve-3d;
-            perspective: 1000px;
-            will-change: transform;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
         }
         
         .gradient-text {
@@ -373,70 +323,24 @@ const HomePage: React.FC = () => {
             50% { background-position: 100% 50%; }
         }
         
-        .float {
-            animation: float 6s ease-in-out infinite;
-            will-change: transform;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-        
-        .mascot-fly-in {
-            animation: mascotFlyIn 2s ease-out forwards;
-            will-change: transform, opacity;
-        }
-        
-        @keyframes mascotFlyIn {
-            0% {
-                opacity: 0;
-                transform: translateX(-100px) translateY(-50px) rotate(-15deg) scale(0.8);
-            }
-            50% {
-                opacity: 0.7;
-                transform: translateX(-20px) translateY(-10px) rotate(-5deg) scale(0.9);
-            }
-            100% {
-                opacity: 1;
-                transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);
-            }
-        }
-        
-        .mascot-sway {
-            animation: mascotSway 3s ease-in-out infinite;
-            will-change: transform;
-        }
-        
-        @keyframes mascotSway {
-            0%, 100% {
-                transform: translateY(0px) rotate(0deg);
-            }
-            25% {
-                transform: translateY(-8px) rotate(2deg);
-            }
-            50% {
-                transform: translateY(-15px) rotate(0deg);
-            }
-            75% {
-                transform: translateY(-8px) rotate(-2deg);
-            }
-        }
-        
-        .pulse-glow {
-            animation: pulseGlow 2s ease-in-out infinite alternate;
-            will-change: box-shadow;
-        }
-        
-        @keyframes pulseGlow {
-            from { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
-            to { box-shadow: 0 0 40px rgba(139, 92, 246, 0.8); }
-        }
-        
         .hero-full-width {
             width: 100vw;
             margin-left: calc(-50vw + 50%);
             margin-right: calc(-50vw + 50%);
+        }
+        
+        /* Parent-minded spacing */
+        .section-spacing {
+            padding: 6rem 0;
+        }
+        
+        .content-spacing {
+            padding: 4rem 0;
+        }
+        
+        .card-spacing {
+            padding: 2rem;
+            margin: 1rem 0;
         }
     `;
 
@@ -463,10 +367,10 @@ const HomePage: React.FC = () => {
                 <SmoothScrollSection id="hero" className="relative flex items-center justify-center text-white hero-full-width">
                 <PlasmaHeroPerformance className="absolute inset-0 z-10" />
                 <div className="hero-content relative z-20 text-center px-6 max-w-6xl text-animation-container">
-                    <div className="mb-8 fade-in-up">
+                    <div className="mb-12 fade-in-up">
                         <BouncyLetters 
                             text="Your Child is a Genius"
-                            className="text-6xl md:text-8xl font-black leading-tight tracking-tighter mb-6 gradient-text"
+                            className="text-6xl md:text-8xl font-black leading-tight tracking-tighter mb-8 gradient-text"
                             delay={0.1}
                             stagger={0.08}
                             duration={0.7}
@@ -487,27 +391,18 @@ const HomePage: React.FC = () => {
                     </div>
                     
                     {/* Mascot - Flying in after text */}
-                    <div className="mb-6 fade-in-up">
-                        <div className="flex justify-center mb-4">
+                    <div className="mb-8 fade-in-up">
+                        <div className="flex justify-center mb-6">
                             <img 
                                 src="/assets/images/Mascot.png" 
                                 alt="NeuraPlay Mascot" 
-                                className="w-24 h-24 md:w-32 md:h-32 object-contain mascot-fly-in mascot-sway"
-                                style={{ 
-                                    animationDelay: '2.5s',
-                                    animationFillMode: 'both'
-                                }}
+                                className="w-24 h-24 md:w-32 md:h-32 object-contain"
                                 loading="eager"
-                                onLoad={() => {
-                                    // Optimize image loading
-                                    const img = new Image();
-                                    img.src = "/assets/images/Mascot.png";
-                                }}
                             />
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-5xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 max-w-5xl mx-auto">
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 enhanced-hover slide-in-left" style={{animationDelay: '0.2s'}}>
                             <Zap className="w-10 h-10 text-yellow-400 mx-auto mb-4" />
                             <h3 className="font-bold text-xl mb-2">Smart Learning</h3>
@@ -561,16 +456,16 @@ const HomePage: React.FC = () => {
             </div>
 
             <main className="main-content" style={{position: 'relative', zIndex: 20}}>
-                <SmoothScrollSection id="features" className="scrolling-section flex items-center justify-center p-13" style={{
+                <SmoothScrollSection id="features" className="section-spacing flex items-center justify-center" style={{
                   background: isDarkMode 
                     ? 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #312e81 100%)'
-                    : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)'
+                    : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)'
                 }}>
-                    <div className="container mx-auto max-w-6xl text-animation-container">
-                        <div className="text-center mb-32">
+                    <div className="container mx-auto max-w-6xl px-6">
+                        <div className="text-center mb-20">
                             <BouncyLetters 
                                 text="An investment in their future is priceless"
-                                className="text-5xl md:text-6xl font-bold mb-6 gradient-text"
+                                className="text-5xl md:text-6xl font-bold mb-8 gradient-text"
                                 delay={0.1}
                                 stagger={0.05}
                                 duration={0.6}
@@ -603,7 +498,7 @@ const HomePage: React.FC = () => {
                                     initialRotation={-3}
                                     triggerOnScroll={true}
                                 />
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     {features.map((feature, index) => (
                                         <button 
                                             key={feature.id} 
@@ -643,16 +538,16 @@ const HomePage: React.FC = () => {
                     </div>
                 </SmoothScrollSection>
 
-                <SmoothScrollSection id="videos" className={`scrolling-section flex items-center justify-center p-32 ${
+                <SmoothScrollSection id="videos" className={`section-spacing flex items-center justify-center ${
                     isDarkMode 
                         ? 'bg-gradient-to-br from-purple-900 to-indigo-900'
-                        : 'bg-gradient-to-br from-purple-100 to-indigo-100'
+                        : 'bg-gradient-to-br from-blue-50 to-indigo-50'
                 }`}>
-                    <div className="container mx-auto max-w-7xl text-animation-container">
-                        <div className="text-center mb-56">
+                    <div className="container mx-auto max-w-7xl px-6">
+                        <div className="text-center mb-20">
                             <BouncyLetters 
                                 text="Discover Neuraplay"
-                                className="text-5xl md:text-6xl font-bold mb-6 gradient-text"
+                                className="text-5xl md:text-6xl font-bold mb-8 gradient-text"
                                 delay={0.1}
                                 stagger={0.05}
                                 duration={0.6}
@@ -672,8 +567,8 @@ const HomePage: React.FC = () => {
                             />
                         </div>
                         
-                        <div className="grid lg:grid-cols-2 gap-32 -mt-40">
-                            <div className="bg-gray-900 rounded-3xl shadow-2xl overflow-hidden enhanced-hover shadow-[0_40px_80px_-20px_rgba(139,92,246,0.3)] border-2 border-purple-600">
+                        <div className="grid lg:grid-cols-2 gap-16">
+                            <div className="video-card bg-gray-900 rounded-3xl shadow-2xl overflow-hidden enhanced-hover shadow-[0_40px_80px_-20px_rgba(139,92,246,0.3)] border-2 border-purple-600">
                                 <div className="p-10">
                                     <video 
                                         src="/assets/Videos/neuraplayintrovid1.mp4" 
@@ -689,7 +584,7 @@ const HomePage: React.FC = () => {
                                 </div>
                             </div>
                             
-                            <div className="bg-gray-900 rounded-3xl shadow-2xl overflow-hidden enhanced-hover shadow-[0_40px_80px_-20px_rgba(139,92,246,0.4)] border-2 border-purple-600">
+                            <div className="video-card bg-gray-900 rounded-3xl shadow-2xl overflow-hidden enhanced-hover shadow-[0_40px_80px_-20px_rgba(139,92,246,0.4)] border-2 border-purple-600">
                                 <div className="p-10">
                                     <video 
                                         src="/assets/Videos/Neuraplayintrovid3.mp4" 
@@ -708,12 +603,12 @@ const HomePage: React.FC = () => {
                     </div>
                 </SmoothScrollSection>
 
-                <SmoothScrollSection id="content" className="scrolling-section bg-white flex items-center justify-center p-10 -mt-20">
-                    <div className="container mx-auto max-w-6xl text-animation-container">
+                <SmoothScrollSection id="content" className="content-spacing bg-white flex items-center justify-center">
+                    <div className="container mx-auto max-w-6xl px-6">
                         <div className="text-center mb-16">
                             <BouncyLetters 
                                 text="New Releases"
-                                className="text-5xl md:text-6xl font-bold mb-2 gradient-text"
+                                className="text-5xl md:text-6xl font-bold mb-4 gradient-text"
                                 delay={0.1}
                                 stagger={0.05}
                                 duration={0.6}
@@ -782,9 +677,9 @@ const HomePage: React.FC = () => {
                     </div>
                 </SmoothScrollSection>
 
-                <SmoothScrollSection id="cta" className="scrolling-section bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white p-20">
-                    <div className="container mx-auto max-w-6xl text-center text-animation-container">
-                        <div className="mb-40 min-h-[120%]">
+                <SmoothScrollSection id="cta" className="section-spacing bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white">
+                    <div className="container mx-auto max-w-6xl text-center px-6">
+                        <div className="mb-16">
                             <BouncyLetters 
                                 text="Ready to unlock your child's potential?"
                                 className="text-5xl md:text-6xl font-bold mb-8"
@@ -798,7 +693,7 @@ const HomePage: React.FC = () => {
                             />
                             <LetterReveal 
                                 text="Join thousands of parents who trust Neuraplay for their child's cognitive development"
-                                className="text-xl md:text-2xl text-white/90 max-w-5xl mx-auto mb-12 leading-relaxed break-words whitespace-normal overflow-visible min-h-[4rem]"
+                                className="text-xl md:text-2xl text-white/90 max-w-5xl mx-auto mb-12 leading-relaxed"
                                 delay={0.6}
                                 stagger={0.01}
                                 duration={0.3}
@@ -810,13 +705,13 @@ const HomePage: React.FC = () => {
                         <div className="flex flex-col md:flex-row gap-8 justify-center items-center mb-16">
                             <Link 
                                 to="/registration" 
-                                className="bg-white font-bold px-12 py-6 rounded-full hover:bg-gray-100 transition-all duration-300 text-xl text-purple-600 enhanced-hover pulse-glow"
+                                className="cta-element bg-white font-bold px-12 py-6 rounded-full hover:bg-gray-100 transition-all duration-300 text-xl text-purple-600 enhanced-hover"
                             >
                                 Start Full Journey
                             </Link>
                             <Link 
                                 to="/forum-registration" 
-                                className="text-white font-bold px-12 py-6 rounded-full hover:bg-white/20 transition-all duration-300 border-2 border-white/30 text-xl bg-white/20 enhanced-hover"
+                                className="cta-element text-white font-bold px-12 py-6 rounded-full hover:bg-white/20 transition-all duration-300 border-2 border-white/30 text-xl bg-white/20 enhanced-hover"
                             >
                                 Join Community
                             </Link>
@@ -829,7 +724,7 @@ const HomePage: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-3">
                                 <Users className="w-8 h-8 text-purple-300" />
-                                <span className="text-lg">10,000+ Families</span>
+                                <span className="text-lg">Join a growing family with more than ever active users!</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <BookOpen className="w-8 h-8 text-blue-300" />
@@ -839,9 +734,9 @@ const HomePage: React.FC = () => {
                     </div>
                 </SmoothScrollSection>
 
-                <SmoothScrollSection id="releases" className="scrolling-section bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-white p-13">
-                    <div className="container mx-auto max-w-6xl text-animation-container">
-                        <div className="text-center mb-32">
+                <SmoothScrollSection id="releases" className="section-spacing bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-white">
+                    <div className="container mx-auto max-w-6xl px-6">
+                        <div className="text-center mb-20">
                             <BouncyLetters 
                                 text="Coming Soon"
                                 className="text-5xl md:text-6xl font-bold mb-8 gradient-text"

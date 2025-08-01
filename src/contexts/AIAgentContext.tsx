@@ -6,7 +6,7 @@ interface AIAgentContextType {
   showAgent: (context?: AIAgentContext) => void;
   hideAgent: () => void;
   currentContext: AIAgentContext | null;
-  triggerAgent: (triggerType: 'manual' | 'auto' | 'achievement' | 'struggle' | 'milestone', context?: AIAgentContext) => void;
+  triggerAgent: (triggerType: 'manual' | 'auto' | 'achievement' | 'struggle' | 'milestone' | 'stuck' | 'rapid', context?: AIAgentContext) => void;
   updateContext: (context: Partial<AIAgentContext>) => void;
 }
 
@@ -23,6 +23,8 @@ interface AIAgentContext {
   difficulty?: string;
   achievements?: string[];
   struggles?: string[];
+  // FIXED: Add synapse-normal to supported personalities
+  agentPersonality?: 'synapse-normal' | 'coach' | 'mentor' | 'friend' | 'analyst';
 }
 
 const AIAgentContext = createContext<AIAgentContextType | undefined>(undefined);
@@ -38,7 +40,10 @@ export const useAIAgent = () => {
 export const AIAgentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useUser();
   const [isVisible, setIsVisible] = useState(false);
-  const [currentContext, setCurrentContext] = useState<AIAgentContext | null>(null);
+  // FIXED: Initialize with default personality
+  const [currentContext, setCurrentContext] = useState<AIAgentContext | null>({
+    agentPersonality: 'synapse-normal'
+  });
   const [autoTriggerEnabled, setAutoTriggerEnabled] = useState(true);
 
   // Game-specific trigger conditions

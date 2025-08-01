@@ -200,9 +200,9 @@ const GameModal: React.FC<GameModalProps> = ({
                     <Target className="w-4 h-4 text-white" />
                     <span className="text-sm font-medium text-white">{progressLabel}</span>
                   </div>
-                  <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
+                  <div className="w-full bg-white bg-opacity-30 rounded-full h-3">
                     <div 
-                      className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-blue-400 to-purple-400 h-3 rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
                       style={{ width: `${progressValue}%` }}
                     ></div>
                   </div>

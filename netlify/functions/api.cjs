@@ -513,6 +513,7 @@ async function handleTextGeneration(input_data, token) {
 
 async function handleImageGeneration(prompt, token) {
   console.log('Starting image generation with token:', !!token);
+  console.log('Prompt:', prompt);
   
   if (!token) {
     console.log('No token provided, returning placeholder');
@@ -524,7 +525,8 @@ async function handleImageGeneration(prompt, token) {
       },
       body: JSON.stringify({
         data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-        contentType: 'image/png'
+        contentType: 'image/png',
+        error: 'No API token configured'
       })
     };
   }
@@ -539,11 +541,12 @@ async function handleImageGeneration(prompt, token) {
     console.log('Image generation prompt:', enhancedPrompt);
     console.log('Using token length:', token.length);
 
-    // Try multiple models for better reliability
+    // Try multiple models for better reliability, with Schnell first
     const models = [
       'black-forest-labs/FLUX.1-schnell-Free',
-      'black-forest-labs/FLUX.1-schnell',
-      'runwayml/stable-diffusion-v1-5'
+      'stability-ai/stable-diffusion-xl-base-1.0',
+      'runwayml/stable-diffusion-v1-5',
+      'CompVis/stable-diffusion-v1-4'
     ];
 
     let lastError = null;
