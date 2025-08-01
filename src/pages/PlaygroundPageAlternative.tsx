@@ -27,7 +27,7 @@ import {
   Crosshair,
   FileText
 } from 'lucide-react';
-import GameInfoModal from '../components/GameInfoModal';
+import PlaygroundModalReveal from '../components/PlaygroundModalReveal';
 import './PlaygroundPage.css';
 
 // Import all game components
@@ -685,12 +685,12 @@ const PlaygroundPageAlternative: React.FC = () => {
 
       {renderGameGrid()}
 
-      <GameInfoModal
-        game={infoGame}
-        isOpen={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
-        onPlay={handlePlayGame}
-      />
+                  <PlaygroundModalReveal
+                game={infoGame}
+                isOpen={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                onPlay={handlePlayGame}
+            />
     </div>
   );
 };

@@ -226,7 +226,7 @@ This story about ${prompt} shows us that with curiosity and kindness, we can ove
       </div>
 
       {/* Input Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg border">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200">
         <div className="flex flex-col sm:flex-row gap-4">
           <input
             type="text"
@@ -276,7 +276,7 @@ This story about ${prompt} shows us that with curiosity and kindness, we can ove
       {story && (
         <div className="space-y-6">
           {/* Story Text */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg border">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-6 h-6 text-purple-600" />
@@ -310,7 +310,7 @@ This story about ${prompt} shows us that with curiosity and kindness, we can ove
 
           {/* Image */}
           {imageUrl && (
-            <div className="bg-white rounded-2xl p-6 shadow-lg border">
+            <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200">
               <div className="flex items-center gap-2 mb-4">
                 <Image className="w-6 h-6 text-purple-600" />
                 <h2 className="text-2xl font-bold text-slate-800">Story Illustration</h2>

@@ -15,6 +15,13 @@ Neuraplay grants the User a limited, non-transferable, non-exclusive, revocable 
 2. SUBSCRIPTION AND BILLING
 Access to the Software is provided on a recurring subscription basis or through a free access tier ("Community"). Users agree to be billed monthly for paid subscriptions. Neuraplay reserves the right to adjust pricing, features, and access tiers at any time, with prior notice. Free access is granted at the sole discretion of Neuraplay.
 
+2.1. SUBSCRIPTION TIERS AND AI USAGE LIMITS
+- Premium Plan ($9.99/month): Limited AI access with usage restrictions
+- Premium Plus Plan ($19.99/month): Completely unlimited AI access with no restrictions
+- Yearly Plans: Include all features of respective monthly plans with additional benefits
+
+AI usage limits are enforced based on subscription tier. Premium Plus subscribers receive unlimited AI access while Premium subscribers have restricted AI usage as determined by Neuraplay.
+
 3. RESTRICTIONS
 The User shall not:
 
@@ -81,6 +88,8 @@ const RegistrationPage: React.FC = () => {
   const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
   const [avatarGenerated, setAvatarGenerated] = useState(false);
   const [showLicense, setShowLicense] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<'premium' | 'premium-plus' | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly' | null>(null);
 
   const avatars = [
     ...generatedAvatars
@@ -89,6 +98,14 @@ const RegistrationPage: React.FC = () => {
   const handleStepOne = () => {
     if (!formData.role || !formData.username.trim() || !formData.email.trim() || !formData.agreeToTerms) {
       alert('Please fill out all fields and agree to the terms.');
+      return;
+    }
+    if (!selectedSubscription) {
+      alert('Please select a subscription plan.');
+      return;
+    }
+    if (!selectedPlan) {
+      alert('Please select a billing period (Monthly or Yearly).');
       return;
     }
     setStep(2);
@@ -101,6 +118,8 @@ const RegistrationPage: React.FC = () => {
       email: formData.email,
       role: formData.role as 'learner' | 'parent',
       age: formData.role === 'learner' ? formData.age : undefined,
+      subscription: selectedSubscription,
+      plan: selectedPlan,
       profile: {
         avatar: formData.avatar,
         rank: 'New Learner',
@@ -178,6 +197,14 @@ const RegistrationPage: React.FC = () => {
     }
   };
 
+  const handleSubscriptionSelect = (subscription: 'premium' | 'premium-plus') => {
+    setSelectedSubscription(subscription);
+  };
+
+  const handlePlanSelect = (plan: 'monthly' | 'yearly') => {
+    setSelectedPlan(plan);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white py-24 px-6">
       <div className="max-w-4xl mx-auto">
@@ -193,10 +220,10 @@ const RegistrationPage: React.FC = () => {
           <p className="text-xl text-violet-300">Unlock the full potential of cognitive development</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Step 1: Basic Information */}
           {step === 1 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Check className="w-8 h-8 text-white" />
@@ -295,7 +322,7 @@ const RegistrationPage: React.FC = () => {
 
           {/* Step 2: Avatar Creation */}
           {step === 2 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Star className="w-8 h-8 text-white" />
@@ -375,8 +402,19 @@ const RegistrationPage: React.FC = () => {
           )}
 
           {/* Premium Features Sidebar */}
-          <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
-            <div className="text-center mb-8">
+          <div 
+            className={`bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl transition-all duration-200 ${
+              selectedSubscription === 'premium' 
+                ? 'border-violet-400/50 bg-violet-600/10' 
+                : 'hover:border-violet-400/30 hover:bg-violet-600/5'
+            }`}
+          >
+            <div className="text-center mb-8 relative">
+              {selectedSubscription === 'premium' && (
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white" />
+                </div>
+              )}
               <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center">
                 <Star className="w-8 h-8 text-white" />
               </div>
@@ -384,12 +422,18 @@ const RegistrationPage: React.FC = () => {
               <p className="text-gray-300">Unlock the full NeuraPlay experience</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 mb-8">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">Unlimited AI Story Generation</span>
+                <span className="text-white">Unlimited AI Learning & Games</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white">AI-Agency with Personally Tailored Learning</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
@@ -417,11 +461,135 @@ const RegistrationPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-8 p-6 bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-xl border border-violet-400/30">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">$9.99</div>
-                <div className="text-gray-300 mb-4">per month</div>
-                <div className="text-sm text-violet-300">Cancel anytime • 30-day free trial</div>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Monthly Plan */}
+              <button
+                onClick={() => {
+                  handleSubscriptionSelect('premium');
+                  handlePlanSelect('monthly');
+                }}
+                className={`p-3 rounded-xl border transition-all duration-200 text-center ${
+                  selectedPlan === 'monthly' && selectedSubscription === 'premium'
+                    ? 'border-violet-400/70 bg-violet-600/20' 
+                    : 'border-violet-400/30 bg-gradient-to-r from-violet-600/20 to-purple-600/20 hover:border-violet-400/50 hover:bg-violet-600/15'
+                }`}
+              >
+                <div className="text-lg font-bold text-white mb-1">$9.99</div>
+                <div className="text-gray-300 text-sm">Monthly</div>
+              </button>
+              
+              {/* Yearly Plan */}
+              <button
+                onClick={() => {
+                  handleSubscriptionSelect('premium');
+                  handlePlanSelect('yearly');
+                }}
+                className={`p-3 rounded-xl border-2 relative transition-all duration-200 text-center ${
+                  selectedPlan === 'yearly' && selectedSubscription === 'premium'
+                    ? 'border-green-400/70 bg-green-600/20' 
+                    : 'border-green-400/50 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:border-green-400/60 hover:bg-green-600/15'
+                }`}
+              >
+                <div className="absolute -top-2 -right-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
+                  20% OFF
+                </div>
+                <div className="text-lg font-bold text-white mb-1">$95.90</div>
+                <div className="text-gray-300 text-sm">Yearly</div>
+              </button>
+            </div>
+          </div>
+          
+          {/* Premium Plus Subscription Card */}
+          <div 
+            className={`bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl transition-all duration-200 ${
+              selectedSubscription === 'premium-plus' 
+                ? 'border-amber-400/50 bg-amber-600/10' 
+                : 'hover:border-amber-400/30 hover:bg-amber-600/5'
+            }`}
+          >
+            <div className="text-center mb-8 relative">
+              {selectedSubscription === 'premium-plus' && (
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                <Star className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Premium Plus</h2>
+              <p className="text-gray-300">Unlimited AI Access</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Monthly Plan */}
+              <button
+                onClick={() => {
+                  handleSubscriptionSelect('premium-plus');
+                  handlePlanSelect('monthly');
+                }}
+                className={`p-3 rounded-xl border transition-all duration-200 text-center ${
+                  selectedPlan === 'monthly' && selectedSubscription === 'premium-plus'
+                    ? 'border-amber-400/70 bg-amber-600/20' 
+                    : 'border-amber-400/30 bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:border-amber-400/50 hover:bg-amber-600/15'
+                }`}
+              >
+                <div className="text-lg font-bold text-white mb-1">$19.99</div>
+                <div className="text-gray-300 text-sm">Monthly</div>
+              </button>
+              
+              {/* Yearly Plan */}
+              <button
+                onClick={() => {
+                  handleSubscriptionSelect('premium-plus');
+                  handlePlanSelect('yearly');
+                }}
+                className={`p-3 rounded-xl border transition-all duration-200 text-center ${
+                  selectedPlan === 'yearly' && selectedSubscription === 'premium-plus'
+                    ? 'border-amber-400/70 bg-amber-600/20' 
+                    : 'border-amber-400/30 bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:border-amber-400/50 hover:bg-amber-600/15'
+                }`}
+              >
+                <div className="text-lg font-bold text-white mb-1">$199.90</div>
+                <div className="text-gray-300 text-sm">Yearly</div>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-white text-sm">Unlimited AI Access</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-white text-sm">No Usage Limits</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-white text-sm">All Premium Features</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-white text-sm">Priority Support</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-white text-sm">Advanced Analytics</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-white text-sm">Exclusive Content</span>
               </div>
             </div>
           </div>

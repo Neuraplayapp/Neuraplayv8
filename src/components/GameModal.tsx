@@ -34,6 +34,8 @@ interface GameModalProps {
   // Fullscreen props
   isFullscreen?: boolean;
   onFullscreenToggle?: () => void;
+  // Custom controls
+  customControls?: React.ReactNode;
 }
 
 const GameModal: React.FC<GameModalProps> = ({
@@ -68,7 +70,9 @@ const GameModal: React.FC<GameModalProps> = ({
   onSkipForward,
   // Fullscreen props
   isFullscreen: externalIsFullscreen,
-  onFullscreenToggle: externalOnFullscreenToggle
+  onFullscreenToggle: externalOnFullscreenToggle,
+  // Custom controls
+  customControls
 }) => {
   const [internalIsFullscreen, setInternalIsFullscreen] = useState(false);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
@@ -160,7 +164,7 @@ const GameModal: React.FC<GameModalProps> = ({
         } ${className}`}
       >
         {/* Collapsible Arrow on Left Border */}
-        <div className={`absolute left-0 top-1/2 transform -translate-y-1/2 z-60 transition-all duration-300 ${
+        <div className={`absolute left-0 top-1/2 transform -translate-y-1/2 z-[9998] transition-all duration-300 ${
           isFullscreen ? 'left-8' : 'left-0'
         }`}>
           <button
@@ -173,7 +177,7 @@ const GameModal: React.FC<GameModalProps> = ({
         </div>
 
         {/* Animated Controls Modal */}
-        <div className={`fixed left-0 top-0 h-full z-70 transition-all duration-500 ease-in-out ${
+        <div className={`fixed left-0 top-0 h-full z-[9999] transition-all duration-500 ease-in-out ${
           showControlsModal ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div className="bg-black bg-opacity-95 backdrop-blur-sm h-full w-80 p-6 shadow-2xl border-r border-white/10">
@@ -210,6 +214,13 @@ const GameModal: React.FC<GameModalProps> = ({
               {showGameControls && (
                 <div className="space-y-4">
                   <h4 className="text-lg font-semibold text-white">Game Controls</h4>
+                  
+                  {/* Custom Controls */}
+                  {customControls && (
+                    <div className="space-y-4">
+                      {customControls}
+                    </div>
+                  )}
                   
                   {/* Skip Controls */}
                   {showSkipControls && (
@@ -295,18 +306,26 @@ const GameModal: React.FC<GameModalProps> = ({
                         {getVolumeIcon()}
                       </button>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={localVolume}
-                      onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                      className="w-full h-2 bg-white bg-opacity-20 rounded-lg appearance-none cursor-pointer"
-                      style={{
-                        background: `linear-gradient(to right, white ${localVolume * 100}%, rgba(255,255,255,0.2) ${localVolume * 100}%)`
-                      }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={localVolume}
+                        onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                        className="w-full h-3 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-full appearance-none cursor-pointer slider-thumb"
+                        style={{
+                          background: `linear-gradient(to right, rgb(147, 51, 234) ${localVolume * 100}%, rgba(147, 51, 234, 0.3) ${localVolume * 100}%)`
+                        }}
+                      />
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div 
+                          className="h-3 bg-gradient-to-r from-violet-400 to-purple-400 rounded-full transition-all duration-200 ease-out"
+                          style={{ width: `${localVolume * 100}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
 

@@ -5,7 +5,7 @@ import { MessageCircle, ThumbsUp, ThumbsDown, Reply, Send, Plus, Users, Star, Tr
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
 import { Link } from 'react-router-dom';
-import PlasmaBackground from '../components/PlasmaBackground';
+
 
 const ForumPage: React.FC = () => {
     const { user } = useUser();
@@ -76,7 +76,7 @@ const ForumPage: React.FC = () => {
 
     if (!user) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900 text-white flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-6">
             <div className="flex items-center justify-center mb-8">
               <img 
@@ -112,12 +112,7 @@ const ForumPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative">
-            {/* Plasma Background */}
-            <PlasmaBackground />
-            
-            {/* Light Blue Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-cyan-400/15 to-blue-500/25 pointer-events-none"></div>
+        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900">
             
             <div className="container mx-auto px-6">
                 {/* Header Section */}

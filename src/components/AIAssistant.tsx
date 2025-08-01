@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star } from 'lucide-react';
+import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+
+import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
 
 interface Message {
@@ -7,6 +11,7 @@ interface Message {
     isUser: boolean;
     timestamp: Date;
     image?: string;
+    action?: 'navigation' | 'settings' | 'info';
 }
 
 const AIAssistant: React.FC = () => {
@@ -14,7 +19,7 @@ const AIAssistant: React.FC = () => {
     const menuRef = useRef<HTMLDivElement>(null);
     const [messages, setMessages] = useState<Message[]>([
         { 
-            text: "🌟 Hi there, little explorer! I'm Synapse, your friendly AI teacher! 🚀 I can help you with your learning adventures, explain cool stuff about games, or even draw pictures for you! Just ask me anything - I'm here to make learning super fun! 🎮✨", 
+            text: "🌟 Hi there! I'm Synapse, your friendly AI teacher! 🚀 I can help you with learning, games, navigation, settings, and accessibility needs. What would you like to explore today? 🎮✨", 
             isUser: false, 
             timestamp: new Date() 
         }
@@ -25,6 +30,38 @@ const AIAssistant: React.FC = () => {
     const [promptCount, setPromptCount] = useState(0);
     const [isConversationMode, setIsConversationMode] = useState(false);
     const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
+
+    
+    const navigate = useNavigate();
+    const location = useLocation();
+    const theme = useTheme();
+
+    // Available pages and their descriptions
+    const availablePages = {
+        '/': { name: 'Home', icon: <Home className="w-4 h-4" />, description: 'Main landing page' },
+        '/playground': { name: 'Playground', icon: <Gamepad2 className="w-4 h-4" />, description: 'Games and activities' },
+        '/dashboard': { name: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, description: 'Your learning progress' },
+        '/forum': { name: 'Forum', icon: <Users className="w-4 h-4" />, description: 'Community discussions' },
+        '/forum-registration': { name: 'Forum Registration', icon: <FileText className="w-4 h-4" />, description: 'Join the forum' },
+        '/registration': { name: 'Registration', icon: <User className="w-4 h-4" />, description: 'Create an account' },
+        '/signin': { name: 'Sign In', icon: <User className="w-4 h-4" />, description: 'Login to your account' },
+        '/ai-report': { name: 'AI Report', icon: <BarChart3 className="w-4 h-4" />, description: 'AI learning analytics' },
+        '/about': { name: 'About Us', icon: <Info className="w-4 h-4" />, description: 'Learn about NeuraPlay' },
+        '/counting-test': { name: 'Counting Test', icon: <Gamepad2 className="w-4 h-4" />, description: 'Math practice' },
+        '/test': { name: 'Test Page', icon: <Gamepad2 className="w-4 h-4" />, description: 'Testing features' },
+        '/text-reveal': { name: 'Text Reveal', icon: <Sparkles className="w-4 h-4" />, description: 'Text animations' }
+    };
+
+    // Available settings and their descriptions
+    const availableSettings = {
+        'theme': { name: 'Theme', description: 'Change light/dark mode', options: ['light', 'dark', 'auto'] },
+        'fontSize': { name: 'Font Size', description: 'Adjust text size', options: ['small', 'medium', 'large', 'extra-large'] },
+        'animations': { name: 'Animations', description: 'Enable/disable animations', options: ['enabled', 'disabled'] },
+        'sound': { name: 'Sound', description: 'Enable/disable sound effects', options: ['enabled', 'disabled'] },
+        'highContrast': { name: 'High Contrast', description: 'Enhanced visibility', options: ['enabled', 'disabled'] },
+        'reducedMotion': { name: 'Reduced Motion', description: 'Minimize animations', options: ['enabled', 'disabled'] },
+        'aiPersonality': { name: 'AI Personality', description: 'Change AI assistant style', options: ['coach', 'mentor', 'friend', 'analyst'] }
+    };
 
     // Child-friendly prompt suggestions
     const childPrompts = [
@@ -37,7 +74,12 @@ const AIAssistant: React.FC = () => {
         "🌱 How do plants grow?",
         "🎵 Sing me a fun song!",
         "🏰 Tell me a castle story!",
-        "🚀 How do rockets fly?"
+        "🚀 How do rockets fly?",
+        "🎮 Playground",
+        "📊 Learning Central",
+        "📈 Show me stats!",
+        "⚙️ Settings",
+        "🏠 Home"
     ];
 
     useEffect(() => {
@@ -50,6 +92,223 @@ const AIAssistant: React.FC = () => {
         document.addEventListener('pointerdown', handlePointerDown);
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, []);
+
+    // AI Agency Functions
+    const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info', action?: any } => {
+        const lowerText = text.toLowerCase();
+        
+        // Navigation commands with expanded variations
+        const navigationKeywords = ['go to', 'take me to', 'navigate to', 'open', 'get', 'list', 'show', 'search', 'bring', 'go', 'take me', 'remove', 'edit'];
+        
+        if (navigationKeywords.some(keyword => lowerText.includes(keyword)) || 
+            // Direct page names without action words
+            lowerText.includes('playground') || 
+            lowerText.includes('home') || 
+            lowerText.includes('learning central') || 
+            lowerText.includes('stats') || 
+            lowerText.includes('settings')) {
+            
+            // Check for specific page matches
+            for (const [path, page] of Object.entries(availablePages)) {
+                if (lowerText.includes(page.name.toLowerCase()) || lowerText.includes(path.replace('/', ''))) {
+                    return { type: 'navigation', action: { path, page } };
+                }
+            }
+            
+            // Special navigation cases with expanded variations
+            if (lowerText.includes('home') || lowerText.includes('main')) {
+                return { type: 'navigation', action: { path: '/', page: availablePages['/'] } };
+            }
+            
+            if (lowerText.includes('playground') || lowerText.includes('games')) {
+                return { type: 'navigation', action: { path: '/playground', page: availablePages['/playground'] } };
+            }
+            
+            if (lowerText.includes('learning central') || lowerText.includes('progress') || lowerText.includes('dashboard')) {
+                return { type: 'navigation', action: { path: '/dashboard', page: availablePages['/dashboard'] } };
+            }
+            
+            if (lowerText.includes('stats') || lowerText.includes('statistics')) {
+                return { type: 'navigation', action: { path: '/dashboard', page: availablePages['/dashboard'] } };
+            }
+        }
+        
+        // Settings commands with expanded variations
+        const settingsKeywords = ['settings', 'preferences', 'options', 'config', 'setup'];
+        if (settingsKeywords.some(keyword => lowerText.includes(keyword))) {
+            return { type: 'settings', action: 'open' };
+        }
+        
+        // Theme settings with expanded variations
+        const themeKeywords = ['theme', 'dark', 'light', 'mode', 'appearance'];
+        const themeActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'switch', 'turn', 'enable', 'use'];
+        
+        if (themeKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (themeActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('dark') || lowerText.includes('light')))) {
+            let themeValue = 'auto';
+            if (lowerText.includes('dark')) themeValue = 'dark';
+            else if (lowerText.includes('light')) themeValue = 'light';
+            return { type: 'settings', action: { setting: 'theme', value: themeValue } };
+        }
+        
+        // Font size settings with expanded variations
+        const fontKeywords = ['font', 'text size', 'text', 'size', 'bigger', 'smaller'];
+        const fontActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'increase', 'decrease'];
+        
+        if (fontKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (fontActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('large') || lowerText.includes('small') || lowerText.includes('big') || lowerText.includes('tiny')))) {
+            let size = 'medium';
+            if (lowerText.includes('large') || lowerText.includes('big')) size = 'large';
+            else if (lowerText.includes('small') || lowerText.includes('tiny')) size = 'small';
+            return { type: 'settings', action: { setting: 'fontSize', value: size } };
+        }
+        
+        // Animation settings with expanded variations
+        const animationKeywords = ['animation', 'motion', 'effects', 'transitions'];
+        const animationActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn'];
+        
+        if (animationKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (animationActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('animation') || lowerText.includes('motion')))) {
+            const enabled = !lowerText.includes('disable') && !lowerText.includes('off') && !lowerText.includes('stop');
+            return { type: 'settings', action: { setting: 'animations', value: enabled ? 'enabled' : 'disabled' } };
+        }
+        
+        // Sound settings with expanded variations
+        const soundKeywords = ['sound', 'audio', 'volume', 'noise'];
+        const soundActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn', 'mute'];
+        
+        if (soundKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (soundActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('sound') || lowerText.includes('audio')))) {
+            const enabled = !lowerText.includes('mute') && !lowerText.includes('off') && !lowerText.includes('disable');
+            return { type: 'settings', action: { setting: 'sound', value: enabled ? 'enabled' : 'disabled' } };
+        }
+
+        // Accessibility settings with expanded variations
+        const accessibilityKeywords = ['colorblind', 'color blind', 'protanopia', 'deuteranopia', 'tritanopia', 'contrast', 'spacing', 'bold', 'text spacing', 'high contrast'];
+        const accessibilityActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn', 'use', 'need', 'want', 'have'];
+        
+        if (accessibilityKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (accessibilityActionKeywords.some(action => lowerText.includes(action)) && 
+             (lowerText.includes('colorblind') || lowerText.includes('contrast') || lowerText.includes('spacing') || lowerText.includes('bold')))) {
+            
+            // Handle specific accessibility requests
+            if (lowerText.includes('protanopia') || lowerText.includes('deuteranopia') || lowerText.includes('tritanopia')) {
+                return { type: 'settings', action: { setting: 'colorBlindMode', value: lowerText.includes('protanopia') ? 'protanopia' : lowerText.includes('deuteranopia') ? 'deuteranopia' : 'tritanopia' } };
+            }
+            
+            if (lowerText.includes('high contrast') || lowerText.includes('contrast')) {
+                return { type: 'settings', action: { setting: 'highContrast', value: 'enabled' } };
+            }
+            
+            if (lowerText.includes('spacing') || lowerText.includes('space') || lowerText.includes('bold')) {
+                if (lowerText.includes('extra') || lowerText.includes('more')) {
+                    return { type: 'settings', action: { setting: 'textSpacing', value: 'extra' } };
+                } else if (lowerText.includes('increased') || lowerText.includes('more')) {
+                    return { type: 'settings', action: { setting: 'textSpacing', value: 'increased' } };
+                }
+            }
+            
+            // Default to chat for complex accessibility requests
+            return { type: 'chat' };
+        }
+        
+        // Info commands
+        if (lowerText.includes('what can you do') || lowerText.includes('help') || lowerText.includes('capabilities')) {
+            return { type: 'info', action: 'capabilities' };
+        }
+        
+        if (lowerText.includes('where am i') || lowerText.includes('current page')) {
+            return { type: 'info', action: 'location' };
+        }
+        
+        // Default to chat
+        return { type: 'chat' };
+    };
+
+    const executeCommand = async (command: { type: string, action?: any }): Promise<string> => {
+        switch (command.type) {
+            case 'navigation':
+                if (command.action?.path) {
+                    navigate(command.action.path);
+                    return `🚀 Taking you to ${command.action.page.name}! ${command.action.page.description} ✨`;
+                }
+                break;
+                
+            case 'settings':
+                if (command.action === 'open') {
+                    return `⚙️ Settings are currently being updated! You can customize your experience through the theme context directly! 🎛️`;
+                }
+                
+                if (command.action?.setting) {
+                    const { setting, value } = command.action;
+                    try {
+                        switch (setting) {
+                            case 'theme':
+                                theme.setTheme(value);
+                                return `🎨 Theme changed to ${value}! The page should update automatically! ✨`;
+                            case 'fontSize':
+                                theme.setFontSize(value);
+                                return `📝 Font size changed to ${value}! Text should be easier to read now! 📖`;
+                            case 'animations':
+                                theme.setAnimationsEnabled(value === 'enabled');
+                                return `🎬 Animations ${value === 'enabled' ? 'enabled' : 'disabled'}! ${value === 'enabled' ? 'Things will be more lively!' : 'Things will be calmer!'} 🎭`;
+                            case 'sound':
+                                // This would need to be implemented in the theme context
+                                return `🔊 Sound settings would be updated here! 🔊`;
+                            case 'colorBlindMode':
+                                theme.setColorBlindMode(value);
+                                return `🌈 Color blind mode set to ${value}! I've adjusted the colors to make them easier to see! 🎨`;
+                            case 'highContrast':
+                                theme.setHighContrast(value === 'enabled');
+                                return `📖 High contrast ${value === 'enabled' ? 'enabled' : 'disabled'}! Text should be much easier to read now! 👁️`;
+                            case 'textSpacing':
+                                theme.setTextSpacing(value);
+                                return `📝 Text spacing changed to ${value}! Letters should be easier to read now! 🔤`;
+                        }
+                    } catch (error) {
+                        return `Oops! I couldn't change that setting right now. Try opening settings manually! ⚙️`;
+                    }
+                }
+                break;
+                
+            case 'info':
+                if (command.action === 'capabilities') {
+                    return `🌟 Here's what I can do for you! 🚀
+
+🎮 **Navigation**: I can take you to any page! Try:
+• "Playground" or "Get playground" or "Show playground"
+• "Learning Central" or "Show me stats" or "Get stats"
+• "Home" or "Go home" or "Bring me home"
+• "Settings" or "Open settings" or "Show settings"
+
+⚙️ **Settings**: I can change your preferences! Try:
+• "Make dark theme" or "Put light theme" or "Bring dark mode"
+• "Make font bigger" or "Put text smaller" or "Bring large text"
+• "Make animations on" or "Put motion off" or "Bring effects"
+• "Make sound on" or "Put audio off" or "Bring volume"
+
+🌈 **Accessibility**: I can help with special needs! Try:
+• "I am colorblind" or "I have protanopia"
+• "Make high contrast" or "Put bold text"
+• "Space letters out" or "Make text bigger"
+• "I need help seeing" or "Make it easier to read"
+
+💬 **Chat**: I can answer questions, draw pictures, and help with learning!
+
+🎯 **Current Location**: You're currently on ${availablePages[location.pathname as keyof typeof availablePages]?.name || 'an unknown page'}!
+
+Just say "playground" or "I am colorblind" and I'll help! ✨`;
+                }
+                
+                if (command.action === 'location') {
+                    const currentPage = availablePages[location.pathname as keyof typeof availablePages];
+                    return `📍 You're currently on the ${currentPage?.name || 'unknown'} page! ${currentPage?.description || ''} 🎯`;
+                }
+                break;
+        }
+        
+        return '';
+    };
 
     const sendMessage = async () => {
         if (!inputMessage.trim() || isLoading || promptCount >= 10) return;
@@ -66,6 +325,25 @@ const AIAssistant: React.FC = () => {
         setPromptCount(count => count + 1);
 
         try {
+            // First, analyze if this is a command
+            const command = analyzeCommand(inputMessage);
+            
+            if (command.type !== 'chat') {
+                // Execute the command
+                const response = await executeCommand(command);
+                
+                const assistantMessage: Message = {
+                    text: response,
+                    isUser: false,
+                    timestamp: new Date(),
+                    action: command.type as any
+                };
+
+                setMessages(prev => [...prev, assistantMessage]);
+                setIsLoading(false);
+                return;
+            }
+
             // Check if this is an image request
             if (isImageRequest(inputMessage)) {
                 // Generate image
@@ -87,12 +365,35 @@ const AIAssistant: React.FC = () => {
                 return;
             }
 
-            // Build conversation history for chat
+            // Build conversation history for chat with enhanced context
             const conversationHistory = messages
                 .filter(msg => !msg.image) // Exclude image messages from history
-                .slice(-8); // Keep last 8 messages (4 exchanges) for better context
+                .slice(-12); // Keep last 12 messages (6 exchanges) for better context
             
             const messagesForAPI = [];
+            
+            // Only add system context if this is the first message or if we have no conversation history
+            if (messages.length <= 2) { // First exchange or just the initial greeting
+                messagesForAPI.push({
+                    role: 'system',
+                    content: `You are Synapse, a friendly AI teacher for children. You are very knowledgeable about accessibility and can help with:
+- Color blindness (protanopia, deuteranopia, tritanopia)
+- Visual impairments and contrast needs
+- Text spacing and font size preferences
+- Motion sensitivity and animation preferences
+- Screen reader support
+- Keyboard navigation
+
+When users mention accessibility needs, you should:
+1. Acknowledge their needs with empathy
+2. Offer specific solutions and settings changes
+3. Maintain context across multiple messages
+4. Use child-friendly language while being informative
+5. Suggest relevant settings changes they can make
+
+Always be supportive and helpful with accessibility requests!`
+                });
+            }
             
             // Add conversation history
             for (let i = 0; i < conversationHistory.length; i += 2) {
@@ -320,12 +621,12 @@ const AIAssistant: React.FC = () => {
         <>
             {/* Chat Button */}
             {!isOpen && (
-                <button
+                <div
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 bg-gradient-to-r from-violet-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-110 z-50"
+                    className="fixed bottom-6 right-6 cursor-pointer z-50 hover:scale-110 transition-all duration-300"
                 >
-                    <Bot className="w-8 h-8" />
-                </button>
+                    <PlasmaBall size={48} />
+                </div>
             )}
 
             {/* Neon Glass Chat Interface */}
@@ -337,7 +638,7 @@ const AIAssistant: React.FC = () => {
 
                 <div className="inner">
                     <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
-                         <h3 className="font-bold text-white flex items-center gap-2"><Bot size={20}/> AI Teacher</h3>
+                         <h3 className="font-bold text-white flex items-center gap-2"><PlasmaBall size={28}/> AI Teacher</h3>
                          <div className="flex items-center gap-2">
                              {/* Conversation Mode Toggle */}
                              <button
@@ -349,7 +650,7 @@ const AIAssistant: React.FC = () => {
                                  }`}
                                  title={isConversationMode ? "Exit Conversation Mode" : "Enter Conversation Mode"}
                              >
-                                 <Bot size={16} />
+                                 <PlasmaBall size={24} />
                              </button>
                              
                              {/* Read Last Message */}
@@ -454,7 +755,7 @@ const AIAssistant: React.FC = () => {
                         {isConversationMode && (
                             <div className="mb-2 p-2 bg-green-500/20 border border-green-400/30 rounded-lg">
                                 <div className="flex items-center gap-2 text-green-300 text-sm">
-                                    <Bot size={14} />
+                                    <PlasmaBall size={20} />
                                     <span className="font-semibold">Conversation Mode Active</span>
                                     <div className="flex gap-1">
                                         <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
@@ -499,6 +800,8 @@ const AIAssistant: React.FC = () => {
                     </div>
                 </div>
             </aside>
+
+
         </>
     );
 };

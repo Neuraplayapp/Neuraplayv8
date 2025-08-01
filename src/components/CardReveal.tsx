@@ -20,7 +20,7 @@ export const CardReveal: React.FC<Props> = ({ videoSrc, children }) => {
         duration: 0.8,
       }}
     >
-      <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-8 items-center bg-white p-8 rounded-3xl shadow-2xl">
+      <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-8 items-center bg-white p-8 rounded-3xl shadow-2xl border-2 border-purple-200">
         <div className="rounded-2xl overflow-hidden">
           <video
             src={videoSrc}

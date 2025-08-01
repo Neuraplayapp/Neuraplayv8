@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { Users, Crown, Star, Zap, Brain, Trophy, Gift, ArrowRight } from 'lucide-react';
+import LetterReveal from '../components/LetterReveal';
 
 const ForumRegistrationPage: React.FC = () => {
   const { setUser } = useUser();
@@ -106,7 +107,7 @@ const ForumRegistrationPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white py-24 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-800 text-white py-24 px-6">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-8">
@@ -116,8 +117,16 @@ const ForumRegistrationPage: React.FC = () => {
               className="w-32 h-32 object-contain"
             />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Join the NeuraPlay Community</h1>
-          <p className="text-xl text-violet-300">Create your free account and start your learning journey</p>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Sign up to the NeuraPlay Forum</h1>
+          <LetterReveal 
+            text="Create your free account and start your learning journey"
+            className="text-xl text-violet-300"
+            delay={0.5}
+            stagger={0.03}
+            duration={0.4}
+            typewriterEffect={true}
+            cursorBlink={false}
+          />
         </div>
 
         <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
@@ -243,6 +252,71 @@ const ForumRegistrationPage: React.FC = () => {
             >
               Create Account
             </button>
+          </div>
+        </div>
+
+        {/* Premium Trial Section */}
+        <div className="mt-12 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl p-8 border border-violet-400/30">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Crown className="w-8 h-8 text-yellow-400" />
+              <h3 className="text-2xl font-bold text-white">Unlock Premium Features</h3>
+            </div>
+            <p className="text-violet-300 text-lg">Start your 7-day free trial and experience the full NeuraPlay potential</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Brain className="w-6 h-6 text-purple-400" />
+                <div>
+                  <div className="text-white font-semibold">AI-Powered Learning</div>
+                  <div className="text-violet-300 text-sm">Personalized cognitive development plans</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Trophy className="w-6 h-6 text-yellow-400" />
+                <div>
+                  <div className="text-white font-semibold">Advanced Games</div>
+                  <div className="text-violet-300 text-sm">Access to premium cognitive training games</div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Zap className="w-6 h-6 text-blue-400" />
+                <div>
+                  <div className="text-white font-semibold">Real-time Analytics</div>
+                  <div className="text-violet-300 text-sm">Detailed progress tracking and insights</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Star className="w-6 h-6 text-pink-400" />
+                <div>
+                  <div className="text-white font-semibold">Expert Support</div>
+                  <div className="text-violet-300 text-sm">Direct access to child development experts</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-400/30 mb-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Gift className="w-5 h-5 text-yellow-400" />
+              <span className="text-white font-semibold">7-Day Free Trial</span>
+            </div>
+            <p className="text-white/80 text-center text-sm">Start free, cancel anytime. No commitment required.</p>
+          </div>
+
+          <div className="text-center">
+            <button
+              onClick={() => navigate('/registration')}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-lg flex items-center justify-center gap-2 mx-auto"
+            >
+              Start Premium Trial
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <p className="text-violet-300 text-sm mt-3">Join thousands of families already transforming learning</p>
           </div>
         </div>
       </div>

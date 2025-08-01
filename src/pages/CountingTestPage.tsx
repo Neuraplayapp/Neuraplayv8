@@ -42,7 +42,7 @@ const CountingTestPage: React.FC = () => {
 
           {/* Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
               <div className="text-3xl mb-4">🔢</div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">3D Animated Numbers</h3>
               <p className="text-slate-600">
@@ -50,7 +50,7 @@ const CountingTestPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
               <div className="text-3xl mb-4">📊</div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Comprehensive Tracking</h3>
               <p className="text-slate-600">
@@ -58,7 +58,7 @@ const CountingTestPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
               <div className="text-3xl mb-4">🎯</div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Progressive Learning</h3>
               <p className="text-slate-600">
@@ -66,7 +66,7 @@ const CountingTestPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
               <div className="text-3xl mb-4">🏆</div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Rewards System</h3>
               <p className="text-slate-600">
@@ -74,7 +74,7 @@ const CountingTestPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
               <div className="text-3xl mb-4">🎨</div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Visual Feedback</h3>
               <p className="text-slate-600">
@@ -82,7 +82,7 @@ const CountingTestPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
               <div className="text-3xl mb-4">📱</div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Responsive Design</h3>
               <p className="text-slate-600">
@@ -92,7 +92,7 @@ const CountingTestPage: React.FC = () => {
           </div>
 
           {/* Learning Stages */}
-          <div className="bg-white rounded-xl p-8 shadow-lg mb-8">
+          <div className="bg-white rounded-xl p-8 shadow-lg mb-8 border-2 border-purple-200">
             <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">
               Learning Stages
             </h2>

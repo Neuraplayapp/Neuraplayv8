@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 // @ts-ignore
 import * as THREE from 'three';
 import { useUser } from '../../contexts/UserContext';
-import { Star, Trophy } from 'lucide-react';
+import { Star, Trophy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, Settings, X, Maximize2, Minimize2 } from 'lucide-react';
+import GameModal from '../GameModal';
 
 const minTileIndex = -8;
 const maxTileIndex = 8;
@@ -250,9 +251,9 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [finalScore, setFinalScore] = useState(0);
-  const [hasPlayedGameOverSound, setHasPlayedGameOverSound] = useState(false);
-  const [hasPlayedHighScoreSound, setHasPlayedHighScoreSound] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
   
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -343,13 +344,13 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   // Play high score sound when a new high score is achieved
   useEffect(() => {
-    if (gameOver && finalScore >= highScore && finalScore > 0) {
+    if (gameOver && score >= highScore && score > 0) {
       if (highScoreSoundRef.current) {
         highScoreSoundRef.current.currentTime = 0;
         highScoreSoundRef.current.play().catch(() => {});
       }
     }
-  }, [gameOver, finalScore, highScore]);
+  }, [gameOver, score, highScore]);
 
   // Game state functions
   const randomElement = (array: any[]) => {
@@ -649,24 +650,21 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const vehicleBoundingBox = new THREE.Box3();
         vehicleBoundingBox.setFromObject(ref);
 
-        if (playerBoundingBox.intersectsBox(vehicleBoundingBox) && !hasPlayedGameOverSound) {
-          // Play game over sound immediately and only once
+        if (playerBoundingBox.intersectsBox(vehicleBoundingBox)) {
+          // Play game over sound immediately
           if (gameOverSoundRef.current) {
             gameOverSoundRef.current.currentTime = 0;
             gameOverSoundRef.current.loop = false;
             gameOverSoundRef.current.play().catch(() => {});
           }
 
-          // Play high score sound if new high score and not already played
-          if (score >= highScore && score > 0 && highScoreSoundRef.current && !hasPlayedHighScoreSound) {
+          // Play high score sound if new high score
+          if (score >= highScore && score > 0 && highScoreSoundRef.current) {
             highScoreSoundRef.current.pause(); // Stop any previous play
             highScoreSoundRef.current.currentTime = 0;
             highScoreSoundRef.current.play().catch(() => {});
-            setHasPlayedHighScoreSound(true);
           }
 
-          setHasPlayedGameOverSound(true);
-          setFinalScore(score);
           setGameOver(true);
           // Stop background music
           if (backgroundMusicRef.current) {
@@ -682,11 +680,9 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     initializeMap();
     setScore(0);
     setGameOver(false);
-    setFinalScore(0);
-    setHasPlayedGameOverSound(false);
-    setHasPlayedHighScoreSound(false);
+    setIsPaused(false);
     
-    // Restart background music
+    // Restart background music if it exists
     if (backgroundMusicRef.current) {
       backgroundMusicRef.current.currentTime = 0;
       backgroundMusicRef.current.play().catch(() => {});
@@ -701,7 +697,7 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (gameOver) return;
+    if (gameOver || isPaused) return;
     
     // Arrow keys
     if (event.key === "ArrowUp") {
@@ -742,14 +738,17 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const handleButtonClick = (direction: string) => {
-    if (gameOver) return;
+    if (gameOver || isPaused) return;
+    playJumpSound();
     queueMove(direction);
   };
 
   const animate = () => {
-    animateVehicles();
-    animatePlayer();
-    hitTest();
+    if (!isPaused && !gameOver) {
+      animateVehicles();
+      animatePlayer();
+      hitTest();
+    }
 
     if (rendererRef.current && cameraRef.current && sceneRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -831,6 +830,30 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
   }, []);
 
+  const handleFullscreenToggle = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handlePause = () => {
+    setIsPaused(true);
+  };
+
+  const handleResume = () => {
+    setIsPaused(false);
+  };
+
+  const handleReset = () => {
+    setScore(0);
+    setGameOver(false);
+    setIsPaused(false);
+    // Reset game logic here
+    initializeGame();
+  };
+
+  const handleSettings = () => {
+    setShowControls(!showControls);
+  };
+
   const endGame = () => {
     setGameOver(true);
     
@@ -845,35 +868,177 @@ const CrossroadFunGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   return (
-    <div className="relative w-full h-full min-h-[500px] bg-gradient-to-br from-violet-900 to-blue-900 flex flex-col items-center justify-center overflow-hidden">
-      {/* Crosswalk Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-        style={{
-          backgroundImage: 'url(/assets/images/crosswalk.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          pointerEvents: 'none'
-        }}
-      />
-      
-      <canvas 
-        ref={canvasRef} 
-        className="game w-full h-full relative z-10" 
-        style={{ 
-          minHeight: 400, 
-          minWidth: 400, 
-          background: 'transparent',
-          display: 'block'
-        }} 
-      />
-      
-      {/* Score and High Score */}
-      <div className="absolute top-2 left-2 text-white font-mono z-10">
-        <div className="text-xl font-bold">Score: {score}</div>
-        <div className="text-sm text-yellow-300">High Score: {highScore}</div>
+    <GameModal
+      isOpen={true}
+      onClose={onClose}
+      title="Crossroad Fun"
+      subtitle="Navigate safely across the road"
+      gameIcon={<Trophy className="w-5 h-5" />}
+      showProgress={true}
+      progressValue={Math.min((score / 1000) * 100, 100)}
+      progressLabel="Progress"
+      showControls={true}
+      onReset={handleReset}
+      onSettings={handleSettings}
+      maxWidth="max-w-7xl"
+      maxHeight="max-h-[98vh]"
+      showVolumeSlider={false}
+      showGameControls={true}
+      showSkipControls={false}
+      isPaused={isPaused}
+      onPause={handlePause}
+      onResume={handleResume}
+      isFullscreen={isFullscreen}
+      onFullscreenToggle={handleFullscreenToggle}
+      customControls={
+        <div className="space-y-4">
+          {/* Arrow Controls */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-white">Movement Controls</h4>
+            <div className="grid grid-cols-3 gap-2">
+              <div></div>
+              <button
+                onClick={() => handleButtonClick("forward")}
+                className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors text-white flex items-center justify-center"
+                title="Move Forward"
+              >
+                <ArrowUp className="w-4 h-4" />
+              </button>
+              <div></div>
+              <button
+                onClick={() => handleButtonClick("left")}
+                className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors text-white flex items-center justify-center"
+                title="Move Left"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleButtonClick("backward")}
+                className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors text-white flex items-center justify-center"
+                title="Move Backward"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleButtonClick("right")}
+                className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors text-white flex items-center justify-center"
+                title="Move Right"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Game Status */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-white">Game Status</h4>
+            <div className="bg-white bg-opacity-10 rounded-lg p-3">
+              <div className="text-white text-sm">
+                <div className="flex justify-between">
+                  <span>Score:</span>
+                  <span className="font-bold">{score}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>High Score:</span>
+                  <span className="font-bold text-yellow-300">{highScore}</span>
+                </div>
+                {gameOver && (
+                  <div className="text-red-300 text-center mt-2 font-bold">
+                    Game Over!
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-white">How to Play</h4>
+            <div className="bg-white bg-opacity-10 rounded-lg p-3">
+              <div className="text-white text-xs space-y-1">
+                <div>• Use arrow keys or WASD to move</div>
+                <div>• Avoid cars and trucks</div>
+                <div>• Cross the road safely</div>
+                <div>• Collect points by surviving longer</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {/* Game Content */}
+      <div className="relative w-full h-full min-h-[500px] bg-gradient-to-br from-violet-900 to-blue-900 flex flex-col items-center justify-center overflow-hidden">
+        {/* Crosswalk Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{
+            backgroundImage: 'url(/assets/images/crosswalk.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            pointerEvents: 'none'
+          }}
+        />
+        
+        <canvas 
+          ref={canvasRef} 
+          className="game w-full h-full relative z-10" 
+          style={{ 
+            minHeight: 400, 
+            minWidth: 400, 
+            background: 'transparent',
+            display: 'block',
+            position: 'relative',
+            zIndex: 10
+          }} 
+        />
+        
+        {/* Score and High Score */}
+        <div className="absolute top-2 left-2 text-white font-mono z-10">
+          <div className="text-xl font-bold">Score: {score}</div>
+          <div className="text-sm text-yellow-300">High Score: {highScore}</div>
+        </div>
+
+        {/* Game Over Overlay */}
+        {gameOver && (
+          <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
+            <div className="bg-white rounded-2xl p-8 text-center">
+              <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Game Over!</h3>
+              <p className="text-gray-600 mb-4">Final Score: {score}</p>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleReset}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-bold hover:from-blue-600 hover:to-purple-600 transition-all"
+                >
+                  Play Again
+                </button>
+                <button
+                  onClick={onClose}
+                  className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-600 transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pause Overlay */}
+        {isPaused && (
+          <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
+            <div className="bg-white rounded-2xl p-8 text-center">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">Game Paused</h3>
+              <button
+                onClick={handleResume}
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg font-bold hover:from-green-600 hover:to-blue-600 transition-all"
+              >
+                Resume Game
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </GameModal>
   );
 };
 

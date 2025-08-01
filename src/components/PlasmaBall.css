@@ -5,16 +5,21 @@
   cursor: pointer;
   user-select: none;
   transition: all 0.3s ease;
+  background: transparent;
+  border: 3px solid rgba(255, 255, 255, 0.5);
   box-shadow: 
-    0 0 30px rgba(138, 43, 226, 0.6),
-    inset 0 0 20px rgba(255, 255, 255, 0.1);
+    0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 40px rgba(255, 255, 255, 0.3),
+    inset 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
 .plasma-ball-container:hover {
   transform: scale(1.05);
+  border: 3px solid rgba(255, 255, 255, 0.8);
   box-shadow: 
-    0 0 40px rgba(138, 43, 226, 0.8),
-    inset 0 0 25px rgba(255, 255, 255, 0.2);
+    0 0 30px rgba(255, 255, 255, 0.8),
+    0 0 60px rgba(255, 255, 255, 0.4),
+    inset 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .plasma-ball-container canvas {
@@ -23,6 +28,7 @@
   display: block;
   border-radius: 50%;
   pointer-events: none;
+  background: transparent;
 }
 
 /* Bottom left positioning */
@@ -48,20 +54,16 @@
   }
 }
 
-/* Animation for the glow effect */
+/* Animation for the glow effect - removed box-shadow animation */
 @keyframes plasmaGlow {
   0%, 100% {
-    box-shadow: 
-      0 0 30px rgba(138, 43, 226, 0.6),
-      inset 0 0 20px rgba(255, 255, 255, 0.1);
+    /* Removed box-shadow to eliminate outline */
   }
   50% {
-    box-shadow: 
-      0 0 40px rgba(138, 43, 226, 0.8),
-      inset 0 0 25px rgba(255, 255, 255, 0.2);
+    /* Removed box-shadow to eliminate outline */
   }
 }
 
 .plasma-ball-container {
-  animation: plasmaGlow 3s ease-in-out infinite;
+  /* Removed animation to eliminate outline effect */
 } 

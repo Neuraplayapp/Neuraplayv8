@@ -54,6 +54,7 @@ const UniversalAIAgent: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [agentPersonality, setAgentPersonality] = useState<'coach' | 'mentor' | 'friend' | 'analyst'>('coach');
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chat' | 'friends'>('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -412,8 +413,35 @@ const UniversalAIAgent: React.FC = () => {
 
         {!isMinimized && (
           <>
-            {/* Messages Area */}
-            <div className="flex-1 p-4 overflow-y-auto h-[380px] ai-messages-container">
+            {/* Tab Navigation */}
+            <div className="flex border-b border-white/20">
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'chat'
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => setActiveTab('friends')}
+                className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'friends'
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Friends
+              </button>
+            </div>
+
+            {/* Content Area */}
+            {activeTab === 'chat' && (
+              <>
+                {/* Messages Area */}
+                <div className="flex-1 p-4 overflow-y-auto h-[340px] ai-messages-container">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
@@ -454,29 +482,73 @@ const UniversalAIAgent: React.FC = () => {
               </div>
             </div>
 
-            {/* Input Area */}
-            <div className="p-4 border-t border-white/20">
-              <div className="flex items-center gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Ask me anything..."
-                  className="flex-1 px-3 py-2 rounded-lg text-sm ai-input-field"
-                  onKeyPress={handleKeyPress}
-                />
-                <button
-                  onClick={() => {
-                    if (inputRef.current) {
-                      handleSendMessage(inputRef.current.value);
-                      inputRef.current.value = '';
-                    }
-                  }}
-                  className="p-2 text-white rounded-lg ai-send-button"
-                >
-                  <Sparkles className="w-4 h-4" />
-                </button>
+                {/* Input Area */}
+                <div className="p-4 border-t border-white/20">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      placeholder="Ask me anything..."
+                      className="flex-1 px-3 py-2 rounded-lg text-sm ai-input-field"
+                      onKeyPress={handleKeyPress}
+                    />
+                    <button
+                      onClick={() => {
+                        if (inputRef.current) {
+                          handleSendMessage(inputRef.current.value);
+                          inputRef.current.value = '';
+                        }
+                      }}
+                      className="p-2 text-white rounded-lg ai-send-button"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'friends' && (
+              <div className="flex-1 p-4 overflow-y-auto h-[380px]">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4">Friends</h3>
+                  
+                  {/* Mock friends data */}
+                  {[
+                    { id: '1', name: 'Alex', status: 'online', avatar: '/assets/images/placeholder.png', lastMessage: 'Great job on the memory game!' },
+                    { id: '2', name: 'Sarah', status: 'away', avatar: '/assets/images/placeholder.png', lastMessage: 'How did you solve that puzzle?' },
+                    { id: '3', name: 'Mike', status: 'offline', avatar: '/assets/images/placeholder.png', lastMessage: 'See you in the next session!' }
+                  ].map(friend => (
+                    <div key={friend.id} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
+                      <div className="relative">
+                        <img
+                          src={friend.avatar}
+                          alt={friend.name}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                          friend.status === 'online' ? 'bg-green-500' :
+                          friend.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
+                        }`}></div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-slate-800">{friend.name}</h4>
+                          <span className="text-xs text-gray-500 capitalize">{friend.status}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 truncate">{friend.lastMessage}</p>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="mt-6">
+                    <button className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                      Add New Friend
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

@@ -1,11 +1,17 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface PlasmaBackgroundProps {
   className?: string;
+  lazyLoad?: boolean;
 }
 
-const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className = '' }) => {
+const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ 
+  className = '', 
+  lazyLoad = true 
+}) => {
+  const { isDarkMode, isBrightMode } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -14,121 +20,110 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className = '' }) =
   const uniformsRef = useRef<any>(null);
   const animationIdRef = useRef<number | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isVisible, setIsVisible] = useState(!lazyLoad);
 
-  // Vertex shader
+  // Optimized vertex shader
   const vertexShader = `
     void main() {
       gl_Position = vec4(position, 1.0);
     }
   `;
 
-  // Fragment shader - milky pink plasma with controlled exposure and specific RGB colors
+  // Proper plasma shader with smooth, flowing gradients
   const fragmentShader = `
     uniform vec2 u_resolution;
     uniform vec2 u_mouse;
     uniform float u_time;
-    uniform sampler2D u_noise;
-    uniform sampler2D u_environment;
+    uniform float u_theme;
     
-    vec2 hash2(vec2 p) {
-      vec2 o = texture2D(u_noise, (p+0.5)/256.0).xy;
-      return o;
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
     }
     
-    float sinnoise(vec3 p) {
-      float s = (sin(u_time) * 0.5 + 0.5);
-      float _c = cos(p.x * 0.1);
-      float _s = sin(p.x * 0.1);
-      mat2 mat = mat2(_c, -_s, _s, _c);
-      for (int i = 0; i < 5; i++) {
-        p += cos(p.yxz * 3.0 + vec3(0.0, u_time, 10.6)) * (0.25 + s * 0.2);
-        p += sin(p.yxz + vec3(u_time, 0.1, 0.0)) * (0.5 - s * 0.1);
-        p *= 1.0 + s * 0.1;
-        p.xy *= mat;
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+    
+    float fbm(vec2 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
+      float frequency = 1.0;
+      for(int i = 0; i < 4; i++) {
+        value += amplitude * noise(p * frequency);
+        amplitude *= 0.5;
+        frequency *= 2.0;
       }
-      return length(p);
+      return value;
     }
-    vec3 envMap(vec3 rd) {
-      rd.xy -= u_time * 0.2;
-      rd /= 4.0;
-      vec3 col = texture2D(u_environment, rd.xy - 0.5).rgb;
-      col *= normalize(col);
-      return col;
+    
+    vec3 plasma(vec2 uv, float time) {
+      vec2 p = uv * 3.0;
+      
+      // Create smooth plasma waves
+      float wave1 = sin(p.x * 2.0 + time * 0.5) * cos(p.y * 2.0 + time * 0.3);
+      float wave2 = sin(p.x * 4.0 + time * 0.7) * cos(p.y * 4.0 + time * 0.5);
+      float wave3 = sin(p.x * 8.0 + time * 0.9) * cos(p.y * 8.0 + time * 0.7);
+      
+      // Add noise for organic movement
+      float noise1 = fbm(p + time * 0.2);
+      float noise2 = fbm(p * 2.0 + time * 0.4);
+      
+      // Combine waves and noise
+      float plasma = wave1 * 0.4 + wave2 * 0.3 + wave3 * 0.2 + noise1 * 0.1 + noise2 * 0.05;
+      
+      // Add some swirling motion
+      float angle = atan(p.y, p.x);
+      float radius = length(p);
+      plasma += 0.1 * sin(angle * 3.0 + time * 0.8) * exp(-radius * 0.5);
+      
+      return vec3(plasma);
     }
-    float bumpMap(vec2 uv, float height) {
-      float bump = sinnoise(vec3(uv, 1.0));
-      return bump * height;
-    }
-    vec4 renderPass(vec2 uv) {
-      vec3 surfacePos = vec3(uv, 0.0);
-      vec3 ray = normalize(vec3(uv, 1.0));
-      vec3 lightPos = vec3(cos(u_time * 0.5 + 2.0) * 2.0, 1.0 + sin(u_time * 0.5 + 2.0) * 2.0, -3.0);
-      vec3 normal = vec3(0.0, 0.0, -1.0);
-      vec2 sampleDistance = vec2(0.001, 0.0);
-      float fx = bumpMap(surfacePos.xy - sampleDistance.xy, 1.0);
-      float fy = bumpMap(surfacePos.xy - sampleDistance.yx, 1.0);
-      float f = bumpMap(surfacePos.xy, 1.0);
-      float freq = (f + fx + fy);
-      freq = freq * freq * 2.0;
-      fx = (fx - f) / sampleDistance.x;
-      fy = (fy - f) / sampleDistance.x;
-      normal = normalize(normal + vec3(fx, fy, 0.0) * 0.2);
-      vec3 lightV = lightPos - surfacePos;
-      float lightDist = max(length(lightV), 0.001);
-      lightV /= lightDist;
-      
-      // Specific RGB colors converted to normalized values (0-1)
-      // Bright: (218,138,235) -> (0.855, 0.541, 0.922)
-      // Medium: (163,100,176) -> (0.639, 0.392, 0.690)
-      // Low: (123,76,133) -> (0.482, 0.298, 0.522)
-      
-      vec3 lightColour = vec3(0.855, 0.541, 0.922); // Bright purple
-      float shininess = 0.5; // Increased for more saturation
-      float brightness = 0.6; // Increased for more vibrant colors
-      float falloff = 0.06; // Tighter falloff for more contrast
-      float attenuation = 1.0 / (1.0 + lightDist * lightDist * falloff);
-      float diffuse = max(dot(normal, lightV), 0.0);
-      float specular = pow(max(dot(reflect(-lightV, normal), -ray), 0.0), 28.0) * shininess; // Adjusted for saturation
-      
-      // Plasma mixing with specific RGB colors
-      vec3 plasma = mix(vec3(0.482, 0.298, 0.522), vec3(0.855, 0.541, 0.922), smoothstep(160.0, 200.0, freq)); // Low to Bright
-      plasma = mix(plasma, vec3(0.639, 0.392, 0.690), 0.6); // Medium color
-      vec2 n = hash2(uv * 200.0 + u_time * 5000.0);
-      plasma += hash2(n).x * 0.06; // Increased noise for more saturation
-      plasma *= 0.8; // Increased overall brightness for more vibrant colors
-      
-      // Enhanced highlights with bright purple
-      plasma += vec3(0.855, 0.541, 0.922) * specular * 0.3; // Increased highlight intensity
-      
-      vec3 reflect_ray = reflect(vec3(uv, 1.0), normal);
-      vec3 tex = envMap(reflect_ray);
-      
-      // Environment mapping with specific colors
-      vec3 texCol = (vec3(0.482, 0.298, 0.522) + tex * brightness * vec3(0.855, 0.541, 0.922)) * 0.7; // Increased intensity
-      
-      // Base color using low RGB
-      vec3 baseColor = vec3(0.482, 0.298, 0.522); // Low purple
-      vec3 colour = (texCol * (diffuse * vec3(1.0, 0.97, 1.0) * 2.0 + 0.6) + lightColour * specular * f * 1.5) * attenuation * 0.8; // Increased intensity
-      colour = mix(baseColor, colour, 0.7); // Increased mixing
-      colour *= 0.8; // Increased overall brightness
-      
-      // Enhanced plasma mixing with specific colors
-      colour = mix(colour, plasma, 1.0 - smoothstep(160.0, 220.0, freq));
-      
-      // Clamp to maintain the specific color range while allowing some brightness
-      colour = min(colour, vec3(0.855, 0.541, 0.922)); // Clamp to bright RGB
-      colour = clamp(colour, 0.0, 0.9); // Allow some brightness while maintaining color integrity
-      
-      return vec4(colour, 1.0);
-    }
+    
     void main() {
-      vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.y, u_resolution.x);
-      vec4 render = renderPass(uv);
-      gl_FragColor = render;
+      vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+      
+      vec3 plasma1 = plasma(uv, u_time);
+      vec3 plasma2 = plasma(uv * 1.5, u_time * 0.7);
+      
+      vec3 col;
+      if (u_theme == 0.0) {
+        // Light theme - Smooth purple to blue gradients
+        col = mix(vec3(0.8, 0.6, 0.9), vec3(0.4, 0.6, 0.9), plasma1.r);
+        col = mix(col, vec3(0.6, 0.4, 0.8), plasma2.r);
+      } else if (u_theme == 1.0) {
+        // Dark theme - Deep purple to blue
+        col = mix(vec3(0.1, 0.05, 0.3), vec3(0.3, 0.1, 0.6), plasma1.r);
+        col = mix(col, vec3(0.6, 0.4, 0.9), plasma2.r);
+      } else {
+        // Bright theme - Orange to red
+        col = mix(vec3(1.0, 0.6, 0.4), vec3(0.9, 0.3, 0.2), plasma1.r);
+        col = mix(col, vec3(1.0, 0.8, 0.6), plasma2.r);
+      }
+      
+      // Add subtle mouse interaction
+      vec2 mouse = u_mouse * 0.5 + 0.5;
+      float dist = length(uv - mouse);
+      col += 0.15 * exp(-dist * 4.0) * vec3(1.0, 0.8, 0.6);
+      
+      // Add some sparkle effect
+      float sparkle = sin(u_time * 15.0 + uv.x * 100.0) * sin(u_time * 12.0 + uv.y * 80.0);
+      col += 0.03 * sparkle * vec3(1.0, 0.9, 0.7);
+      
+      gl_FragColor = vec4(col, 1.0);
     }
   `;
 
-  const initThreeJS = async () => {
+  // Optimized initialization with reduced texture loading
+  const initThreeJS = useCallback(async () => {
     if (!containerRef.current || !canvasRef.current) return;
 
     const container = containerRef.current;
@@ -143,101 +138,87 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className = '' }) =
     camera.position.z = 1;
     cameraRef.current = camera;
 
-    // Create renderer
+    // Create renderer with optimized settings
     const renderer = new THREE.WebGLRenderer({ 
       canvas,
       alpha: true,
-      antialias: true 
+      antialias: false, // Disable antialiasing for performance
+      powerPreference: "high-performance"
     });
-    renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Optimize pixel ratio for performance
+    const pixelRatio = Math.min(window.devicePixelRatio, 2);
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(container.offsetWidth, container.offsetHeight);
     rendererRef.current = renderer;
 
-    // Load textures
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
+    // Create uniforms without external textures
+    const uniforms = {
+      u_time: { type: "f", value: 1.0 },
+      u_resolution: { type: "v2", value: new THREE.Vector2() },
+      u_mouse: { type: "v2", value: new THREE.Vector2() },
+      u_theme: { type: "f", value: isDarkMode ? 1.0 : isBrightMode ? 2.0 : 0.0 }
+    };
+    uniformsRef.current = uniforms;
 
-    try {
-      const texture = await new Promise<THREE.Texture>((resolve, reject) => {
-        loader.load(
-          'https://s3-us-west-2.amazonaws.com/s.cdpn.io/982762/noise.png',
-          resolve,
-          undefined,
-          reject
-        );
-      });
+    // Create geometry and material
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      transparent: true
+    });
 
-      const environment = await new Promise<THREE.Texture>((resolve, reject) => {
-        loader.load(
-          'https://s3-us-west-2.amazonaws.com/s.cdpn.io/982762/env_lat-lon.png',
-          resolve,
-          undefined,
-          reject
-        );
-      });
+    // Create mesh
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
 
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.minFilter = THREE.LinearFilter;
+    // Update resolution uniform
+    uniforms.u_resolution.value.x = renderer.domElement.width;
+    uniforms.u_resolution.value.y = renderer.domElement.height;
 
-      environment.wrapS = THREE.RepeatWrapping;
-      environment.wrapT = THREE.RepeatWrapping;
-      environment.minFilter = THREE.LinearFilter;
-
-      // Create uniforms
-      const uniforms = {
-        u_time: { type: "f", value: 1.0 },
-        u_resolution: { type: "v2", value: new THREE.Vector2() },
-        u_noise: { type: "t", value: texture },
-        u_environment: { type: "t", value: environment },
-        u_mouse: { type: "v2", value: new THREE.Vector2() }
-      };
-      uniformsRef.current = uniforms;
-
-      // Create geometry and material
-      const geometry = new THREE.PlaneGeometry(2, 2);
-      const material = new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader,
-        fragmentShader,
-        extensions: {
-          derivatives: true
-        }
-      });
-
-      // Create mesh
-      const mesh = new THREE.Mesh(geometry, material);
-      scene.add(mesh);
-
-      // Update resolution uniform
-      uniforms.u_resolution.value.x = renderer.domElement.width;
-      uniforms.u_resolution.value.y = renderer.domElement.height;
-
-      // Add mouse tracking
-      const handleMouseMove = (e: MouseEvent) => {
+    // Optimized mouse tracking with throttling
+    let mouseTimeout: number;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (mouseTimeout) return;
+      mouseTimeout = window.setTimeout(() => {
         const rect = canvas.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         uniforms.u_mouse.value.set(x, y);
-      };
+        mouseTimeout = 0;
+      }, 16); // ~60fps throttling
+    };
 
-      canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mousemove', handleMouseMove);
 
-      setIsInitialized(true);
+    setIsInitialized(true);
 
-      // Start animation
-      const animate = (time: number) => {
-        if (!sceneRef.current || !rendererRef.current || !cameraRef.current || !uniformsRef.current) return;
+    // Optimized animation loop with frame limiting
+    let lastTime = 0;
+    const animate = (time: number) => {
+      if (!sceneRef.current || !rendererRef.current || !cameraRef.current || !uniformsRef.current) return;
 
-        uniformsRef.current.u_time.value = time * 0.0005;
-        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      // Limit to 30fps for better performance
+      if (time - lastTime < 33) {
         animationIdRef.current = requestAnimationFrame(animate);
-      };
+        return;
+      }
+      lastTime = time;
 
-      animate(0);
+      uniformsRef.current.u_time.value = time * 0.0003; // Reduced time multiplier
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      animationIdRef.current = requestAnimationFrame(animate);
+    };
 
-      // Handle resize
-      const handleResize = () => {
+    animate(0);
+
+    // Optimized resize handler
+    let resizeTimeout: number;
+    const handleResize = () => {
+      if (resizeTimeout) return;
+      resizeTimeout = window.setTimeout(() => {
         if (!containerRef.current || !rendererRef.current || !uniformsRef.current) return;
         
         const width = containerRef.current.offsetWidth;
@@ -246,38 +227,72 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className = '' }) =
         rendererRef.current.setSize(width, height);
         uniformsRef.current.u_resolution.value.x = width;
         uniformsRef.current.u_resolution.value.y = height;
-      };
-
-      window.addEventListener('resize', handleResize);
-
-      // Cleanup function
-      return () => {
-        canvas.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('resize', handleResize);
-        if (animationIdRef.current) {
-          cancelAnimationFrame(animationIdRef.current);
-        }
-        if (rendererRef.current) {
-          rendererRef.current.dispose();
-        }
-      };
-    } catch (error) {
-      console.error('Failed to load textures:', error);
-    }
-  };
-
-  useEffect(() => {
-    const cleanup = initThreeJS();
-    return () => {
-      cleanup.then(cleanupFn => cleanupFn?.());
+        resizeTimeout = 0;
+      }, 100);
     };
-  }, []);
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup function
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', handleResize);
+      if (mouseTimeout) clearTimeout(mouseTimeout);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+      }
+    };
+  }, [isDarkMode, isBrightMode]);
+
+  // Lazy loading with intersection observer
+  useEffect(() => {
+    if (!lazyLoad) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [lazyLoad]);
+
+  // Initialize when visible
+  useEffect(() => {
+    if (isVisible) {
+      const cleanup = initThreeJS();
+      return () => {
+        cleanup.then(cleanupFn => cleanupFn?.());
+      };
+    }
+  }, [isVisible, initThreeJS]);
+
+  // Update theme uniform when theme changes
+  useEffect(() => {
+    if (uniformsRef.current) {
+      uniformsRef.current.u_theme.value = isDarkMode ? 1.0 : isBrightMode ? 2.0 : 0.0;
+    }
+  }, [isDarkMode, isBrightMode]);
 
   return (
     <div 
       ref={containerRef} 
       className={`absolute inset-0 ${className}`}
-      style={{ zIndex: -1 }}
     >
       <canvas 
         ref={canvasRef} 

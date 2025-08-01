@@ -7,11 +7,202 @@ declare const ScrollTrigger: any;
 
 const MarginParallax = () => {
   useEffect(() => {
-    // Set initial states for all SVG elements
+    // Set initial states for ALL SVG elements - DIVIDED INTO SEPARATE PIECES
     gsap.set(".svg-element", { 
       opacity: 0, 
-      y: "50vh",
+      y: "0vh",
       scale: 0.8 
+    });
+    
+    // DAWN MOUNTAIN - DIVIDED INTO 6 PIECES
+    gsap.set("#dawn-bg, #dawn-bg-right", { 
+      opacity: 1, 
+      y: "0vh", // Background starts directly under hero
+      scale: 1 
+    });
+    
+    gsap.set("#dawn-hill-1, #dawn-hill-1-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "300vh", // MUCH MORE SPREAD - covers whole page
+      scale: 0.6 
+    });
+    
+    gsap.set("#dawn-hill-2, #dawn-hill-2-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-250vh", // MUCH MORE SPREAD - covers whole page
+      scale: 0.7 
+    });
+    
+    gsap.set("#dawn-hill-3, #dawn-hill-3-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "400vh", // MUCH MORE SPREAD - covers whole page
+      scale: 0.6 
+    });
+    
+    gsap.set("#dawn-cloud-1, #dawn-cloud-1-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-200vh", // MUCH MORE SPREAD - covers whole page
+      scale: 0.8 
+    });
+    
+    gsap.set("#dawn-cloud-2, #dawn-cloud-2-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "350vh", // MUCH MORE SPREAD - covers whole page
+      scale: 0.8 
+    });
+
+    // STUDY/HOUSE - DIVIDED INTO 6 PIECES (like mountain)
+    gsap.set("#study-bg, #house-bg", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "0vh",
+      scale: 1 
+    });
+    
+    gsap.set("#boy-studying-1, #house-1", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "300vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#boy-studying-2, #house-2", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-250vh", // SPREAD ACROSS PAGE
+      scale: 0.7 
+    });
+    
+    gsap.set("#boy-studying-3, #house-3", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "400vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#boy-studying-4, #house-4", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-200vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+    
+    gsap.set("#boy-studying-5, #house-5", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "350vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+
+    // HILL/CHALKBOARD - DIVIDED INTO 6 PIECES
+    gsap.set("#classroom-bg, #chalkboard-bg", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "0vh",
+      scale: 1 
+    });
+    
+    gsap.set("#hill-1, #chalkboard-1", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "300vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#hill-2, #chalkboard-2", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-250vh", // SPREAD ACROSS PAGE
+      scale: 0.7 
+    });
+    
+    gsap.set("#hill-3, #chalkboard-3", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "400vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#hill-4, #chalkboard-4", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-200vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+    
+    gsap.set("#hill-5, #chalkboard-5", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "350vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+
+    // GARDEN/SPARROW - DIVIDED INTO 6 PIECES
+    gsap.set("#garden-bg, #sparrow-bg", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "0vh",
+      scale: 1 
+    });
+    
+    gsap.set("#garden-1, #sparrow-1", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "300vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#garden-2, #sparrow-2", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-250vh", // SPREAD ACROSS PAGE
+      scale: 0.7 
+    });
+    
+    gsap.set("#garden-3, #sparrow-3", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "400vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#garden-4, #sparrow-4", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-200vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+    
+    gsap.set("#garden-5, #sparrow-5", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "350vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+
+    // PARK - DIVIDED INTO 6 PIECES
+    gsap.set("#park-bg, #park-bg-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "0vh",
+      scale: 1 
+    });
+    
+    gsap.set("#park-tree-1, #park-tree-1-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "300vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#park-tree-2, #park-tree-2-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-250vh", // SPREAD ACROSS PAGE
+      scale: 0.7 
+    });
+    
+    gsap.set("#park-bench, #park-bench-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "400vh", // SPREAD ACROSS PAGE
+      scale: 0.6 
+    });
+    
+    gsap.set("#park-people, #park-people-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-200vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+    
+    gsap.set("#park-extra-1, #park-extra-1-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "350vh", // SPREAD ACROSS PAGE
+      scale: 0.8 
+    });
+    
+    gsap.set("#park-extra-2, #park-extra-2-right", { 
+      opacity: 1, // MAKE VISIBLE
+      y: "-180vh", // SPREAD ACROSS PAGE
+      scale: 0.7 
     });
 
     // Create the main timeline with continuous scroll trigger
@@ -26,443 +217,197 @@ const MarginParallax = () => {
       }
     });
 
-    // Section 1: Dawn Mountain - Elongated by 300% with reversed logic
-    // Start with the blue sky background (dawn-hill-1 contains the gradient)
-    mainTimeline.to("#dawn-hill-1", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 0);
-    
-    // Clouds drift in early
-    mainTimeline.to("#dawn-cloud-1", { 
-      opacity: 1, 
-      x: "-20vw",
-      duration: 0.3,
-      ease: "power1.out"
-    }, 0.4);
-    
-    mainTimeline.to("#dawn-cloud-2", { 
-      opacity: 1, 
-      x: "15vw",
-      duration: 0.3,
-      ease: "power1.out"
-    }, 0.5);
-    
-    // Background mountain moves up slowly (elongated scene)
-    mainTimeline.to("#dawn-hill-1", { 
+    // SECTION 1: DAWN MOUNTAIN - GATHERING EFFECT ONLY
+    // All pieces gather to final positions
+    mainTimeline.to(["#dawn-hill-1", "#dawn-hill-1-right"], { 
       y: "-15vh", 
-      duration: 5.4, // 300% longer (1.8 * 3)
-      ease: "none"
-    }, 0.6);
-    
-    // Second mountain layer appears after 1 second of scrolling
-    mainTimeline.to("#dawn-hill-2", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 1.0);
-    
-    // Third mountain layer appears after 1 second of scrolling
-    mainTimeline.to("#dawn-hill-3", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 1.3);
-    
-    // Mountains move up with increased separation (50% slower, 50% more separation)
-    mainTimeline.to("#dawn-hill-2", { 
-      y: "-30vh", 
-      duration: 1.8,
-      ease: "none"
-    }, 1.6);
-    
-    mainTimeline.to("#dawn-hill-3", { 
-      y: "-15vh", 
-      duration: 1.8,
-      ease: "none"
-    }, 1.6);
-    
-    // Keep dawn scene visible much longer (elongated)
-    mainTimeline.to("#dawn-scene", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 2.7);
-
-    // Section 2: Boy studying + House - Sequential introduction
-    // Background appears
-    mainTimeline.to("#study-bg", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 0.9);
-    
-    // Boy studying appears with dramatic entrance
-    mainTimeline.to("#boy-studying", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.4,
-      ease: "power3.out"
-    }, 1.0);
-    
-    // House appears
-    mainTimeline.to("#house", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 1.1);
-    
-    // Elements move up (original speed)
-    mainTimeline.to(["#boy-studying", "#house"], { 
-      y: "-25vh", 
-      duration: 1.2,
-      ease: "none"
-    }, 1.3);
-    
-    // Keep study scene visible longer
-    mainTimeline.to("#study-scene", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 1.8);
-
-    // Section 3: Hill + Chalkboard - Sequential introduction
-    // Background appears
-    mainTimeline.to("#classroom-bg", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 1.8);
-    
-    // Hill appears
-    mainTimeline.to("#hill", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 1.9);
-    
-    // Chalkboard appears
-    mainTimeline.to("#chalkboard", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
+      duration: 2.0,
+      ease: "power2.inOut"
     }, 2.0);
     
-    // Elements move up (original speed)
-    mainTimeline.to(["#hill", "#chalkboard"], { 
-      y: "-25vh", 
-      duration: 0.8,
-      ease: "none"
-    }, 2.2);
-    
-    // Fade out classroom scene
-    mainTimeline.to("#classroom-scene", { 
-      opacity: 0, 
-      duration: 0.3 
-    }, 2.7);
-
-    // Section 4: Garden + Sparrow - Sequential introduction
-    // Background appears
-    mainTimeline.to("#garden-bg", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 2.7);
-    
-    // Garden elements appear
-    mainTimeline.to("#garden", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 2.8);
-    
-    // Sparrow appears with flight animation
-    mainTimeline.to("#sparrow", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.4,
-      ease: "power3.out"
-    }, 2.9);
-    
-    // Elements move up (original speed)
-    mainTimeline.to(["#garden", "#sparrow"], { 
-      y: "-25vh", 
-      duration: 0.8,
-      ease: "none"
-    }, 3.1);
-    
-    // Fade out garden scene
-    mainTimeline.to("#garden-scene", { 
-      opacity: 0, 
-      duration: 0.3 
-    }, 3.6);
-
-    // Section 5: Park - Sequential introduction
-    // Background appears
-    mainTimeline.to("#park-bg", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 3.6);
-    
-    // Park elements appear sequentially
-    mainTimeline.to("#park-tree-1", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.2,
-      ease: "power2.out"
-    }, 3.7);
-    
-    mainTimeline.to("#park-tree-2", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.2,
-      ease: "power2.out"
-    }, 3.8);
-    
-    mainTimeline.to("#park-bench", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 3.9);
-    
-    mainTimeline.to("#park-people", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 4.0);
-    
-    // Elements move up (original speed)
-    mainTimeline.to(["#park-tree-1", "#park-tree-2", "#park-bench", "#park-people"], { 
-      y: "-25vh", 
-      duration: 0.8,
-      ease: "none"
-    }, 4.2);
-    
-    // Fade out park scene
-    mainTimeline.to("#park-scene", { 
-      opacity: 0, 
-      duration: 0.3 
-    }, 4.5);
-
-    // RIGHT MARGIN ANIMATIONS
-    // Section 1: Dawn Mountain Right - Sequential element introduction
-    // Start with the blue sky background (dawn-hill-1-right contains the gradient)
-    mainTimeline.to("#dawn-hill-1-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 0);
-    
-    // Second mountain layer appears
-    mainTimeline.to("#dawn-hill-2-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 0.3);
-    
-    // Third mountain layer appears
-    mainTimeline.to("#dawn-hill-3-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 0.6);
-    
-    // Clouds drift in
-    mainTimeline.to("#dawn-cloud-1-right", { 
-      opacity: 1, 
-      x: "-20vw",
-      duration: 0.3,
-      ease: "power1.out"
-    }, 0.4);
-    
-    mainTimeline.to("#dawn-cloud-2-right", { 
-      opacity: 1, 
-      x: "15vw",
-      duration: 0.3,
-      ease: "power1.out"
-    }, 0.5);
-    
-    // Mountains move up with increased separation (50% slower, 50% more separation)
-    mainTimeline.to("#dawn-hill-1-right", { 
-      y: "-45vh", 
-      duration: 1.8,
-      ease: "none"
-    }, 0.6);
-    
-    mainTimeline.to("#dawn-hill-2-right", { 
-      y: "-30vh", 
-      duration: 1.8,
-      ease: "none"
-    }, 0.6);
-    
-    mainTimeline.to("#dawn-hill-3-right", { 
+    mainTimeline.to(["#dawn-hill-2", "#dawn-hill-2-right"], { 
       y: "-15vh", 
-      duration: 1.8,
-      ease: "none"
-    }, 0.6);
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.0);
+    
+    mainTimeline.to(["#dawn-hill-3", "#dawn-hill-3-right"], { 
+      y: "-10vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.0);
+    
+    mainTimeline.to(["#dawn-cloud-1", "#dawn-cloud-1-right"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.0);
+    
+    mainTimeline.to(["#dawn-cloud-2", "#dawn-cloud-2-right"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.0);
     
     // Keep dawn scene visible longer
-    mainTimeline.to("#dawn-scene-right", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 0.9);
-
-    // Section 2: House Scene
-    mainTimeline.to("#house-bg", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 0.9);
-    
-    mainTimeline.to("#house", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.4,
-      ease: "power3.out"
-    }, 1.0);
-    
-    // House moves up (original speed)
-    mainTimeline.to("#house", { 
-      y: "-25vh", 
-      duration: 1.2,
-      ease: "none"
-    }, 1.3);
-    
-    // Keep house scene visible longer
-    mainTimeline.to("#house-scene", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 1.8);
-
-    // Section 3: Chalkboard Scene
-    mainTimeline.to("#chalkboard-bg", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 1.8);
-    
-    mainTimeline.to("#chalkboard", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 1.9);
-    
-    // Chalkboard moves up (original speed)
-    mainTimeline.to("#chalkboard", { 
-      y: "-25vh", 
-      duration: 1.2,
-      ease: "none"
-    }, 2.1);
-    
-    // Keep chalkboard scene visible longer
-    mainTimeline.to("#chalkboard-scene", { 
+    mainTimeline.to(["#dawn-scene", "#dawn-scene-right"], { 
       opacity: 1, 
       duration: 0.1 
     }, 2.7);
 
-    // Section 4: Sparrow Scene
-    mainTimeline.to("#sparrow-bg", { 
-      opacity: 1, 
-      duration: 0.1 
+    // SECTION 2: STUDY/HOUSE - GATHERING EFFECT ONLY (6 pieces like mountain)
+    mainTimeline.to(["#boy-studying-1", "#house-1"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
     }, 2.7);
     
-    mainTimeline.to("#sparrow", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 2.8);
+    mainTimeline.to(["#boy-studying-2", "#house-2"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.7);
     
-    // Sparrow moves up (original speed)
-    mainTimeline.to("#sparrow", { 
-      y: "-25vh", 
-      duration: 1.2,
-      ease: "none"
-    }, 3.0);
+    mainTimeline.to(["#boy-studying-3", "#house-3"], { 
+      y: "-10vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.7);
     
-    // Keep sparrow scene visible longer
-    mainTimeline.to("#sparrow-scene", { 
+    mainTimeline.to(["#boy-studying-4", "#house-4"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.7);
+    
+    mainTimeline.to(["#boy-studying-5", "#house-5"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 2.7);
+    
+    // Keep study/house scene visible longer
+    mainTimeline.to(["#study-scene", "#house-scene"], { 
       opacity: 1, 
       duration: 0.1 
-    }, 3.6);
+    }, 3.9);
 
-    // Section 5: Park Right Scene
-    mainTimeline.to("#park-bg-right", { 
-      opacity: 1, 
-      duration: 0.1 
-    }, 3.6);
-    
-    // Park elements appear sequentially
-    mainTimeline.to("#park-tree-1-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.2,
-      ease: "power2.out"
-    }, 3.7);
-    
-    mainTimeline.to("#park-tree-2-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.2,
-      ease: "power2.out"
-    }, 3.8);
-    
-    mainTimeline.to("#park-bench-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
+    // SECTION 3: HILL/CHALKBOARD - GATHERING EFFECT ONLY (6 pieces)
+    mainTimeline.to(["#hill-1", "#chalkboard-1"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
     }, 3.9);
     
-    mainTimeline.to("#park-people-right", { 
-      opacity: 1, 
-      y: "0vh", 
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, 4.0);
+    mainTimeline.to(["#hill-2", "#chalkboard-2"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 3.9);
     
-    // Elements move up (original speed)
-    mainTimeline.to(["#park-tree-1-right", "#park-tree-2-right", "#park-bench-right", "#park-people-right"], { 
-      y: "-25vh", 
-      duration: 0.8,
-      ease: "none"
-    }, 4.2);
+    mainTimeline.to(["#hill-3", "#chalkboard-3"], { 
+      y: "-10vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 3.9);
+    
+    mainTimeline.to(["#hill-4", "#chalkboard-4"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 3.9);
+    
+    mainTimeline.to(["#hill-5", "#chalkboard-5"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 3.9);
+    
+    // Fade out classroom/chalkboard scene
+    mainTimeline.to(["#classroom-scene", "#chalkboard-scene"], { 
+      opacity: 0, 
+      duration: 0.3 
+    }, 4.6);
+
+    // SECTION 4: GARDEN/SPARROW - GATHERING EFFECT ONLY (6 pieces)
+    mainTimeline.to(["#garden-1", "#sparrow-1"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 4.6);
+    
+    mainTimeline.to(["#garden-2", "#sparrow-2"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 4.6);
+    
+    mainTimeline.to(["#garden-3", "#sparrow-3"], { 
+      y: "-10vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 4.6);
+    
+    mainTimeline.to(["#garden-4", "#sparrow-4"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 4.6);
+    
+    mainTimeline.to(["#garden-5", "#sparrow-5"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 4.6);
+    
+    // Fade out garden/sparrow scene
+    mainTimeline.to(["#garden-scene", "#sparrow-scene"], { 
+      opacity: 0, 
+      duration: 0.3 
+    }, 5.3);
+
+    // SECTION 5: PARK - GATHERING EFFECT ONLY (6 pieces)
+    mainTimeline.to(["#park-tree-1", "#park-tree-1-right"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 5.3);
+    
+    mainTimeline.to(["#park-tree-2", "#park-tree-2-right"], { 
+      y: "-15vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 5.3);
+    
+    mainTimeline.to(["#park-bench", "#park-bench-right"], { 
+      y: "-10vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 5.3);
+    
+    mainTimeline.to(["#park-people", "#park-people-right"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 5.3);
+    
+    mainTimeline.to(["#park-extra-1", "#park-extra-1-right"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 5.3);
+    
+    mainTimeline.to(["#park-extra-2", "#park-extra-2-right"], { 
+      y: "-5vh", 
+      duration: 2.0,
+      ease: "power2.inOut"
+    }, 5.3);
     
     // Keep park scene visible longer
-    mainTimeline.to("#park-scene-right", { 
+    mainTimeline.to(["#park-scene", "#park-scene-right"], { 
       opacity: 1, 
       duration: 0.1 
-    }, 4.5);
+    }, 6.0);
 
     return () => {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
@@ -525,24 +470,60 @@ const MarginParallax = () => {
         {/* Study Scene */}
         <div id="study-scene" className="svg-scene">
           <div id="study-bg" className="svg-element study-bg"></div>
-          <div id="boy-studying" className="svg-element boy-studying">
-            <img src="/assets/SVG/Boystudying.svg" alt="Boy studying" className="svg-content" />
+          <div id="boy-studying-1" className="svg-element boy-studying">
+            <img src="/assets/SVG/undraw_professor_xcrw.svg" alt="Boy studying piece 1" className="svg-content" />
+          </div>
+          <div id="boy-studying-2" className="svg-element boy-studying">
+            <img src="/assets/SVG/undraw_book-writer_ri5u.svg" alt="Boy studying piece 2" className="svg-content" />
+          </div>
+          <div id="boy-studying-3" className="svg-element boy-studying">
+            <img src="/assets/SVG/undraw_calendar_8r6s.svg" alt="Boy studying piece 3" className="svg-content" />
+          </div>
+          <div id="boy-studying-4" className="svg-element boy-studying">
+            <img src="/assets/SVG/undraw_certificate_cqps.svg" alt="Boy studying piece 4" className="svg-content" />
+          </div>
+          <div id="boy-studying-5" className="svg-element boy-studying">
+            <img src="/assets/SVG/undraw_creative-flow_t3kz.svg" alt="Boy studying piece 5" className="svg-content" />
           </div>
         </div>
         
         {/* Classroom Scene */}
         <div id="classroom-scene" className="svg-scene">
           <div id="classroom-bg" className="svg-element classroom-bg"></div>
-          <div id="hill" className="svg-element hill">
-            <img src="/assets/SVG/hill.svg" alt="Hill" className="svg-content" />
+          <div id="hill-1" className="svg-element hill">
+            <img src="/assets/SVG/hill.svg" alt="Hill piece 1" className="svg-content" />
+          </div>
+          <div id="hill-2" className="svg-element hill">
+            <img src="/assets/SVG/hill.svg" alt="Hill piece 2" className="svg-content" />
+          </div>
+          <div id="hill-3" className="svg-element hill">
+            <img src="/assets/SVG/hill.svg" alt="Hill piece 3" className="svg-content" />
+          </div>
+          <div id="hill-4" className="svg-element hill">
+            <img src="/assets/SVG/hill.svg" alt="Hill piece 4" className="svg-content" />
+          </div>
+          <div id="hill-5" className="svg-element hill">
+            <img src="/assets/SVG/hill.svg" alt="Hill piece 5" className="svg-content" />
           </div>
         </div>
         
         {/* Garden Scene */}
         <div id="garden-scene" className="svg-scene">
           <div id="garden-bg" className="svg-element garden-bg"></div>
-          <div id="garden" className="svg-element garden">
-            <img src="/assets/SVG/garden.svg" alt="Garden" className="svg-content" />
+          <div id="garden-1" className="svg-element garden">
+            <img src="/assets/SVG/garden.svg" alt="Garden piece 1" className="svg-content" />
+          </div>
+          <div id="garden-2" className="svg-element garden">
+            <img src="/assets/SVG/garden.svg" alt="Garden piece 2" className="svg-content" />
+          </div>
+          <div id="garden-3" className="svg-element garden">
+            <img src="/assets/SVG/garden.svg" alt="Garden piece 3" className="svg-content" />
+          </div>
+          <div id="garden-4" className="svg-element garden">
+            <img src="/assets/SVG/garden.svg" alt="Garden piece 4" className="svg-content" />
+          </div>
+          <div id="garden-5" className="svg-element garden">
+            <img src="/assets/SVG/garden.svg" alt="Garden piece 5" className="svg-content" />
           </div>
         </div>
         
@@ -560,6 +541,12 @@ const MarginParallax = () => {
           </div>
           <div id="park-people" className="svg-element park-people">
             <img src="/assets/SVG/park.svg" alt="Park people" className="svg-content" />
+          </div>
+          <div id="park-extra-1" className="svg-element park-extra">
+            <img src="/assets/SVG/park.svg" alt="Park extra 1" className="svg-content" />
+          </div>
+          <div id="park-extra-2" className="svg-element park-extra">
+            <img src="/assets/SVG/park.svg" alt="Park extra 2" className="svg-content" />
           </div>
         </div>
       </div>
@@ -617,24 +604,60 @@ const MarginParallax = () => {
         {/* House Scene */}
         <div id="house-scene" className="svg-scene">
           <div id="house-bg" className="svg-element house-bg"></div>
-          <div id="house" className="svg-element house">
-            <img src="/assets/SVG/house-2023960.svg" alt="House" className="svg-content" />
+          <div id="house-1" className="svg-element house">
+            <img src="/assets/SVG/house-2023960.svg" alt="House piece 1" className="svg-content" />
+          </div>
+          <div id="house-2" className="svg-element house">
+            <img src="/assets/SVG/house-2023960.svg" alt="House piece 2" className="svg-content" />
+          </div>
+          <div id="house-3" className="svg-element house">
+            <img src="/assets/SVG/house-2023960.svg" alt="House piece 3" className="svg-content" />
+          </div>
+          <div id="house-4" className="svg-element house">
+            <img src="/assets/SVG/house-2023960.svg" alt="House piece 4" className="svg-content" />
+          </div>
+          <div id="house-5" className="svg-element house">
+            <img src="/assets/SVG/house-2023960.svg" alt="House piece 5" className="svg-content" />
           </div>
         </div>
         
         {/* Chalkboard Scene */}
         <div id="chalkboard-scene" className="svg-scene">
           <div id="chalkboard-bg" className="svg-element chalkboard-bg"></div>
-          <div id="chalkboard" className="svg-element chalkboard">
-            <img src="/assets/SVG/chalkboardclassroom.svg" alt="Chalkboard" className="svg-content" />
+          <div id="chalkboard-1" className="svg-element chalkboard">
+            <img src="/assets/SVG/chalkboardclassroom.svg" alt="Chalkboard piece 1" className="svg-content" />
+          </div>
+          <div id="chalkboard-2" className="svg-element chalkboard">
+            <img src="/assets/SVG/chalkboardclassroom.svg" alt="Chalkboard piece 2" className="svg-content" />
+          </div>
+          <div id="chalkboard-3" className="svg-element chalkboard">
+            <img src="/assets/SVG/chalkboardclassroom.svg" alt="Chalkboard piece 3" className="svg-content" />
+          </div>
+          <div id="chalkboard-4" className="svg-element chalkboard">
+            <img src="/assets/SVG/chalkboardclassroom.svg" alt="Chalkboard piece 4" className="svg-content" />
+          </div>
+          <div id="chalkboard-5" className="svg-element chalkboard">
+            <img src="/assets/SVG/chalkboardclassroom.svg" alt="Chalkboard piece 5" className="svg-content" />
           </div>
         </div>
         
         {/* Sparrow Scene */}
         <div id="sparrow-scene" className="svg-scene">
           <div id="sparrow-bg" className="svg-element sparrow-bg"></div>
-          <div id="sparrow" className="svg-element sparrow">
-            <img src="/assets/SVG/Sparrow.svg" alt="Sparrow" className="svg-content" />
+          <div id="sparrow-1" className="svg-element sparrow">
+            <img src="/assets/SVG/Sparrow.svg" alt="Sparrow piece 1" className="svg-content" />
+          </div>
+          <div id="sparrow-2" className="svg-element sparrow">
+            <img src="/assets/SVG/Sparrow.svg" alt="Sparrow piece 2" className="svg-content" />
+          </div>
+          <div id="sparrow-3" className="svg-element sparrow">
+            <img src="/assets/SVG/Sparrow.svg" alt="Sparrow piece 3" className="svg-content" />
+          </div>
+          <div id="sparrow-4" className="svg-element sparrow">
+            <img src="/assets/SVG/Sparrow.svg" alt="Sparrow piece 4" className="svg-content" />
+          </div>
+          <div id="sparrow-5" className="svg-element sparrow">
+            <img src="/assets/SVG/Sparrow.svg" alt="Sparrow piece 5" className="svg-content" />
           </div>
         </div>
         
@@ -652,6 +675,12 @@ const MarginParallax = () => {
           </div>
           <div id="park-people-right" className="svg-element park-people">
             <img src="/assets/SVG/park.svg" alt="Park people" className="svg-content" />
+          </div>
+          <div id="park-extra-1-right" className="svg-element park-extra">
+            <img src="/assets/SVG/park.svg" alt="Park extra 1" className="svg-content" />
+          </div>
+          <div id="park-extra-2-right" className="svg-element park-extra">
+            <img src="/assets/SVG/park.svg" alt="Park extra 2" className="svg-content" />
           </div>
         </div>
       </div>

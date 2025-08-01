@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useRef, useMemo } from 'react';
+import React, { useState, useLayoutEffect, useRef, useMemo, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
@@ -20,10 +20,10 @@ import HappyBuilderGame from '../components/games/HappyBuilderGame';
 import FuzzlingGame from '../components/games/FuzzlingGame';
 import TheCubeGame from '../components/games/TheCubeGame';
 import AIGame from '../components/AIGame';
-import GameInfoModal, { GameInfo } from '../components/GameInfoModal';
+import PlaygroundModalReveal, { GameInfo } from '../components/PlaygroundModalReveal';
 import GameWrapper from '../components/GameWrapper';
 
-import PlasmaBall from '../components/PlasmaBall';
+
 import PlasmaBackground from '../components/PlasmaBackground';
 // Import your other components like GameModal and ALL your game components
 // import StackerGame from '../components/games/StackerGame';
@@ -36,27 +36,40 @@ const PlaygroundPage: React.FC = () => {
     const [selectedGame, setSelectedGame] = useState<string | null>(null);
     const [infoGame, setInfoGame] = useState<GameInfo | null>(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [revealedCards, setRevealedCards] = useState<Set<string>>(new Set());
 
     const contentRef = useRef<HTMLDivElement>(null);
 
     const games = useMemo(() => [
-        { id: 'memory-sequence', title: 'Memory Galaxy', category: 'Memory', icon: <Star />, color: 'from-blue-500 to-cyan-500' },
-        { id: 'starbloom-adventure', title: 'Starbloom Forest', category: 'Memory', icon: <Brain />, color: 'from-green-500 to-teal-500' },
-        { id: 'inhibition', title: 'Stop & Go Adventure', category: 'Focus', icon: <Target />, color: 'from-emerald-500 to-green-500' },
-        { id: 'berry-blaster', title: 'Berry Blaster', category: 'Focus', icon: <Gamepad2 />, color: 'from-indigo-500 to-blue-500' },
-        // { id: 'stacker-game', title: 'Block Stacker', category: 'Focus', icon: <Target />, color: 'from-red-500 to-orange-500' },
-        { id: 'pattern-matching', title: 'Pattern Detective', category: 'Logic', icon: <Brain />, color: 'from-purple-500 to-violet-500' },
-        { id: 'counting-adventure', title: 'Number Quest', category: 'Logic', icon: <Trophy />, color: 'from-orange-500 to-amber-500' },
-        { id: 'fuzzling-advanced', title: "Fuzzling's Playpen", category: 'Logic', icon: <Sparkles />, color: 'from-pink-500 to-rose-500' },
-        { id: 'letter-hunt', title: 'Letter Safari', category: 'Language', icon: <FileText />, color: 'from-fuchsia-500 to-pink-500' },
-        { id: 'ai-story-creator', title: 'AI Story Creator', category: 'Creativity', icon: <Sparkles />, color: 'from-sky-500 to-indigo-500' },
-        { id: 'happy-builder', title: 'Happy Builder', category: 'Creativity', icon: <Trophy />, color: 'from-yellow-500 to-lime-500' },
-        { id: 'the-cube', title: 'The Cube', category: 'Logic', icon: <Trophy />, color: 'from-indigo-600 to-purple-600' },
-        { id: 'crossroad-fun', title: 'Crossroad Fun', category: 'Logic', icon: <Gamepad2 />, color: 'from-blue-400 to-blue-700' },
+        // Games with specific images first
+        { id: 'crossroad-fun', title: 'Crossroad Fun', category: 'Logic', icon: <Gamepad2 />, color: 'from-blue-400 to-blue-700', image: '/assets/images/crosswalk.png' },
+        { id: 'the-cube', title: 'The Cube', category: 'Logic', icon: <Trophy />, color: 'from-indigo-600 to-purple-600', image: '/assets/images/Thecube.png' },
+        { id: 'memory-sequence', title: 'Memory Galaxy', category: 'Memory', icon: <Star />, color: 'from-blue-500 to-cyan-500', image: '/assets/images/Neuraplaybrain.png' },
+        { id: 'starbloom-adventure', title: 'Starbloom Forest', category: 'Memory', icon: <Brain />, color: 'from-green-500 to-teal-500', image: '/assets/images/Mascot.png' },
+        { id: 'inhibition', title: 'Stop & Go Adventure', category: 'Focus', icon: <Target />, color: 'from-emerald-500 to-green-500', image: '/assets/images/Neuraplaybrain.png' },
+        { id: 'berry-blaster', title: 'Berry Blaster', category: 'Focus', icon: <Gamepad2 />, color: 'from-indigo-500 to-blue-500', image: '/assets/images/Alfiya.png' },
+        { id: 'pattern-matching', title: 'Pattern Detective', category: 'Logic', icon: <Brain />, color: 'from-purple-500 to-violet-500', image: '/assets/images/Neuraplaybrain.png' },
+        { id: 'counting-adventure', title: 'Number Quest', category: 'Logic', icon: <Trophy />, color: 'from-orange-500 to-amber-500', image: '/assets/images/Mascot.png' },
+        { id: 'fuzzling-advanced', title: "Fuzzling's Playpen", category: 'Logic', icon: <Sparkles />, color: 'from-pink-500 to-rose-500', image: '/assets/images/Neuraplaybrain.png' },
+        { id: 'letter-hunt', title: 'Letter Safari', category: 'Language', icon: <FileText />, color: 'from-fuchsia-500 to-pink-500', image: '/assets/images/Alfiya.png' },
+        { id: 'ai-story-creator', title: 'AI Story Creator', category: 'Creativity', icon: <Sparkles />, color: 'from-sky-500 to-indigo-500', image: '/assets/images/Neuraplaybrain.png' },
+        { id: 'happy-builder', title: 'Happy Builder', category: 'Creativity', icon: <Trophy />, color: 'from-yellow-500 to-lime-500', image: '/assets/images/Mascot.png' },
     ], []);
 
     const gameCategories = useMemo(() => ['All', ...Array.from(new Set(games.map(g => g.category)))], [games]);
     const filteredGames = useMemo(() => playCategory === 'All' ? games : games.filter(g => g.category === playCategory), [games, playCategory]);
+
+    // Trigger card reveal animations when games change
+    useEffect(() => {
+        if (filteredGames.length > 0) {
+            // Animate cards with staggered delays
+            filteredGames.forEach((game, index) => {
+                setTimeout(() => {
+                    setRevealedCards(prev => new Set([...prev, game.id]));
+                }, index * 100);
+            });
+        }
+    }, [filteredGames]);
 
     const gameDetails: Record<string, GameInfo> = {
         'memory-sequence': {
@@ -80,326 +93,263 @@ const PlaygroundPage: React.FC = () => {
             skills: ['Attention Control', 'Motor Skills', 'Planning'],
             difficulty: 'Medium',
             duration: '3-7 min',
-            ageRange: '7-14',
-            image: '/assets/images/police.jpg',
-            features: ['3D graphics', 'High score tracking', 'Multiple controls'],
-            instructions: 'Use arrow keys or WASD to move. Avoid cars and reach the other side!',
+            ageRange: '6-12',
+            image: '/assets/images/crosswalk.png',
+            features: ['Traffic simulation', 'Increasing difficulty', 'Score tracking'],
+            instructions: 'Wait for the traffic to clear, then quickly cross the road. Be careful of oncoming vehicles!',
         },
         'starbloom-adventure': {
             id: 'starbloom-adventure',
             title: 'Starbloom Forest',
             category: 'Memory',
-            description: 'Navigate through a magical forest while remembering patterns and sequences.',
-            skills: ['Working Memory', 'Spatial Awareness'],
+            description: 'Explore a magical forest while training your memory and pattern recognition.',
+            skills: ['Visual Memory', 'Pattern Recognition', 'Spatial Awareness'],
             difficulty: 'Easy',
-            duration: '3-6 min',
-            ageRange: '6-12',
-            image: '/assets/images/Neuraplaybrain.png',
-            features: ['Magical environment', 'Pattern recognition', 'Progressive levels'],
-            instructions: 'Follow the glowing path and remember the sequence of flowers you encounter.',
+            duration: '5-8 min',
+            ageRange: '4-10',
+            image: '/assets/images/Mascot.png',
+            features: ['Magical forest theme', 'Progressive levels', 'Beautiful animations'],
+            instructions: 'Remember the sequence of flowers and repeat them in the correct order.',
         },
         'inhibition': {
             id: 'inhibition',
             title: 'Stop & Go Adventure',
             category: 'Focus',
-            description: 'Test your impulse control and reaction time in this engaging game.',
-            skills: ['Inhibitory Control', 'Reaction Time', 'Attention'],
+            description: 'Train your impulse control and attention with this engaging stop-go game.',
+            skills: ['Inhibitory Control', 'Attention', 'Response Inhibition'],
             difficulty: 'Medium',
-            duration: '2-4 min',
-            ageRange: '7-14',
-            image: '/assets/images/Mascot.png',
-            features: ['Color-coded signals', 'Speed tracking', 'Focus training'],
-            instructions: 'Press the button only when the light turns green. Resist the urge to press on red!',
+            duration: '4-7 min',
+            ageRange: '5-12',
+            image: '/assets/images/Neuraplaybrain.png',
+            features: ['Color-coded responses', 'Speed challenges', 'Progress tracking'],
+            instructions: 'Press the button when you see green, but stop when you see red. Be quick but accurate!',
         },
         'berry-blaster': {
             id: 'berry-blaster',
             title: 'Berry Blaster',
             category: 'Focus',
-            description: 'Blast berries while avoiding obstacles in this fast-paced focus game.',
-            skills: ['Visual Attention', 'Hand-Eye Coordination'],
-            difficulty: 'Medium',
+            description: 'Blast berries in this fast-paced focus and reaction game.',
+            skills: ['Visual Attention', 'Reaction Time', 'Hand-Eye Coordination'],
+            difficulty: 'Easy',
             duration: '3-5 min',
-            ageRange: '8-15',
-            image: '/assets/images/neuraplaybanner1.png',
-            features: ['Dynamic targets', 'Obstacle avoidance', 'Score multiplier'],
-            instructions: 'Aim and shoot at the berries while avoiding the obstacles that appear.',
+            ageRange: '4-10',
+            image: '/assets/images/Alfiya.png',
+            features: ['Colorful graphics', 'Increasing speed', 'Score system'],
+            instructions: 'Click on berries as they appear. The faster you click, the higher your score!',
         },
         'pattern-matching': {
             id: 'pattern-matching',
             title: 'Pattern Detective',
             category: 'Logic',
-            description: 'Solve pattern puzzles and unlock the secrets of logical thinking.',
-            skills: ['Pattern Recognition', 'Logical Reasoning'],
-            difficulty: 'Hard',
-            duration: '4-8 min',
-            ageRange: '9-16',
+            description: 'Solve pattern puzzles and develop logical thinking skills.',
+            skills: ['Pattern Recognition', 'Logical Reasoning', 'Problem Solving'],
+            difficulty: 'Medium',
+            duration: '5-10 min',
+            ageRange: '6-12',
             image: '/assets/images/Neuraplaybrain.png',
-            features: ['Multiple pattern types', 'Logic puzzles', 'Brain training'],
-            instructions: 'Identify the pattern and predict what comes next in the sequence.',
+            features: ['Multiple pattern types', 'Progressive difficulty', 'Hint system'],
+            instructions: 'Find the pattern in the sequence and predict what comes next.',
         },
         'counting-adventure': {
             id: 'counting-adventure',
             title: 'Number Quest',
             category: 'Logic',
             description: 'Embark on a mathematical adventure with counting and number recognition.',
-            skills: ['Numerical Processing', 'Counting Skills'],
+            skills: ['Number Recognition', 'Counting', 'Mathematical Thinking'],
             difficulty: 'Easy',
-            duration: '2-5 min',
-            ageRange: '5-10',
+            duration: '4-8 min',
+            ageRange: '4-8',
             image: '/assets/images/Mascot.png',
-            features: ['Number recognition', 'Counting practice', 'Visual math'],
-            instructions: 'Count the objects and select the correct number from the options.',
+            features: ['Number animations', 'Progressive difficulty', 'Visual feedback'],
+            instructions: 'Count the objects and select the correct number.',
         },
         'fuzzling-advanced': {
             id: 'fuzzling-advanced',
             title: "Fuzzling's Playpen",
             category: 'Logic',
-            description: 'Advanced puzzle solving with the adorable Fuzzling character.',
-            skills: ['Problem Solving', 'Critical Thinking'],
+            description: 'Advanced puzzle solving with Fuzzling the friendly monster.',
+            skills: ['Problem Solving', 'Spatial Reasoning', 'Logical Thinking'],
             difficulty: 'Hard',
-            duration: '5-10 min',
-            ageRange: '10-16',
-            image: '/assets/images/neuraplaybanner1.png',
-            features: ['Complex puzzles', 'Character interaction', 'Multiple solutions'],
-            instructions: 'Help Fuzzling solve puzzles by thinking creatively and logically.',
+            duration: '8-15 min',
+            ageRange: '8-14',
+            image: '/assets/images/Neuraplaybrain.png',
+            features: ['Complex puzzles', 'Multiple solutions', 'Hint system'],
+            instructions: 'Help Fuzzling solve complex puzzles by thinking logically and creatively.',
         },
         'letter-hunt': {
             id: 'letter-hunt',
             title: 'Letter Safari',
             category: 'Language',
-            description: 'Hunt for letters in a jungle adventure while learning the alphabet.',
-            skills: ['Letter Recognition', 'Visual Scanning'],
+            description: 'Hunt for letters and develop early literacy skills.',
+            skills: ['Letter Recognition', 'Visual Scanning', 'Language Development'],
             difficulty: 'Easy',
-            duration: '2-4 min',
-            ageRange: '4-8',
-            image: '/assets/images/Neuraplaybrain.png',
-            features: ['Jungle theme', 'Letter recognition', 'Visual scanning'],
-            instructions: 'Find and click on the letters hidden throughout the jungle scene.',
-        },
-        'mountain-climber': {
-            id: 'mountain-climber',
-            title: 'Mountain Climber',
-            category: 'Motor Skills',
-            description: 'Climb mountains while developing coordination and motor skills.',
-            skills: ['Motor Coordination', 'Balance'],
-            difficulty: 'Medium',
             duration: '3-6 min',
-            ageRange: '6-12',
-            image: '/assets/images/Mascot.png',
-            features: ['Mountain climbing', 'Coordination training', 'Progressive difficulty'],
-            instructions: 'Use precise movements to climb the mountain without falling.',
-        },
-        'stacker': {
-            id: 'stacker',
-            title: 'Block Stacker',
-            category: 'Motor Skills',
-            description: 'Stack blocks carefully to build the tallest tower possible.',
-            skills: ['Fine Motor Skills', 'Spatial Awareness'],
-            difficulty: 'Medium',
-            duration: '2-5 min',
-            ageRange: '5-10',
-            image: '/assets/images/police.jpg',
-            features: ['Block stacking', 'Tower building', 'Precision training'],
-            instructions: 'Stack blocks one by one to build the tallest tower without it falling.',
-        },
-        'happy-builder': {
-            id: 'happy-builder',
-            title: 'Happy Builder',
-            category: 'Creativity',
-            description: 'Build and create in this open-ended construction game.',
-            skills: ['Creativity', 'Spatial Reasoning'],
-            difficulty: 'Easy',
-            duration: '5-15 min',
-            ageRange: '6-12',
-            image: '/assets/images/neuraplaybanner1.png',
-            features: ['Open-ended building', 'Creative expression', 'Multiple materials'],
-            instructions: 'Use different materials to build whatever you can imagine!',
-        },
-        'fuzzling': {
-            id: 'fuzzling',
-            title: 'Fuzzling Adventure',
-            category: 'Logic',
-            description: 'Help the adorable Fuzzling solve puzzles and navigate challenges.',
-            skills: ['Problem Solving', 'Logical Thinking'],
-            difficulty: 'Medium',
-            duration: '4-8 min',
-            ageRange: '7-12',
-            image: '/assets/images/Neuraplaybrain.png',
-            features: ['Character-driven', 'Puzzle solving', 'Adventure elements'],
-            instructions: 'Help Fuzzling solve puzzles and overcome obstacles in this adventure.',
+            ageRange: '4-8',
+            image: '/assets/images/Alfiya.png',
+            features: ['Letter animations', 'Sound effects', 'Progress tracking'],
+            instructions: 'Find and click on the target letter as quickly as you can.',
         },
         'ai-story-creator': {
             id: 'ai-story-creator',
             title: 'AI Story Creator',
             category: 'Creativity',
-            description: 'Create magical stories with the help of AI and bring them to life with images.',
-            skills: ['Creativity', 'Language Development', 'Imagination'],
+            description: 'Create amazing stories with the help of AI.',
+            skills: ['Creativity', 'Language Skills', 'Imagination'],
+            difficulty: 'Easy',
+            duration: '5-15 min',
+            ageRange: '6-12',
+            image: '/assets/images/Neuraplaybrain.png',
+            features: ['AI-powered stories', 'Custom characters', 'Interactive elements'],
+            instructions: 'Describe your story idea and watch AI create a unique adventure for you.',
+        },
+        'happy-builder': {
+            id: 'happy-builder',
+            title: 'Happy Builder',
+            category: 'Creativity',
+            description: 'Build and create in this creative construction game.',
+            skills: ['Creativity', 'Spatial Reasoning', 'Planning'],
             difficulty: 'Easy',
             duration: '5-10 min',
-            ageRange: '6-14',
-            image: '/assets/images/Neuraplaybrain.png',
-            features: ['AI-powered story generation', 'Image creation', 'Voice narration'],
-            instructions: 'Enter a story idea and watch AI create a magical story with images and narration for you!',
+            ageRange: '4-10',
+            image: '/assets/images/Mascot.png',
+            features: ['Building blocks', 'Creative freedom', 'Save creations'],
+            instructions: 'Use the building blocks to create whatever you imagine.',
         },
         'the-cube': {
             id: 'the-cube',
             title: 'The Cube',
             category: 'Logic',
-            description: 'Solve the classic 3D Rubik\'s Cube puzzle with smooth 3D graphics and intuitive controls.',
-            skills: ['Spatial Reasoning', 'Problem Solving', 'Pattern Recognition'],
+            description: 'Solve 3D cube puzzles and develop spatial reasoning.',
+            skills: ['Spatial Reasoning', '3D Visualization', 'Problem Solving'],
             difficulty: 'Hard',
-            duration: '5-30 min',
-            ageRange: '8-16',
+            duration: '10-20 min',
+            ageRange: '8-14',
             image: '/assets/images/Thecube.png',
-            features: ['3D graphics', 'Multiple cube sizes', 'Timer and statistics', 'Customizable themes'],
-            instructions: 'Drag to rotate the cube, use settings to change size and theme. Double tap to start!',
-        }
+            features: ['3D graphics', 'Multiple levels', 'Hint system'],
+            instructions: 'Rotate the cube to solve the puzzle and unlock new levels.',
+        },
     };
+
+    const glassPanelStyle = "bg-white/10 backdrop-blur-md border border-white/20";
 
     const handlePlayGame = () => {
         if (infoGame) {
             setSelectedGame(infoGame.id);
             setShowInfoModal(false);
+            setMainView('game');
         }
     };
 
-    const handleGameClose = () => setSelectedGame(null);
+    const handleGameClose = () => {
+        setSelectedGame(null);
+        setMainView('play');
+    };
 
-
-
-    useLayoutEffect(() => {
-        if (contentRef.current) {
-            gsap.fromTo(contentRef.current, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out', delay: 0.1 });
+    const renderGameComponent = (gameId: string) => {
+        switch (gameId) {
+            case 'crossroad-fun':
+                return <CrossroadFunGame onClose={handleGameClose} />;
+            case 'memory-sequence':
+                return <MemorySequenceGame onClose={handleGameClose} />;
+            case 'starbloom-adventure':
+                return <StarbloomAdventureGame onClose={handleGameClose} />;
+            case 'inhibition':
+                return <InhibitionGame onClose={handleGameClose} />;
+            case 'berry-blaster':
+                return <BerryBlasterGame />;
+            case 'pattern-matching':
+                return <PatternMatchingGame onClose={handleGameClose} />;
+            case 'counting-adventure':
+                return <CountingAdventureGame onClose={handleGameClose} />;
+            case 'fuzzling-advanced':
+                return <FuzzlingAdvancedGame onClose={handleGameClose} />;
+            case 'letter-hunt':
+                return <LetterHuntGame onClose={handleGameClose} />;
+            case 'mountain-climber':
+                return <MountainClimberGame onClose={handleGameClose} />;
+            case 'stacker':
+                return <StackerGame onClose={handleGameClose} onGameEnd={() => {}} />;
+            case 'happy-builder':
+                return <HappyBuilderGame />;
+            case 'fuzzling':
+                return <FuzzlingGame onClose={handleGameClose} />;
+            case 'the-cube':
+                return <TheCubeGame onClose={handleGameClose} />;
+            case 'ai-story-creator':
+                return <AIGame onClose={handleGameClose} />;
+            default:
+                return <div className="text-white text-center p-8">Game not found: {gameId}</div>;
         }
-    }, [mainView, playCategory]);
-
-    if (!user) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-6">
-            <div className="flex items-center justify-center mb-8">
-              <img 
-                src="/assets/images/Mascot.png" 
-                alt="NeuraPlay Mascot" 
-                className="w-32 h-32 object-contain"
-              />
-            </div>
-            <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
-            <p className="text-lg text-gray-300 mb-8">
-              Please log in to access the playground and start your learning adventure.
-            </p>
-            <div className="space-y-4">
-              <Link 
-                to="/forum-registration" 
-                className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
-                Create Account
-              </Link>
-              <Link 
-                to="/login" 
-                className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
-              >
-                Log In
-              </Link>
-            </div>
-            <p className="text-sm text-gray-400 mt-6">
-              Join thousands of learners discovering the joy of cognitive development!
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    const glassPanelStyle = "bg-black/20 border border-white/10 backdrop-blur-md";
+    };
 
     const renderGameGrid = () => (
-        selectedGame ? (
-            <GameWrapper 
-                gameId={selectedGame} 
-                onClose={handleGameClose}
-                showVolumeSlider={true}
-                showGameControls={true}
-                volume={0.7}
-                onVolumeChange={(volume) => {
-                    // Handle volume change for all games
-                    console.log('Volume changed to:', volume);
-                }}
-                showSkipControls={selectedGame === 'starbloom-adventure'}
-                onSkipBack={() => {
-                    // Handle skip back for story games
-                    console.log('Skip back');
-                }}
-                onSkipForward={() => {
-                    // Handle skip forward for story games
-                    console.log('Skip forward');
-                }}
-            >
-                {selectedGame === 'memory-sequence' && <MemorySequenceGame onClose={handleGameClose} />}
-                {selectedGame === 'starbloom-adventure' && <StarbloomAdventureGame onClose={handleGameClose} />}
-                {selectedGame === 'inhibition' && <InhibitionGame onClose={handleGameClose} />}
-                {selectedGame === 'berry-blaster' && <BerryBlasterGame onRequestFullscreen={() => {}} />}
-                {selectedGame === 'pattern-matching' && <PatternMatchingGame onClose={handleGameClose} />}
-                {selectedGame === 'counting-adventure' && <CountingAdventureGame onClose={handleGameClose} />}
-                {selectedGame === 'fuzzling-advanced' && <FuzzlingAdvancedGame onClose={handleGameClose} />}
-                {selectedGame === 'letter-hunt' && <LetterHuntGame onClose={handleGameClose} />}
-                {selectedGame === 'mountain-climber' && <MountainClimberGame onClose={handleGameClose} />}
-                {selectedGame === 'stacker' && <StackerGame onGameEnd={() => {}} onClose={handleGameClose} />}
-                {selectedGame === 'happy-builder' && <HappyBuilderGame />}
-                {selectedGame === 'fuzzling' && <FuzzlingGame onClose={handleGameClose} />}
-                {selectedGame === 'crossroad-fun' && <CrossroadFunGame onClose={handleGameClose} />}
-                {selectedGame === 'the-cube' && <TheCubeGame onClose={handleGameClose} />}
-                {selectedGame === 'ai-story-creator' && <AIGame onClose={handleGameClose} />}
-                {/* Add more mappings as you add more games */}
-                {/* Fallback if not implemented */}
-                {![
-                  'memory-sequence','starbloom-adventure','inhibition','berry-blaster','pattern-matching','counting-adventure','fuzzling-advanced','letter-hunt','mountain-climber','stacker','happy-builder','fuzzling','crossroad-fun','the-cube','ai-story-creator'
-                ].includes(selectedGame) && (
-                  <div className="text-white text-xl">This game is not yet implemented.</div>
-                )}
-            </GameWrapper>
-        ) : (
-            <>
-                <h2 className="text-2xl font-bold text-slate-100 mb-4">Category: {playCategory}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredGames.map(game => {
-                        // Special handling for the cube game to use image instead of gradient
-                        const isCubeGame = game.id === 'the-cube';
-                        
-                        return (
-                            <div
-                                key={game.id}
-                                className={`${glassPanelStyle} rounded-2xl overflow-hidden cursor-pointer group`}
-                                onClick={() => {
-                                    setInfoGame(gameDetails[game.id]);
-                                    setShowInfoModal(true);
-                                }}
-                            >
-                                {isCubeGame ? (
-                                    <div className="relative h-36 overflow-hidden">
-                                        <img 
-                                            src="/assets/images/Thecube.png" 
-                                            alt="The Cube Game"
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                        />
-                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
-                                        <div className="absolute top-3 right-3 bg-black/50 rounded-lg px-2 py-1">
-                                            <span className="text-xs font-medium text-white">3D Puzzle</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={`h-36 bg-gradient-to-br ${game.color} flex items-center justify-center text-white text-5xl transition-transform duration-300 group-hover:scale-110`}>
-                                        {game.icon}
-                                    </div>
-                                )}
-                                <div className="p-5">
-                                    <h3 className="font-bold text-lg text-white">{game.title}</h3>
-                                </div>
-                            </div>
-                        );
-                    })}
+        <>
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-2">
+                    {gameCategories.map(category => (
+                        <button
+                            key={category}
+                            onClick={() => setPlayCategory(category)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                playCategory === category
+                                    ? 'bg-violet-600 text-white'
+                                    : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                            }`}
+                        >
+                            {category}
+                        </button>
+                    ))}
                 </div>
-            </>
-        )
+                <h2 className="text-2xl font-bold text-slate-100 mb-4">Category: {playCategory}</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredGames.map((game, index) => {
+                    const isRevealed = revealedCards.has(game.id);
+                    
+                    return (
+                        <div
+                            key={game.id}
+                            className={`${glassPanelStyle} rounded-2xl overflow-hidden cursor-pointer group w-full h-full transition-all duration-500 transform ${
+                                isRevealed 
+                                    ? 'opacity-100 scale-100 translate-y-0' 
+                                    : 'opacity-0 scale-95 translate-y-4'
+                            }`}
+                            style={{ transitionDelay: `${index * 100}ms` }}
+                            onClick={() => {
+                                const gameInfo = gameDetails[game.id];
+                                if (gameInfo) {
+                                    setInfoGame(gameInfo);
+                                    setShowInfoModal(true);
+                                } else {
+                                    console.warn(`No game details found for: ${game.id}`);
+                                }
+                            }}
+                        >
+                            {game.image ? (
+                                <div className="relative h-36 overflow-hidden">
+                                    <img 
+                                        src={game.image} 
+                                        alt={`${game.title} Game`}
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+                                    <div className="absolute top-3 right-3 bg-black/50 rounded-lg px-2 py-1">
+                                        <span className="text-xs font-medium text-white">{game.category}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={`h-36 bg-gradient-to-br ${game.color} flex items-center justify-center text-white text-5xl transition-transform duration-300 group-hover:scale-110`}>
+                                    {game.icon}
+                                </div>
+                            )}
+                            <div className="p-5">
+                                <h3 className="font-bold text-lg text-white">{game.title}</h3>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </>
     );
 
 
@@ -412,125 +362,58 @@ const PlaygroundPage: React.FC = () => {
                     <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center">
                         <Crown className="w-6 h-6 text-black" />
                     </div>
-                    <div className="text-2xl font-bold text-yellow-400">{user.profile.rank}</div>
+                    <div className="text-2xl font-bold text-yellow-400">{user?.profile.rank || 'New Learner'}</div>
                     <div className="text-sm text-slate-400">Current Rank</div>
                 </div>
                 <div className={`${glassPanelStyle} p-4 rounded-xl text-center`}>
                     <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center">
                         <Zap className="w-6 h-6 text-black" />
                     </div>
-                    <div className="text-2xl font-bold text-blue-400">{user.profile.xp}</div>
+                    <div className="text-2xl font-bold text-blue-400">{user?.profile.xp || 0}</div>
                     <div className="text-sm text-slate-400">Experience Points</div>
                 </div>
                 <div className={`${glassPanelStyle} p-4 rounded-xl text-center`}>
                     <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                         <Star className="w-6 h-6 text-black" />
                     </div>
-                    <div className="text-2xl font-bold text-yellow-400">{user.profile.stars}</div>
+                    <div className="text-2xl font-bold text-yellow-400">{user?.profile.stars || 0}</div>
                     <div className="text-sm text-slate-400">Stars Earned</div>
                 </div>
                 <div className={`${glassPanelStyle} p-4 rounded-xl text-center`}>
                     <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                        <Gamepad2 className="w-6 h-6 text-black" />
+                        <TrendingUp className="w-6 h-6 text-black" />
                     </div>
-                    <div className="text-2xl font-bold text-green-400">{Object.keys(user.profile.gameProgress).length}</div>
-                    <div className="text-sm text-slate-400">Games Played</div>
+                    <div className="text-2xl font-bold text-green-400">{user?.profile.xpToNextLevel || 100}</div>
+                    <div className="text-sm text-slate-400">XP to Next Level</div>
                 </div>
             </div>
 
-            {/* AI Assessment Tool */}
-            <div className={`${glassPanelStyle} p-6 rounded-2xl`}>
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                        <BrainIcon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-white">AI Learning Assessment</h3>
-                        <p className="text-slate-400">Get personalized insights about your learning progress</p>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Link
-                        to="/ai-report"
-                        className="p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-xl hover:from-purple-500/30 hover:to-pink-500/30 transition-all group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <FileText className="w-6 h-6 text-purple-400 group-hover:text-purple-300" />
-                            <div>
-                                <h4 className="font-semibold text-white">Generate AI Report</h4>
-                                <p className="text-sm text-slate-400">Comprehensive learning analysis</p>
-                            </div>
-                        </div>
-                    </Link>
-                    <div className="p-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl">
-                        <div className="flex items-center gap-3">
-                            <TrendingUp className="w-6 h-6 text-blue-400" />
-                            <div>
-                                <h4 className="font-semibold text-white">Progress Analytics</h4>
-                                <p className="text-sm text-slate-400">Real-time performance tracking</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Plasma Icon Info */}
-            <div className={`${glassPanelStyle} p-6 rounded-2xl`}>
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-white">Plasma Icon</h3>
-                        <p className="text-slate-400">Look for the floating plasma icon around the playground!</p>
-                    </div>
-                </div>
-                <div className="p-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-xl">
-                    <div className="flex items-center gap-3">
-                        <Sparkles className="w-6 h-6 text-indigo-400" />
-                        <div>
-                            <h4 className="font-semibold text-white">Interactive Plasma Animation</h4>
-                            <p className="text-sm text-slate-400">Click the floating plasma icon to see achievement modals</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Game Progress Grid */}
+            {/* Game Progress */}
             <div className={`${glassPanelStyle} p-6 rounded-2xl`}>
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-violet-400" />
-                    Game Progress & Assessment
+                    <Award className="w-5 h-5 text-violet-400" />
+                    Game Progress
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {games.map(game => {
-                        const progress = user.profile.gameProgress[game.id] || { level: 0, stars: 0, bestScore: 0, timesPlayed: 0 };
+                    {Object.entries(user?.profile.gameProgress || {}).map(([gameId, progress]) => {
+                        const game = games.find(g => g.id === gameId);
+                        if (!game) return null;
+                        
                         return (
-                            <div key={game.id} className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className={`w-8 h-8 bg-gradient-to-br ${game.color} rounded-lg flex items-center justify-center`}>
+                            <div key={gameId} className="p-4 bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-400/30 rounded-xl">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className={`w-8 h-8 bg-gradient-to-br ${game.color} rounded-full flex items-center justify-center text-white`}>
                                         {game.icon}
                                     </div>
-                                    <div>
-                                        <h4 className="font-semibold text-white">{game.title}</h4>
-                                        <p className="text-xs text-slate-400">{game.category}</p>
-                                    </div>
+                                    <h4 className="font-semibold text-white">{game.title}</h4>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="flex items-center justify-between">
                                     <div className="text-center">
-                                        <div className="text-yellow-400 font-bold">{progress.level}</div>
+                                        <div className="text-violet-400 font-bold">{progress.level || 0}</div>
                                         <div className="text-slate-400">Level</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-yellow-400 font-bold">{progress.stars}</div>
-                                        <div className="text-slate-400">Stars</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-blue-400 font-bold">{progress.bestScore}</div>
-                                        <div className="text-slate-400">Best Score</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-green-400 font-bold">{progress.timesPlayed}</div>
+                                        <div className="text-green-400 font-bold">{progress.timesPlayed || 0}</div>
                                         <div className="text-slate-400">Plays</div>
                                     </div>
                                 </div>
@@ -555,10 +438,10 @@ const PlaygroundPage: React.FC = () => {
                         <p className="text-sm text-slate-400 mb-3">Based on Memory Galaxy & Starbloom Forest performance</p>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 bg-white/10 rounded-full h-2">
-                                <div className="bg-green-400 h-2 rounded-full" style={{ width: `${Math.min((user.profile.gameProgress['memory-sequence']?.level || 0) * 20, 100)}%` }}></div>
+                                <div className="bg-green-400 h-2 rounded-full" style={{ width: `${Math.min((user?.profile.gameProgress?.['memory-sequence']?.level || 0) * 20, 100)}%` }}></div>
                             </div>
                             <span className="text-xs text-green-400 font-bold">
-                                {Math.min((user.profile.gameProgress['memory-sequence']?.level || 0) * 20, 100)}%
+                                {Math.min((user?.profile.gameProgress?.['memory-sequence']?.level || 0) * 20, 100)}%
                             </span>
                         </div>
                     </div>
@@ -570,10 +453,10 @@ const PlaygroundPage: React.FC = () => {
                         <p className="text-sm text-slate-400 mb-3">Based on Stop & Go Adventure performance</p>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 bg-white/10 rounded-full h-2">
-                                <div className="bg-blue-400 h-2 rounded-full" style={{ width: `${Math.min((user.profile.gameProgress['inhibition']?.level || 0) * 20, 100)}%` }}></div>
+                                <div className="bg-blue-400 h-2 rounded-full" style={{ width: `${Math.min((user?.profile.gameProgress?.['inhibition']?.level || 0) * 20, 100)}%` }}></div>
                             </div>
                             <span className="text-xs text-blue-400 font-bold">
-                                {Math.min((user.profile.gameProgress['inhibition']?.level || 0) * 20, 100)}%
+                                {Math.min((user?.profile.gameProgress?.['inhibition']?.level || 0) * 20, 100)}%
                             </span>
                         </div>
                     </div>
@@ -585,10 +468,10 @@ const PlaygroundPage: React.FC = () => {
                         <p className="text-sm text-slate-400 mb-3">Based on Pattern Detective performance</p>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 bg-white/10 rounded-full h-2">
-                                <div className="bg-purple-400 h-2 rounded-full" style={{ width: `${Math.min((user.profile.gameProgress['pattern-matching']?.level || 0) * 20, 100)}%` }}></div>
+                                <div className="bg-purple-400 h-2 rounded-full" style={{ width: `${Math.min((user?.profile.gameProgress?.['pattern-matching']?.level || 0) * 20, 100)}%` }}></div>
                             </div>
                             <span className="text-xs text-purple-400 font-bold">
-                                {Math.min((user.profile.gameProgress['pattern-matching']?.level || 0) * 20, 100)}%
+                                {Math.min((user?.profile.gameProgress?.['pattern-matching']?.level || 0) * 20, 100)}%
                             </span>
                         </div>
                     </div>
@@ -600,10 +483,10 @@ const PlaygroundPage: React.FC = () => {
                         <p className="text-sm text-slate-400 mb-3">Based on Number Quest performance</p>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 bg-white/10 rounded-full h-2">
-                                <div className="bg-orange-400 h-2 rounded-full" style={{ width: `${Math.min((user.profile.gameProgress['counting-adventure']?.level || 0) * 20, 100)}%` }}></div>
+                                <div className="bg-orange-400 h-2 rounded-full" style={{ width: `${Math.min((user?.profile.gameProgress?.['counting-adventure']?.level || 0) * 20, 100)}%` }}></div>
                             </div>
                             <span className="text-xs text-orange-400 font-bold">
-                                {Math.min((user.profile.gameProgress['counting-adventure']?.level || 0) * 20, 100)}%
+                                {Math.min((user?.profile.gameProgress?.['counting-adventure']?.level || 0) * 20, 100)}%
                             </span>
                         </div>
                     </div>
@@ -612,23 +495,51 @@ const PlaygroundPage: React.FC = () => {
         </div>
     );
 
-    return (
-        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative">
-            {/* Plasma Background */}
-            <PlasmaBackground />
-            
-            {/* Plasma Ball in Bottom Left */}
-            <div className="plasma-ball-bottom-left">
-                <PlasmaBall 
-                    size={150} 
-                    className="plasma-ball-interactive"
-                />
+    // Add user authentication check
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto px-6">
+                    <div className="flex items-center justify-center mb-8">
+                        <img 
+                            src="/assets/images/Mascot.png" 
+                            alt="NeuraPlay Mascot" 
+                            className="w-32 h-32 object-contain"
+                        />
+                    </div>
+                    <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
+                    <p className="text-lg text-gray-300 mb-8">
+                        Please log in to access the playground and start your learning adventure.
+                    </p>
+                    <div className="space-y-4">
+                        <Link 
+                            to="/forum-registration" 
+                            className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                        >
+                            Create Account
+                        </Link>
+                        <Link 
+                            to="/login" 
+                            className="inline-block w-full bg-transparent border-2 border-white/20 text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300"
+                        >
+                            Log In
+                        </Link>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-6">
+                        Join thousands of learners discovering the joy of cognitive development!
+                    </p>
+                </div>
             </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen text-slate-200 pt-24 pb-12 relative bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
             
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
                     <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white">The Playground</h1>
-                    <p className="text-xl text-violet-300 mt-2">Your learning adventure starts here, {user.username}.</p>
+                    <p className="text-xl text-violet-300 mt-2">Your learning adventure starts here, {user?.username}.</p>
                 </div>
                 <div className="flex flex-col lg:flex-row gap-4">
                     <aside className="lg:w-48 flex-shrink-0">
@@ -655,11 +566,24 @@ const PlaygroundPage: React.FC = () => {
                             {mainView === 'play' && renderGameGrid()}
                             {mainView === 'profile' && renderProfile()}
                             {mainView === 'social' && <div className="p-4 text-white"><h2 className="text-3xl font-bold">Social & Friends</h2></div>}
+                            {mainView === 'game' && selectedGame && (
+                                <div className="relative">
+                                    <button
+                                        onClick={handleGameClose}
+                                        className="absolute top-2 right-2 z-10 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors"
+                                    >
+                                        ✕
+                                    </button>
+                                    <GameWrapper gameId={selectedGame} onClose={handleGameClose}>
+                                        {renderGameComponent(selectedGame)}
+                                    </GameWrapper>
+                                </div>
+                            )}
                         </div>
                     </main>
                 </div>
             </div>
-            <GameInfoModal
+            <PlaygroundModalReveal
                 game={infoGame}
                 isOpen={showInfoModal}
                 onClose={() => setShowInfoModal(false)}

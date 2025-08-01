@@ -57,7 +57,7 @@ import {
   X,
   CheckSquare
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import TaskManager from '../components/TaskManager';
 import StudyCalendar from '../components/StudyCalendar';
 import Diary from '../components/Diary';
@@ -91,6 +91,7 @@ interface StudySession {
 
 const DashboardPage: React.FC = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('library');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -285,6 +286,12 @@ const DashboardPage: React.FC = () => {
     console.log('Toggle bookmark for module:', moduleId);
   };
 
+  const handleUserClick = () => {
+    if (user) {
+      navigate(`/profile/${user.username}`);
+    }
+  };
+
   const progressPercentage = totalTime > 0 ? (currentTime / totalTime) * 100 : 0;
 
   // Show login prompt if user is not logged in
@@ -338,25 +345,9 @@ const DashboardPage: React.FC = () => {
               <div>
                 <h1 className="text-2xl font-bold">Learning Central</h1>
                 <p className="text-sm text-gray-300">Your personal learning library</p>
-          </div>
-        </div>
-
-            <div className="flex items-center space-x-4">
-              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-              </button>
-              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                <Settings className="w-5 h-5" />
-              </button>
-              <div className="flex items-center space-x-2">
-                <img 
-                  src={user?.profile?.avatar || '/assets/images/placeholder.png'} 
-                  alt="Avatar" 
-                  className="w-8 h-8 rounded-full"
-                />
-                <span className="text-sm font-medium">{user?.username || 'User'}</span>
+              </div>
             </div>
-            </div>
+            {/* Removed lower DemoUser avatar and name */}
           </div>
                 </div>
               </div>
@@ -758,6 +749,8 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           )}
+
+
     </div>
   );
 };

@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 import ContactForm from './ContactForm';
+import { useTheme } from '../contexts/ThemeContext';
+
+// Use the globally loaded GSAP from CDN
+declare const gsap: any;
+declare const ScrollTrigger: any;
 
 const LICENSE_TEXT = `Copyright (c) 2025 Neuraplay
 
@@ -43,7 +48,7 @@ The Software's content is informed by professionals in neuropsychology and clini
 
 The Software is not a substitute for medical advice, diagnosis, or treatment.
 
-AI-Generated Content is produced by automated systems and has not been reviewed by experts. Neuraplay does not guarantee its accuracy, appropriateness, or safety. Use is at the User’s own risk.
+AI-Generated Content is produced by automated systems and has not been reviewed by experts. Neuraplay does not guarantee its accuracy, appropriateness, or safety. Use is at the User's own risk.
 
 7. NO WARRANTIES
 The Software is provided "AS IS" and "AS AVAILABLE," without warranties of any kind, express or implied. Neuraplay expressly disclaims all warranties, including but not limited to fitness for a particular purpose, merchantability, non-infringement, and any warranties regarding the reliability, content, or availability of the Software or its integrated Third-Party Services.
@@ -66,53 +71,152 @@ Neuraplay
 const Footer: React.FC = () => {
   const [showLicense, setShowLicense] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const footerRef = useRef<HTMLElement>(null);
+  const { isDarkMode } = useTheme();
+
+  useEffect(() => {
+    if (footerRef.current && typeof gsap !== 'undefined') {
+      // Get all footer elements for staggering
+      const footerElements = footerRef.current.querySelectorAll('.footer-element');
+      const footerSections = footerRef.current.querySelectorAll('.footer-section');
+      
+      // Set initial states for staggering elements
+      gsap.set(footerElements, {
+        opacity: 0,
+        y: 30,
+        scale: 0.95
+      });
+      
+      gsap.set(footerSections, {
+        opacity: 0,
+        y: 20
+      });
+
+      // Create main timeline for footer reveal
+      const footerTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: footerRef.current,
+          start: 'top bottom-=100',
+          end: 'bottom top+=50',
+          scrub: 1,
+          onEnter: () => {
+            // Animate footer elements in when footer comes into view
+            gsap.to(footerElements, {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.8,
+              stagger: 0.1,
+              ease: "back.out(1.7)"
+            });
+            
+            gsap.to(footerSections, {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.15,
+              ease: "power2.out"
+            });
+          },
+          onLeave: () => {
+            // Optional: animate out when leaving view
+            gsap.to([footerElements, footerSections], {
+              opacity: 0.3,
+              y: 10,
+              duration: 0.3
+            });
+          },
+          onEnterBack: () => {
+            // Animate back in when scrolling back up
+            gsap.to(footerElements, {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.6,
+              stagger: 0.08,
+              ease: "power2.out"
+            });
+            
+            gsap.to(footerSections, {
+              opacity: 1,
+              y: 0,
+              duration: 0.4,
+              stagger: 0.1,
+              ease: "power2.out"
+            });
+          }
+        }
+      });
+
+      return () => {
+        // Cleanup
+        ScrollTrigger.getAll().forEach(trigger => {
+          if (trigger.vars.trigger === footerRef.current) {
+            trigger.kill();
+          }
+        });
+      };
+    }
+  }, []);
+
   return (
-    <footer className="bg-slate-100 border-t border-slate-200">
-      <div className="container mx-auto px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-slate-600">
-          <div>
-            <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Brain className="w-5 h-5" />
+    <footer ref={footerRef} className={`${isDarkMode 
+      ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white border-white/10' 
+      : 'bg-gradient-to-br from-slate-100 via-purple-100 to-indigo-100 text-slate-800 border-slate-200'
+    } border-t transition-all duration-500 relative overflow-hidden`}>
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 left-1/4 w-32 h-32 bg-purple-500 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-blue-500 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-16 h-16 bg-violet-500 rounded-full blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+      
+      <div className="container mx-auto px-6 py-16 relative z-10">
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 ${isDarkMode ? 'text-white/80' : 'text-slate-600'}`}>
+          <div className="footer-section">
+            <h4 className={`font-bold mb-4 flex items-center gap-2 footer-element ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+              <Brain className="w-5 h-5 text-violet-400" />
               NEURAPLAY
             </h4>
-            <Link to="/registration" className="block hover:text-violet-600">
+            <Link to="/registration" className="block hover:text-violet-300 transition-colors duration-300 footer-element">
               Begin Journey
             </Link>
           </div>
-          <div>
-            <h4 className="font-bold text-slate-800 mb-4">Company</h4>
-            <a href="#" className="block hover:text-violet-600 mb-2">About Us</a>
-            <a href="#" className="block hover:text-violet-600" onClick={e => { e.preventDefault(); setShowContact(true); }}>Contact</a>
+          <div className="footer-section">
+            <h4 className={`font-bold mb-4 footer-element ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Company</h4>
+            <a href="#" className="block hover:text-violet-300 transition-colors duration-300 mb-2 footer-element">About Us</a>
+            <a href="#" className="block hover:text-violet-300 transition-colors duration-300 footer-element" onClick={e => { e.preventDefault(); setShowContact(true); }}>Contact</a>
           </div>
-          <div>
-            <h4 className="font-bold text-slate-800 mb-4">Community</h4>
-            <Link to="/playground" className="block hover:text-violet-600 mb-2">
+          <div className="footer-section">
+            <h4 className={`font-bold mb-4 footer-element ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Community</h4>
+            <Link to="/playground" className="block hover:text-violet-300 transition-colors duration-300 mb-2 footer-element">
               The Playground
             </Link>
-            <Link to="/forum" className="block hover:text-violet-600">
+            <Link to="/forum" className="block hover:text-violet-300 transition-colors duration-300 footer-element">
               Forum
             </Link>
           </div>
-          <div>
-            <h4 className="font-bold text-slate-800 mb-4">Legal</h4>
-            <a href="/licenses/neuraplay.txt" className="text-left block hover:text-violet-600 mb-2" target="_blank" rel="noopener noreferrer">
+          <div className="footer-section">
+            <h4 className={`font-bold mb-4 footer-element ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Legal</h4>
+            <a href="/licenses/neuraplay.txt" className="text-left block hover:text-violet-300 transition-colors duration-300 mb-2 footer-element" target="_blank" rel="noopener noreferrer">
               Neuraplay License
             </a>
-            <a href="/licenses/MIT.txt" className="text-left block hover:text-violet-600 mb-2" target="_blank" rel="noopener noreferrer">
-              MIT License
-            </a>
-            <a href="#" className="text-left block hover:text-violet-600 mb-2" onClick={() => setShowLicense(true)}>
+
+            <a href="#" className="text-left block hover:text-violet-300 transition-colors duration-300 mb-2 footer-element" onClick={() => setShowLicense(true)}>
               View License (Popup)
             </a>
-            <a href="#" className="text-left block hover:text-violet-600" onClick={e => { e.preventDefault(); setShowContact(true); }}>
+            <a href="#" className="text-left block hover:text-violet-300 transition-colors duration-300 footer-element" onClick={e => { e.preventDefault(); setShowContact(true); }}>
               Contact Us
             </a>
           </div>
         </div>
-        <div className="mt-12 border-t border-slate-200 pt-8 text-center text-slate-500">
-          <p>© 2025 Neuraplay. All rights reserved. Proprietary content and intellectual property protected.</p>
-          <div className="text-xs text-slate-400 mt-2">
-            By using this site you agree to the <a href="/licenses/neuraplay.txt" className="underline hover:text-violet-600" target="_blank" rel="noopener noreferrer">Neuraplay License Agreement</a> and <a href="/licenses/MIT.txt" className="underline hover:text-violet-600" target="_blank" rel="noopener noreferrer">MIT License</a>.
+        <div className={`mt-12 border-t pt-8 text-center footer-section ${isDarkMode 
+          ? 'border-white/10 text-white/60' 
+          : 'border-slate-200 text-slate-500'
+        }`}>
+          <p className="footer-element">© 2025 Neuraplay. All rights reserved. Proprietary content and intellectual property protected.</p>
+          <div className={`text-xs mt-2 footer-element ${isDarkMode ? 'text-white/40' : 'text-slate-400'}`}>
+            By using this site you agree to the <a href="/licenses/neuraplay.txt" className="underline hover:text-violet-300 transition-colors duration-300" target="_blank" rel="noopener noreferrer">Neuraplay License Agreement</a>.
           </div>
         </div>
       </div>
