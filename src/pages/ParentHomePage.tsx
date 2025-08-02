@@ -439,35 +439,20 @@ const ParentHomePage: React.FC = () => {
           
           <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 max-w-7xl mx-auto">
             <GlassVideoPlayer
-              src="/assets/Videos/neuraplayintrovid1_720p.mp4"
+              src="/assets/Videos/neuraplayintrovid1.mp4"
               title="What is Neuraplay?"
               description="Step into a world where learning becomes an adventure. Discover how our neuroscience-based approach transforms education and unlocks your child's cognitive potential."
-              secondarySrc="/assets/Videos/neuraplayintrovid4_720p.mp4"
+              secondarySrc="/assets/Videos/neuraplayintrovid4.mp4"
               secondaryTitle="AI-Guard Safety System"
               secondaryDescription="Learn about our advanced AI-powered safety system that monitors all interactions in real-time, ensuring your child's online experience is completely secure."
               className="h-full"
-              qualityVariants={{
-                high: "/assets/Videos/neuraplayintrovid1_1080p.mp4",
-                medium: "/assets/Videos/neuraplayintrovid1_720p.mp4",
-                low: "/assets/Videos/neuraplayintrovid1_480p.mp4"
-              }}
-              secondaryQualityVariants={{
-                high: "/assets/Videos/neuraplayintrovid4_1080p.mp4",
-                medium: "/assets/Videos/neuraplayintrovid4_720p.mp4",
-                low: "/assets/Videos/neuraplayintrovid4_480p.mp4"
-              }}
             />
             
             <GlassVideoPlayer
-              src="/assets/Videos/Neuraplayintroduction_720p.mp4"
+              src="/assets/Videos/Neuraplayintroduction.mp4"
               title="What do users say?"
               description="Explore how our research-backed methodologies target specific cognitive skills and brain development areas for optimal learning outcomes."
               className="h-full"
-              qualityVariants={{
-                high: "/assets/Videos/Neuraplayintroduction_1080p.mp4",
-                medium: "/assets/Videos/Neuraplayintroduction_720p.mp4",
-                low: "/assets/Videos/Neuraplayintroduction_480p.mp4"
-              }}
             />
           </div>
         </div>

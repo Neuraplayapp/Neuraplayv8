@@ -2,9 +2,11 @@ import * as Ably from 'https://cdn.skypack.dev/ably@^1.2.29';
 
 export default async function handler(request, context) {
   try {
-    // Get API keys from environment
+    // Get API keys from environment - try multiple names for ElevenLabs
     const ABLY_API = Deno.env.get("ABLY_API");
-    const ELEVENLABS_API_KEY = Deno.env.get("elven_labs_api_key");
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY") || 
+                               Deno.env.get("elven_labs_api_key") ||
+                               Deno.env.get("VITE_ELVEN_LABS_API_KEY");
     
     if (!ABLY_API || !ELEVENLABS_API_KEY) {
       return new Response(JSON.stringify({

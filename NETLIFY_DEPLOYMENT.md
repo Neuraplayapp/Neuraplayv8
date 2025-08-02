@@ -24,7 +24,11 @@ You must set these in your Netlify dashboard under **Site settings > Environment
 
 1. **together_token** - Your Together AI API token
 2. **hf_token** - Your Hugging Face API token  
-3. **elven_labs_api_key** - Your ElevenLabs API key
+3. **elven_labs_api_key** - Your ElevenLabs API key (for backend functions)
+4. **VITE_ELVEN_LABS_API_KEY** - Your ElevenLabs API key (for frontend)
+5. **ABLY_API** - Your Ably API key
+6. **ASSEMBLY_API_KEY** - Your AssemblyAI API key
+7. **VITE_BRIDGE_SERVICE_URL** - Your bridge service URL
 
 ### How to Set Environment Variables
 1. Go to your Netlify dashboard

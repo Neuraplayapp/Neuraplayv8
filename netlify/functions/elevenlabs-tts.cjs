@@ -33,9 +33,11 @@ exports.handler = async (event, context) => {
     console.log('Voice ID:', voiceId);
     console.log('Model ID:', modelId);
 
-    // Get ElevenLabs API key
-    const ELEVENLABS_API_KEY = process.env.elven_labs_api_key;
-    
+    // Get ElevenLabs API key - try multiple possible environment variable names
+    const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 
+                               process.env.elven_labs_api_key ||
+                               process.env.VITE_ELVEN_LABS_API_KEY;
+
     if (!ELEVENLABS_API_KEY) {
       return {
         statusCode: 500,
@@ -44,7 +46,7 @@ exports.handler = async (event, context) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          error: 'ElevenLabs API key not configured'
+          error: 'ElevenLabs API key not configured. Checked: ELEVENLABS_API_KEY, elven_labs_api_key, VITE_ELVEN_LABS_API_KEY'
         })
       };
     }

@@ -1,3 +1,5 @@
+import { Howl } from 'howler';
+
 export interface ElevenLabsConfig {
     agentId: string;
     voices: {
@@ -23,12 +25,28 @@ export const elevenLabsConfig: ElevenLabsConfig = {
         turbo: 'eleven_turbo_v2_5',
         standard: 'eleven_multilingual_v2'
     },
-    apiKey: import.meta.env.VITE_ELVEN_LABS_API_KEY || ''
+    apiKey: import.meta.env.VITE_ELEVENLABS_API_KEY || 
+             import.meta.env.VITE_ELVEN_LABS_API_KEY ||
+             import.meta.env.ELEVENLABS_API_KEY || ''
 };
+
+// Check for any ElevenLabs API key at build time
+const isElevenLabsConfigured = !!(import.meta.env.VITE_ELEVENLABS_API_KEY || 
+                                  import.meta.env.VITE_ELVEN_LABS_API_KEY ||
+                                  import.meta.env.ELEVENLABS_API_KEY);
+
+// Log the availability of the key during development for debugging purposes
+if (import.meta.env.DEV) {
+  console.log('ElevenLabs API key configured:', isElevenLabsConfigured);
+  console.log('Checked variables: VITE_ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY, ELEVENLABS_API_KEY');
+}
+
+const audioCache = new Map<string, Howl>();
 
 // Debug: Log available environment variables
 console.log('Available env vars:', Object.keys(import.meta.env));
-console.log('ElevenLabs API Key available:', !!import.meta.env.VITE_ELVEN_LABS_API_KEY);
+console.log('ElevenLabs API Key available:', isElevenLabsConfigured);
+console.log('⚠️ IMPORTANT: Frontend needs VITE_ELEVENLABS_API_KEY or VITE_ELVEN_LABS_API_KEY in Netlify environment variables');
 
 export const getVoiceId = (language: 'english' | 'russian' | 'arabic' = 'english'): string => {
     return elevenLabsConfig.voices[language];

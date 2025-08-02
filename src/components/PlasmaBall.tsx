@@ -6,12 +6,14 @@ interface PlasmaBallProps {
   size?: number;
   className?: string;
   onClick?: () => void;
+  intensity?: number; // 0-1, controls animation intensity
 }
 
 const PlasmaBall: React.FC<PlasmaBallProps> = ({
   size = 200,
   className = '',
-  onClick
+  onClick,
+  intensity = 0.5
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,6 +36,7 @@ const PlasmaBall: React.FC<PlasmaBallProps> = ({
     uniform vec2 u_resolution;
     uniform vec2 u_mouse;
     uniform float u_time;
+    uniform float u_intensity;
     uniform sampler2D u_noise;
     uniform sampler2D u_environment;
     
@@ -44,15 +47,16 @@ const PlasmaBall: React.FC<PlasmaBallProps> = ({
     
     float sinnoise(vec3 p) {
       float s = (sin(u_time) * 0.5 + 0.5);
+      float intensity_mod = 0.5 + u_intensity * 0.5;
       
       float _c = cos(p.x * 0.1);
       float _s = sin(p.x * 0.1);
       mat2 mat = mat2(_c, -_s, _s, _c);
       
       for (int i = 0; i < 5; i++) {
-        p += cos(p.yxz * 3.0 + vec3(0.0, u_time, 10.6)) * (0.25 + s * 0.2);
-        p += sin(p.yxz + vec3(u_time, 0.1, 0.0)) * (0.5 - s * 0.1);
-        p *= 1.0 + s * 0.1;
+        p += cos(p.yxz * 3.0 + vec3(0.0, u_time * intensity_mod, 10.6)) * (0.25 + s * 0.2 * intensity_mod);
+        p += sin(p.yxz + vec3(u_time * intensity_mod, 0.1, 0.0)) * (0.5 - s * 0.1);
+        p *= 1.0 + s * 0.1 * intensity_mod;
         p.xy *= mat;
       }
 
@@ -229,7 +233,8 @@ const PlasmaBall: React.FC<PlasmaBallProps> = ({
         u_resolution: { type: "v2", value: new THREE.Vector2() },
         u_noise: { type: "t", value: texture },
         u_environment: { type: "t", value: environment },
-        u_mouse: { type: "v2", value: new THREE.Vector2() }
+        u_mouse: { type: "v2", value: new THREE.Vector2() },
+        u_intensity: { type: "f", value: intensity }
       };
       uniformsRef.current = uniforms;
 
@@ -304,6 +309,12 @@ const PlasmaBall: React.FC<PlasmaBallProps> = ({
       };
     }
   }, [isInitialized]);
+
+  useEffect(() => {
+    if (uniformsRef.current) {
+      uniformsRef.current.u_intensity.value = intensity;
+    }
+  }, [intensity]);
 
   return (
     <div 

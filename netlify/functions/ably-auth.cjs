@@ -21,7 +21,11 @@ exports.handler = async (event, context) => {
     // Get Ably API key from environment variables
     const ABLY_API_KEY = process.env.ABLY_API;
     
+    console.log('ABLY_API key exists:', !!ABLY_API_KEY);
+    console.log('ABLY_API key length:', ABLY_API_KEY ? ABLY_API_KEY.length : 0);
+    
     if (!ABLY_API_KEY) {
+      console.error('Ably API key not found in environment variables');
       return {
         statusCode: 500,
         headers,
@@ -34,19 +38,25 @@ exports.handler = async (event, context) => {
     // Create Ably client with API key
     const ably = new Ably.Rest(ABLY_API_KEY);
     
-    // Generate a token for the client
-    const tokenRequest = await ably.auth.createTokenRequest({
+    // Generate a token directly instead of a token request
+    const tokenDetails = await ably.auth.requestToken({
       clientId: 'neuraplay-user-' + Math.random().toString(36).substr(2, 9),
       capability: {
         'neuraplay-chat': ['publish', 'subscribe', 'presence'],
-        'elevenlabs-stream': ['publish', 'subscribe']
+        'elevenlabs-stream': ['publish', 'subscribe'],
+        'conversation:*': ['publish', 'subscribe']
       }
     });
 
+    console.log('Generated tokenDetails:', tokenDetails);
+
     return {
       statusCode: 200,
-      headers,
-      body: JSON.stringify(tokenRequest)
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(tokenDetails)
     };
 
   } catch (error) {

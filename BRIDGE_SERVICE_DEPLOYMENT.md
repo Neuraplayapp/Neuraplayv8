@@ -5,7 +5,7 @@
 You now have the **correct architecture** for reliable ElevenLabs WebSocket streaming:
 
 ```
-Frontend (Netlify) ↔ Ably ↔ Bridge Service (Render/Railway) ↔ ElevenLabs API
+Frontend (Netlify) ↔ Ably ↔ Bridge Service (Fly.io) ↔ ElevenLabs API
 ```
 
 ## 📁 **What We've Created**
@@ -25,14 +25,15 @@ Frontend (Netlify) ↔ Ably ↔ Bridge Service (Render/Railway) ↔ ElevenLabs A
 
 ### Step 1: Deploy Bridge Service
 
-**Option A: Railway (Recommended)**
-1. Go to [railway.app](https://railway.app)
-2. Create new project from GitHub repo
-3. Point to the `bridge-service/` folder
-4. Set environment variables:
-   - `ABLY_API` = your Ably API key
-   - `ELEVENLABS_API_KEY` = your ElevenLabs API key
-5. Deploy automatically
+**Option A: Fly.io (Recommended)**
+1. Install Fly.io CLI: `powershell -Command "iwr https://fly.io/install.ps1 -useb | iex"`
+2. Navigate to bridge-service directory: `cd bridge-service`
+3. Login to Fly.io: `fly auth login`
+4. Launch the app: `fly launch --no-deploy`
+5. Set environment variables:
+   - `fly secrets set ABLY_API=your_ably_api_key`
+   - `fly secrets set ELEVENLABS_API_KEY=your_elevenlabs_api_key`
+6. Deploy: `fly deploy`
 
 **Option B: Render**
 1. Go to [render.com](https://render.com)
@@ -47,9 +48,9 @@ Frontend (Netlify) ↔ Ably ↔ Bridge Service (Render/Railway) ↔ ElevenLabs A
 
 Add to your Netlify environment variables:
 ```env
+VITE_BRIDGE_SERVICE_URL=https://your-bridge-service.fly.dev
+# OR (if using Render)
 VITE_BRIDGE_SERVICE_URL=https://your-bridge-service.onrender.com
-# OR
-VITE_BRIDGE_SERVICE_URL=https://your-bridge-service.up.railway.app
 ```
 
 ### Step 3: Test the Integration
@@ -124,7 +125,7 @@ Bridge service provides health endpoints:
 
 ## 🚨 **Next Steps**
 
-1. **Deploy the bridge service** to Railway or Render
+1. **Deploy the bridge service** to Fly.io or Render
 2. **Update your environment variables**
 3. **Test with AblyConversationTest component**
 4. **Replace existing conversation components** with new Ably-based service

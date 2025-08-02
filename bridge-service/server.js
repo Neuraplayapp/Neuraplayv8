@@ -17,10 +17,12 @@ app.use(express.json());
 
 // Environment variables
 const ABLY_API_KEY = process.env.ABLY_API;
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || process.env.elven_labs_api_key;
 
 if (!ABLY_API_KEY || !ELEVENLABS_API_KEY) {
-  console.error('❌ Missing required environment variables: ABLY_API, ELEVENLABS_API_KEY');
+  console.error('❌ Missing required environment variables:');
+  console.error('  - ABLY_API:', !!ABLY_API_KEY);
+  console.error('  - ELEVENLABS_API_KEY (or elven_labs_api_key):', !!ELEVENLABS_API_KEY);
   process.exit(1);
 }
 

@@ -26,12 +26,16 @@ export const elevenLabsConfig: ElevenLabsConfig = {
 
 Add to your Netlify environment variables:
 ```env
+# For backend functions
 elven_labs_api_key=your_elevenlabs_api_key_here
+
+# For frontend (Vite)
+VITE_ELVEN_LABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
 For local development:
 ```env
-REACT_APP_ELVEN_LABS_API_KEY=your_elevenlabs_api_key_here
+VITE_ELVEN_LABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
 ### Netlify Function (`netlify/functions/elevenlabs-websocket.cjs`)

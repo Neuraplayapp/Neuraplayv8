@@ -23,7 +23,7 @@ import TheCubeGame from '../components/games/TheCubeGame';
 import AIGame from '../components/AIGame';
 import PlaygroundModalReveal, { GameInfo } from '../components/PlaygroundModalReveal';
 import GameWrapper from '../components/GameWrapper';
-
+import PlasmaBall from '../components/PlasmaBall';
 
 import PlasmaBackground from '../components/PlasmaBackground';
 // Import your other components like GameModal and ALL your game components

@@ -1,11 +1,11 @@
-const { Buffer } = require('buffer');
+const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
-  // Enable CORS
+  // Enable CORS for all origins
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
   // Handle preflight requests
@@ -13,7 +13,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers,
-      body: ''
+      body: '',
     };
   }
 
@@ -21,238 +21,254 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
   try {
-    console.log('AssemblyAI transcription started');
-    console.log('Content-Type:', event.headers['content-type']);
-    
-    let audioData;
-    
-    // Check if it's JSON (base64 audio) or multipart form data
-    if (event.headers['content-type']?.includes('application/json')) {
-      const body = JSON.parse(event.body);
-      if (body.audio) {
-        audioData = Buffer.from(body.audio, 'base64');
-        console.log('Received base64 audio data, length:', audioData.length);
-      } else {
-        throw new Error('No audio data found in JSON request');
-      }
-    } else {
-      // Parse the multipart form data
-      const boundary = event.headers['content-type']?.split('boundary=')[1];
-      if (!boundary) {
-        console.error('No boundary found in content-type');
-        throw new Error('No boundary found in content-type');
-      }
+    const { audio, language_code = 'en_us', speech_model = 'universal' } = JSON.parse(event.body);
 
-      console.log('Boundary:', boundary);
-      console.log('Body length:', event.body ? event.body.length : 'no body');
-
-      const body = Buffer.from(event.body, 'base64');
-      console.log('Decoded body length:', body.length);
-      
-      const parts = parseMultipartFormData(body, boundary);
-      console.log('Parsed parts count:', parts.length);
-      
-      const audioFile = parts.find(part => part.name === 'audio');
-      if (!audioFile) {
-        console.error('No audio file found in request');
-        throw new Error('No audio file found in request');
-      }
-
-      console.log('Audio file found:', audioFile.name, 'size:', audioFile.data.length);
-      audioData = audioFile.data;
+    if (!audio) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Audio data is required' }),
+      };
     }
 
-    if (!audioData || audioData.length === 0) {
-      throw new Error('No audio data provided');
+    // Use the correct environment variable name from Netlify
+    const apiKey = process.env.ASSEMBLY_API_KEY ||
+                   process.env.ASSEMBLYAI_API_KEY ||
+                   process.env.Assemblyai_api_key || 
+                   process.env.assemblyai_api_key ||
+                   process.env.assembly_ai_api_key;
+
+    // AGGRESSIVE DEBUGGING - FORCE CACHE REFRESH
+    console.log('🚨 CACHE REFRESH DEBUGGING 🚨');
+    console.log('Current timestamp:', new Date().toISOString());
+    console.log('Function deployment ID:', process.env.NETLIFY_DEPLOY_ID || 'unknown');
+    console.log('Raw ASSEMBLY_API_KEY value:', process.env.ASSEMBLY_API_KEY ? 'EXISTS' : 'MISSING');
+    console.log('API key length:', apiKey ? apiKey.length : 0);
+    console.log('API key first 8 chars:', apiKey ? apiKey.substring(0, 8) + '...' : 'NONE');
+    console.log('Expected key should start with: 6793b1c4...');
+    console.log('🚨 END DEBUGGING 🚨');
+
+    // Deep debugging: Log all available environment variables to see what the function receives
+    console.log('--- Deep Environment Variable Debug ---');
+    const availableVars = Object.keys(process.env);
+    const assemblyVars = availableVars.filter(key => key.toLowerCase().includes('assembly'));
+    console.log('Available AssemblyAI-related ENV VARS:', assemblyVars);
+    console.log('--- End Debug ---');
+                   
+    console.log('AssemblyAI API key search results:');
+    console.log('- ASSEMBLY_API_KEY:', !!process.env.ASSEMBLY_API_KEY);
+    console.log('- ASSEMBLYAI_API_KEY:', !!process.env.ASSEMBLYAI_API_KEY);
+    console.log('- Found API key:', !!apiKey);
+    console.log('- API key starts with:', apiKey ? apiKey.substring(0, 10) + '...' : 'none');
+                   
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'AssemblyAI API key not configured. Checked: ASSEMBLY_API_KEY, ASSEMBLYAI_API_KEY, Assemblyai_api_key, assemblyai_api_key, assembly_ai_api_key' }),
+      };
     }
 
-    // AssemblyAI API configuration
-    const ASSEMBLYAI_API_KEY = '70f0f98ec1ec4a49afe581069224eba1';
-    const ASSEMBLYAI_UPLOAD_URL = 'https://api.assemblyai.com/v2/upload';
-    const ASSEMBLYAI_TRANSCRIPT_URL = 'https://api.assemblyai.com/v2/transcript';
+    // Convert base64 audio to buffer
+    const audioBuffer = Buffer.from(audio, 'base64');
+    console.log('Audio buffer size:', audioBuffer.length, 'bytes');
 
-    console.log('Uploading to AssemblyAI...');
-    // Step 1: Upload audio to AssemblyAI
-    const uploadResponse = await fetch(ASSEMBLYAI_UPLOAD_URL, {
+    // Upload audio file to AssemblyAI
+    const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
       method: 'POST',
       headers: {
-        'Authorization': ASSEMBLYAI_API_KEY,
-        'Content-Type': 'audio/webm'
+        'Authorization': apiKey,  // AssemblyAI doesn't use "Bearer" prefix
+        'Content-Type': 'application/octet-stream',
       },
-      body: audioData
+      body: audioBuffer,
     });
 
     console.log('Upload response status:', uploadResponse.status);
+    console.log('Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
       console.error('Upload failed:', errorText);
-      throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
+      return {
+        statusCode: uploadResponse.status,
+        headers,
+        body: JSON.stringify({ error: 'Failed to upload audio to AssemblyAI', details: errorText }),
+      };
     }
 
     const uploadResult = await uploadResponse.json();
-    const uploadUrl = uploadResult.upload_url;
-    console.log('Upload URL:', uploadUrl);
+    const audioUrl = uploadResult.upload_url;
 
-    // Step 2: Request transcription
-    console.log('Requesting transcription...');
-    const transcriptResponse = await fetch(ASSEMBLYAI_TRANSCRIPT_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': ASSEMBLYAI_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        audio_url: uploadUrl,
-        language_code: 'en_us',
-        punctuate: true,
-        format_text: true
-      })
-    });
+    // OFFICIAL AssemblyAI Universal Model Language Support (from documentation)
+    const supportedLanguages = {
+      // High accuracy languages (≤ 10% WER)
+      'en': 'en',              // English 
+      'en_us': 'en',           // English (US)
+      'en_uk': 'en_uk',        // English (UK)
+      'es': 'es',              // Spanish
+      'fr': 'fr',              // French
+      'de': 'de',              // German
+      'id': 'id',              // Indonesian
+      'it': 'it',              // Italian
+      'ja': 'ja',              // Japanese
+      'nl': 'nl',              // Dutch
+      'pl': 'pl',              // Polish
+      'pt': 'pt',              // Portuguese
+      'ru': 'ru',              // Russian
+      'tr': 'tr',              // Turkish
+      'uk': 'uk',              // Ukrainian
+      'ca': 'ca',              // Catalan
+      
+      // Good accuracy languages (>10% to ≤25% WER)
+      'ar': 'ar',              // Arabic
+      'az': 'az',              // Azerbaijani
+      'bg': 'bg',              // Bulgarian
+      'bs': 'bs',              // Bosnian
+      'zh': 'zh',              // Mandarin Chinese
+      'cs': 'cs',              // Czech
+      'da': 'da',              // Danish
+      'el': 'el',              // Greek
+      'et': 'et',              // Estonian
+      'fi': 'fi',              // Finnish
+      'fil': 'fil',            // Filipino
+      'gl': 'gl',              // Galician
+      'hi': 'hi',              // Hindi
+      'hr': 'hr',              // Croatian
+      'hu': 'hu',              // Hungarian
+      'ko': 'ko',              // Korean
+      'mk': 'mk',              // Macedonian
+      'ms': 'ms',              // Malay
+      'nb': 'nb',              // Norwegian Bokmål
+      'ro': 'ro',              // Romanian
+      'sk': 'sk',              // Slovak
+      'sv': 'sv',              // Swedish
+      'th': 'th',              // Thai
+      'ur': 'ur',              // Urdu
+      'vi': 'vi',              // Vietnamese
+      'yue': 'yue',            // Cantonese
+      
+      // Auto-detection
+      'auto': null             // Automatic language detection
+    };
 
-    console.log('Transcription request status:', transcriptResponse.status);
+    // Use language code or enable auto-detection
+    const requestedLanguage = language_code?.toLowerCase();
+    const validLanguageCode = requestedLanguage === 'auto' ? null : supportedLanguages[requestedLanguage];
+    
+    // Enable automatic language detection if no specific language or 'auto' is requested
+    const enableLanguageDetection = !validLanguageCode;
 
-    if (!transcriptResponse.ok) {
-      const errorText = await transcriptResponse.text();
-      console.error('Transcription request failed:', errorText);
-      throw new Error(`Transcription failed: ${transcriptResponse.status} - ${errorText}`);
+    // Validate speech model
+    const validSpeechModel = ['universal', 'slam-1'].includes(speech_model) ? speech_model : 'universal';
+
+    // Request transcription with simplified, supported parameters
+    const transcriptionConfig = {
+      audio_url: audioUrl,
+      speech_model: validSpeechModel,
+      punctuate: true,
+      format_text: true,
+      language_detection: enableLanguageDetection
+    };
+
+    // Add language_code only if we have a valid one
+    if (validLanguageCode) {
+      transcriptionConfig.language_code = validLanguageCode;
     }
 
-    const transcriptResult = await transcriptResponse.json();
-    const transcriptId = transcriptResult.id;
-    console.log('Transcript ID:', transcriptId);
+    console.log('Transcription config:', JSON.stringify(transcriptionConfig, null, 2));
 
-    // Step 3: Poll for completion
-    let transcript = null;
+    const transcribeResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+      method: 'POST',
+      headers: {
+        'Authorization': apiKey,  // AssemblyAI doesn't use "Bearer" prefix
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(transcriptionConfig),
+    });
+
+    if (!transcribeResponse.ok) {
+      const errorText = await transcribeResponse.text();
+      console.error('Transcription request failed:', errorText);
+      return {
+        statusCode: transcribeResponse.status,
+        headers,
+        body: JSON.stringify({ error: 'Failed to request transcription from AssemblyAI' }),
+      };
+    }
+
+    const transcribeResult = await transcribeResponse.json();
+    const transcriptId = transcribeResult.id;
+
+    // Poll for completion
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds max wait
-
-    console.log('Polling for completion...');
+    const maxAttempts = 60; // 5 minutes max wait time
+    
     while (attempts < maxAttempts) {
-      const statusResponse = await fetch(`${ASSEMBLYAI_TRANSCRIPT_URL}/${transcriptId}`, {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      
+      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
         headers: {
-          'Authorization': ASSEMBLYAI_API_KEY
-        }
+          'Authorization': apiKey,  // AssemblyAI doesn't use "Bearer" prefix
+        },
       });
 
-      if (!statusResponse.ok) {
-        const errorText = await statusResponse.text();
-        console.error('Status check failed:', errorText);
-        throw new Error(`Status check failed: ${statusResponse.status} - ${errorText}`);
+      if (!pollResponse.ok) {
+        const errorText = await pollResponse.text();
+        console.error('Polling failed:', errorText);
+        return {
+          statusCode: pollResponse.status,
+          headers,
+          body: JSON.stringify({ error: 'Failed to poll transcription status' }),
+        };
       }
 
-      transcript = await statusResponse.json();
-      console.log(`Attempt ${attempts + 1}: Status = ${transcript.status}`);
-
-      if (transcript.status === 'completed') {
-        console.log('Transcription completed successfully');
-        break;
-      } else if (transcript.status === 'error') {
-        console.error('Transcription error:', transcript.error);
-        throw new Error(`Transcription error: ${transcript.error}`);
+      const pollResult = await pollResponse.json();
+      
+      if (pollResult.status === 'completed') {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            text: pollResult.text || '',
+            confidence: pollResult.confidence || 0,
+            language_code: validLanguageCode,
+            speech_model: validSpeechModel,
+            words: pollResult.words || [],
+            audio_duration: pollResult.audio_duration || 0
+          }),
+        };
       }
-
-      // Wait 1 second before next check
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (pollResult.status === 'error') {
+        console.error('Transcription error:', pollResult.error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Transcription failed: ' + pollResult.error }),
+        };
+      }
+      
       attempts++;
     }
 
-    if (!transcript || transcript.status !== 'completed') {
-      console.error('Transcription timed out');
-      throw new Error('Transcription timed out');
-    }
-
-    console.log('Final transcript text:', transcript.text);
-    console.log('Confidence:', transcript.confidence);
-
+    // Timeout
     return {
-      statusCode: 200,
+      statusCode: 408,
       headers,
-      body: JSON.stringify({
-        text: transcript.text || '',
-        confidence: transcript.confidence || 0,
-        words: transcript.words || []
-      })
+      body: JSON.stringify({ error: 'Transcription timeout' }),
     };
 
   } catch (error) {
-    console.error('AssemblyAI transcription error:', error);
+    console.error('Error in assemblyai-transcribe:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: error.message,
-        details: error.stack
-      })
+      body: JSON.stringify({ error: 'Internal server error: ' + error.message }),
     };
   }
-};
-
-// Helper function to parse multipart form data
-function parseMultipartFormData(buffer, boundary) {
-  const parts = [];
-  const boundaryBuffer = Buffer.from(`--${boundary}`);
-  const endBoundaryBuffer = Buffer.from(`--${boundary}--`);
-  
-  let start = buffer.indexOf(boundaryBuffer);
-  let end = buffer.indexOf(endBoundaryBuffer);
-  
-  if (start === -1 || end === -1) {
-    throw new Error('Invalid multipart data');
-  }
-  
-  // Find all parts
-  let currentPos = start + boundaryBuffer.length;
-  
-  while (currentPos < end) {
-    // Find next boundary
-    const nextBoundary = buffer.indexOf(boundaryBuffer, currentPos);
-    if (nextBoundary === -1) break;
-    
-    // Extract part data
-    const partData = buffer.slice(currentPos, nextBoundary);
-    const part = parsePart(partData);
-    if (part) {
-      parts.push(part);
-    }
-    
-    currentPos = nextBoundary + boundaryBuffer.length;
-  }
-  
-  return parts;
-}
-
-function parsePart(partBuffer) {
-  // Find the header/body separator (double CRLF)
-  const separator = Buffer.from('\r\n\r\n');
-  const separatorIndex = partBuffer.indexOf(separator);
-  
-  if (separatorIndex === -1) return null;
-  
-  const headerBuffer = partBuffer.slice(0, separatorIndex);
-  const bodyBuffer = partBuffer.slice(separatorIndex + separator.length);
-  
-  // Parse headers
-  const headers = {};
-  const headerLines = headerBuffer.toString().split('\r\n');
-  
-  for (const line of headerLines) {
-    if (line.startsWith('Content-Disposition:')) {
-      const contentDisposition = line;
-      const nameMatch = contentDisposition.match(/name="([^"]+)"/);
-      if (nameMatch) {
-        headers.name = nameMatch[1];
-      }
-    }
-  }
-  
-  return {
-    name: headers.name,
-    data: bodyBuffer
-  };
-} 
+}; 

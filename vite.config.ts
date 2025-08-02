@@ -12,6 +12,57 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
     },
+    watch: {
+      // Wait for file writes to finish before triggering updates
+      awaitWriteFinish: {
+        // Wait 500ms for file writes to stabilize
+        stabilityThreshold: 500,
+        // Poll every 100ms to check if file is stable
+        pollInterval: 100
+      },
+      // Exclude large static assets from file watching
+      ignored: [
+        // Video files
+        '**/public/assets/Videos/**',
+        '**/assets/Videos/**',
+        '**/*.mp4',
+        '**/*.mov',
+        '**/*.avi',
+        '**/*.wmv',
+        '**/*.flv',
+        '**/*.webm',
+        
+        // Large audio files  
+        '**/public/assets/music/**',
+        '**/assets/music/**',
+        '**/*.mp3',
+        '**/*.wav',
+        '**/*.flac',
+        '**/*.m4a',
+        
+        // Large image files
+        '**/*.png',
+        '**/*.jpg',
+        '**/*.jpeg',
+        '**/*.gif',
+        '**/*.bmp',
+        '**/*.tiff',
+        
+        // Other large assets
+        '**/*.wasm',
+        '**/*.zip',
+        '**/*.exe',
+        
+        // Specific large files
+        '**/fast-noise-lite.js',
+        '**/Implement the transitional animatio.txt',
+        
+        // Node modules and build outputs
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/build/**',
+      ]
+    }
   },
   assetsInclude: ['**/*.wasm'],
   publicDir: 'public',

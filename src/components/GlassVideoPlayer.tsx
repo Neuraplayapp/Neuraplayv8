@@ -100,13 +100,54 @@ const GlassVideoPlayer: React.FC<GlassVideoPlayerProps> = ({
     
     if (currentVariants) {
       const quality = currentQuality;
-      return currentVariants[quality as keyof typeof currentVariants] || 
-             currentVariants.medium || 
-             currentVariants.low || 
-             currentSrc;
+      // Try to get the requested quality, fall back through the chain
+      const requestedSource = currentVariants[quality as keyof typeof currentVariants];
+      const mediumSource = currentVariants.medium;
+      const lowSource = currentVariants.low;
+      
+      // Return the first available source in preference order
+      return requestedSource || mediumSource || lowSource || currentSrc;
     }
     return currentSrc;
   }, [src, secondarySrc, qualityVariants, secondaryQualityVariants, currentQuality, currentVideoIndex]);
+
+  // Check if a video source exists
+  const checkVideoSource = useCallback(async (videoSrc: string): Promise<boolean> => {
+    try {
+      const response = await fetch(videoSrc, { method: 'HEAD' });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Get fallback video source if main source fails
+  const getFallbackVideoSource = useCallback(async () => {
+    const currentSrc = currentVideoIndex === 0 ? src : (secondarySrc || src);
+    const currentVariants = currentVideoIndex === 0 ? qualityVariants : secondaryQualityVariants;
+    
+    // If no quality variants, just return the main source
+    if (!currentVariants) {
+      return currentSrc;
+    }
+    
+    // Try sources in order: low -> medium -> high -> original
+    const sources = [
+      currentVariants.low,
+      currentVariants.medium, 
+      currentVariants.high,
+      currentSrc
+    ].filter(Boolean);
+    
+    for (const source of sources) {
+      if (source && await checkVideoSource(source)) {
+        return source;
+      }
+    }
+    
+    // Final fallback to original source
+    return currentSrc;
+  }, [src, secondarySrc, qualityVariants, secondaryQualityVariants, currentVideoIndex, checkVideoSource]);
 
   // Optimize video element for current connection
   const optimizeVideoElement = useCallback(() => {
@@ -117,14 +158,16 @@ const GlassVideoPlayer: React.FC<GlassVideoPlayerProps> = ({
     const isSlowConnection = connection?.effectiveType === 'slow-2g' || 
                            connection?.effectiveType === '2g' || 
                            connection?.downlink < 1;
+    const isMediumConnection = connection?.effectiveType === '3g' || 
+                              (connection?.downlink >= 1 && connection?.downlink < 5);
 
-    // Set preload strategy based on connection
+    // Set preload strategy based on connection speed
     if (isSlowConnection) {
-      video.preload = 'none';
-    } else if (connection?.effectiveType === '3g' || connection?.downlink < 5) {
-      video.preload = 'metadata';
+      video.preload = 'none';  // Don't preload on very slow connections
+    } else if (isMediumConnection) {
+      video.preload = 'metadata';  // Only preload metadata on medium connections
     } else {
-      video.preload = 'metadata';
+      video.preload = 'metadata';  // Conservative approach for fast connections too
     }
 
     // Mobile optimizations
@@ -132,12 +175,20 @@ const GlassVideoPlayer: React.FC<GlassVideoPlayerProps> = ({
     if (isMobile) {
       video.setAttribute('playsinline', 'true');
       video.setAttribute('webkit-playsinline', 'true');
+      // Disable picture-in-picture on mobile to prevent issues
+      video.setAttribute('disablepictureinpicture', 'true');
     }
 
-    // Additional optimizations
+    // Additional optimizations for better compatibility
     video.setAttribute('crossorigin', 'anonymous');
     video.muted = isMuted;
     video.loop = false;
+    
+    // Set buffer size based on connection quality
+    if (isSlowConnection) {
+      // Smaller buffer for slow connections
+      video.setAttribute('x-webkit-airplay', 'allow');
+    }
   }, [isMuted]);
 
   useEffect(() => {
@@ -211,12 +262,30 @@ const GlassVideoPlayer: React.FC<GlassVideoPlayerProps> = ({
       setLoadProgress(100);
     };
 
-    const handleError = () => {
+    const handleError = async () => {
       if (retryCount.current < maxRetries) {
         retryCount.current++;
         console.log(`Retrying video load (attempt ${retryCount.current}/${maxRetries})`);
         
-        // Try lower quality if available
+        // Try fallback sources if available
+        try {
+          const fallbackSrc = await getFallbackVideoSource();
+          if (fallbackSrc && fallbackSrc !== videoRef.current?.src) {
+            setHasError(false);
+            setIsLoading(true);
+            setLoadProgress(0);
+            
+            if (videoRef.current) {
+              videoRef.current.src = fallbackSrc;
+              videoRef.current.load();
+            }
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback source check failed:', fallbackError);
+        }
+        
+        // Try lower quality if available and we haven't tried fallback
         const currentVariants = currentVideoIndex === 0 ? qualityVariants : secondaryQualityVariants;
         if (currentVariants && currentQuality !== 'low') {
           const newQuality = currentQuality === 'high' ? 'medium' : 'low';
@@ -432,17 +501,34 @@ const GlassVideoPlayer: React.FC<GlassVideoPlayerProps> = ({
           <div className="text-center">
             <div className="text-6xl mb-4">🎬</div>
             <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Video Unavailable
+              Video Temporarily Unavailable
             </h3>
             <p className={`text-sm opacity-80 mb-4 ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
               Click to try again
             </p>
-            {connectionInfo && (
-              <div className={`mt-4 text-xs opacity-60 ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
-                <p>Connection: {connectionInfo.effectiveType} ({connectionInfo.downlink} Mbps)</p>
-                <p>Quality: {currentQuality}</p>
+            <div className={`text-xs opacity-70 space-y-1 ${isDarkMode ? 'text-white/70' : 'text-gray-500'}`}>
+              <p>Tried {retryCount.current} times</p>
+              {connectionInfo && (
+                <>
+                  <p>Connection: {connectionInfo.effectiveType}</p>
+                  {connectionInfo.downlink > 0 && (
+                    <p>Speed: {connectionInfo.downlink.toFixed(1)} Mbps</p>
+                  )}
+                  <p>Current quality: {currentQuality}</p>
+                </>
+              )}
+              <div className="mt-3 text-xs opacity-60">
+                <p>Possible solutions:</p>
+                <ul className="mt-1 space-y-1 text-left">
+                  <li>• Check your internet connection</li>
+                  <li>• Try refreshing the page</li>
+                  <li>• Switch to a different network</li>
+                  {connectionInfo?.downlink && connectionInfo.downlink < 2 && (
+                    <li>• Your connection seems slow - try again later</li>
+                  )}
+                </ul>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -485,11 +571,19 @@ const GlassVideoPlayer: React.FC<GlassVideoPlayerProps> = ({
                   </div>
                 )}
               </div>
-              <p className="text-sm">Loading video...</p>
+              <p className="text-sm mb-2">Loading video...</p>
+              {retryCount.current > 0 && (
+                <p className="text-xs opacity-80 mb-1">
+                  Retry attempt {retryCount.current}/{maxRetries}
+                </p>
+              )}
               {connectionInfo && (
                 <div className="mt-2 text-xs opacity-60">
                   <p>Quality: {currentQuality}</p>
                   <p>Connection: {connectionInfo.effectiveType}</p>
+                  {connectionInfo.downlink > 0 && (
+                    <p>Speed: {connectionInfo.downlink.toFixed(1)} Mbps</p>
+                  )}
                 </div>
               )}
             </div>

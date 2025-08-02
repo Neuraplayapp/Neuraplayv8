@@ -26,12 +26,16 @@ npm install @elevenlabs/elevenlabs-js ws
 Add the following environment variables to your Netlify dashboard:
 
 ```env
+# For backend functions
 elven_labs_api_key=your_elevenlabs_api_key_here
+
+# For frontend (Vite)
+VITE_ELVEN_LABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
 **Note**: For local development, you can also add:
 ```env
-REACT_APP_ELVEN_LABS_API_KEY=your_elevenlabs_api_key_here
+VITE_ELVEN_LABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
 ### 3. Agent Configuration

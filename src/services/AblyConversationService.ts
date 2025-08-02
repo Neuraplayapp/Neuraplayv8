@@ -19,7 +19,9 @@ export class AblyConversationService {
   private isConnected: boolean = false;
   private conversationId: string = '';
   private eventListeners: Map<string, ((data: any) => void)[]> = new Map();
-  private bridgeServiceUrl: string = import.meta.env.VITE_BRIDGE_SERVICE_URL || 'https://your-bridge-service.onrender.com';
+  private bridgeServiceUrl: string = import.meta.env.VITE_BRIDGE_SERVICE_URL || 'https://neuraplay-bridge-service.fly.dev';
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
 
   private constructor() {}
 
@@ -32,32 +34,105 @@ export class AblyConversationService {
 
   async initialize(): Promise<void> {
     try {
-      // Get Ably token from Netlify function
-      const response = await fetch('/.netlify/functions/ably-auth');
-      if (!response.ok) {
-        throw new Error(`Failed to get Ably token: ${response.statusText}`);
-      }
-      
-      const { token } = await response.json();
-      
-      // Initialize Ably with token
-      this.ably = new Ably.Realtime({ authUrl: '/.netlify/functions/ably-auth' });
-      
-      this.ably.connection.on('connected', () => {
-        console.log('✅ Connected to Ably');
-        this.isConnected = true;
-        this.emit('connected', { status: 'connected' });
-      });
-      
-      this.ably.connection.on('disconnected', () => {
-        console.log('❌ Disconnected from Ably');
+      // Close existing connection if any
+      if (this.ably) {
+        console.log('🔌 Closing existing Ably connection...');
+        this.ably.close();
+        this.ably = null;
         this.isConnected = false;
-        this.emit('disconnected', { status: 'disconnected' });
+      }
+
+      console.log('🔗 Initializing fresh Ably connection...', {
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent.substring(0, 50)
       });
       
-      this.ably.connection.on('failed', (error: any) => {
-        console.error('❌ Ably connection failed:', error);
-        this.emit('error', { error: error.message });
+      // Initialize Ably with simpler, more reliable settings
+      this.ably = new Ably.Realtime({ 
+        authUrl: '/.netlify/functions/ably-auth',
+        autoConnect: false, // We'll connect manually after setting up listeners
+        closeOnUnload: true,
+        queueMessages: true
+      });
+      
+      // Return a promise that resolves when connected
+      return new Promise((resolve, reject) => {
+        let resolved = false;
+        
+        const cleanup = () => {
+          if (timeoutId) clearTimeout(timeoutId);
+        };
+
+        const resolveOnce = () => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve();
+          }
+        };
+
+        const rejectOnce = (error: Error) => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            reject(error);
+          }
+        };
+
+        // Set up event listeners
+        this.ably!.connection.on('connected', () => {
+          console.log('✅ Connected to Ably successfully');
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          this.emit('connected', { status: 'connected' });
+          resolveOnce();
+        });
+        
+        this.ably!.connection.on('disconnected', (stateChange: any) => {
+          console.log('❌ Disconnected from Ably', stateChange?.reason);
+          this.isConnected = false;
+          this.emit('disconnected', { status: 'disconnected' });
+          
+          // Let Ably handle reconnections automatically during normal operation
+          if (resolved && this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`🔄 Auto-reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+          }
+        });
+        
+        this.ably!.connection.on('failed', (stateChange: any) => {
+          console.error('❌ Ably connection failed:', stateChange?.reason);
+          this.emit('error', { error: stateChange?.reason?.message || 'Connection failed' });
+          rejectOnce(new Error(`Ably connection failed: ${stateChange?.reason?.message || 'Unknown error'}`));
+        });
+
+        this.ably!.connection.on('suspended', (stateChange: any) => {
+          console.log('⚠️ Ably connection suspended', stateChange?.reason);
+          this.isConnected = false;
+        });
+
+        this.ably!.connection.on('connecting', () => {
+          console.log('🔄 Connecting to Ably...');
+        });
+
+        this.ably!.connection.on('closing', () => {
+          console.log('🔄 Closing Ably connection...');
+        });
+
+        this.ably!.connection.on('closed', () => {
+          console.log('🔄 Ably connection closed');
+          this.isConnected = false;
+        });
+        
+        // Start connection
+        console.log('🚀 Starting Ably connection...');
+        this.ably!.connection.connect();
+        
+        // Timeout for initial connection
+        const timeoutId = setTimeout(() => {
+          console.error('❌ Ably connection timeout after 30 seconds');
+          rejectOnce(new Error('Ably connection timeout'));
+        }, 30000);
       });
       
     } catch (error: any) {

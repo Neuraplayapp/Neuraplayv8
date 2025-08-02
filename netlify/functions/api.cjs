@@ -521,9 +521,12 @@ async function handleTextGeneration(input_data, token) {
   }
 }
 
-async function handleImageGeneration(prompt, token) {
+async function handleImageGeneration(input_data, token) {
+  const prompt = (typeof input_data === 'object' && input_data.prompt) ? input_data.prompt : String(input_data);
+
   console.log('Starting image generation with token:', !!token);
-  console.log('Prompt:', prompt);
+  console.log('Received input data for image generation:', JSON.stringify(input_data));
+  console.log('Extracted prompt for image generation:', prompt);
   
   if (!token) {
     console.log('No token provided, returning placeholder');
@@ -544,7 +547,7 @@ async function handleImageGeneration(prompt, token) {
   try {
     // Enhance the prompt for better results
     let enhancedPrompt = prompt;
-    if (!enhancedPrompt.includes('high quality') && !enhancedPrompt.includes('detailed')) {
+    if (enhancedPrompt && !enhancedPrompt.includes('high quality') && !enhancedPrompt.includes('detailed')) {
       enhancedPrompt = `${enhancedPrompt}, high quality, detailed, 4k`;
     }
 
@@ -702,8 +705,10 @@ function generateFallbackImage(prompt) {
 async function handleVoiceGeneration(text, token) {
   console.log('Voice generation requested for text:', text.substring(0, 50) + '...');
   
-  // Get ElevenLabs API key
-  const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+  // Get ElevenLabs API key - try multiple possible environment variable names
+  const elevenLabsKey = process.env.ELEVENLABS_API_KEY || 
+                        process.env.elven_labs_api_key ||
+                        process.env.VITE_ELVEN_LABS_API_KEY;
   console.log('ElevenLabs API key exists:', !!elevenLabsKey);
   
   if (!elevenLabsKey) {

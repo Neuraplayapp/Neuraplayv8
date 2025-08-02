@@ -5,7 +5,7 @@ A stateful bridge service that maintains persistent WebSocket connections betwee
 ## Architecture
 
 ```
-Frontend (Netlify) ↔ Ably ↔ Bridge Service (Render/Railway) ↔ ElevenLabs API
+Frontend (Netlify) ↔ Ably ↔ Bridge Service (Fly.io) ↔ ElevenLabs API
 ```
 
 ## Features
@@ -28,8 +28,10 @@ PORT=3001
 # Ably API Key for real-time communication
 ABLY_API=your_ably_api_key_here
 
-# ElevenLabs API Key for voice chat
+# ElevenLabs API Key for voice chat (use either name)
 ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+# OR (legacy compatibility)
+elven_labs_api_key=your_elevenlabs_api_key_here
 
 # Node environment
 NODE_ENV=production
@@ -50,12 +52,18 @@ npm start
 
 ## Deployment
 
-### Railway
+### Fly.io (Recommended)
 
-1. Create new project on Railway
-2. Connect your GitHub repository
-3. Set environment variables in Railway dashboard
-4. Deploy automatically on push
+1. Install Fly.io CLI: `powershell -Command "iwr https://fly.io/install.ps1 -useb | iex"`
+2. Navigate to this directory: `cd bridge-service`
+3. Login to Fly.io: `fly auth login`
+4. Launch the app: `fly launch --no-deploy`
+5. Set environment variables:
+   ```bash
+   fly secrets set ABLY_API=your_ably_api_key
+   fly secrets set ELEVENLABS_API_KEY=your_elevenlabs_api_key
+   ```
+6. Deploy: `fly deploy`
 
 ### Render
 
@@ -68,6 +76,14 @@ npm start
 
 ### Environment Variables for Deployment
 
+**For Fly.io:**
+```bash
+fly secrets set ABLY_API=your_ably_api_key
+fly secrets set ELEVENLABS_API_KEY=your_elevenlabs_api_key
+# PORT is automatically set by Fly.io
+```
+
+**For Render:**
 - `ABLY_API`: Your Ably API key
 - `ELEVENLABS_API_KEY`: Your ElevenLabs API key  
 - `PORT`: Usually set automatically by hosting platform

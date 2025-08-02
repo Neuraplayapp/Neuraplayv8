@@ -30,6 +30,56 @@ interface Conversation {
 // Define the assistant modes for cleaner state management
 type AssistantMode = 'idle' | 'text_input' | 'single_recording' | 'conversing';
 
+// Language selection states and constants
+type LanguageCode = 'auto' | 'en' | 'en_us' | 'en_uk' | 'es' | 'fr' | 'de' | 'id' | 'it' | 'ja' | 'nl' | 'pl' | 'pt' | 'ru' | 'tr' | 'uk' | 'ca' | 'ar' | 'az' | 'bg' | 'bs' | 'zh' | 'cs' | 'da' | 'el' | 'et' | 'fi' | 'fil' | 'gl' | 'hi' | 'hr' | 'hu' | 'ko' | 'mk' | 'ms' | 'nb' | 'ro' | 'sk' | 'sv' | 'th' | 'ur' | 'vi' | 'yue';
+const SUPPORTED_LANGUAGES: Record<LanguageCode, string> = {
+    'auto': '🌍 Auto-Detect',
+    // High accuracy languages (≤ 10% WER)
+    'en': 'English',
+    'en_us': 'English (US)',
+    'en_uk': 'English (UK)',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'id': 'Indonesian',
+    'it': 'Italian',
+    'ja': 'Japanese',
+    'nl': 'Dutch',
+    'pl': 'Polish',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'tr': 'Turkish',
+    'uk': 'Ukrainian',
+    'ca': 'Catalan',
+    // Good accuracy languages (>10% to ≤25% WER)
+    'ar': 'Arabic',
+    'az': 'Azerbaijani',
+    'bg': 'Bulgarian',
+    'bs': 'Bosnian',
+    'zh': 'Chinese (Mandarin)',
+    'cs': 'Czech',
+    'da': 'Danish',
+    'el': 'Greek',
+    'et': 'Estonian',
+    'fi': 'Finnish',
+    'fil': 'Filipino',
+    'gl': 'Galician',
+    'hi': 'Hindi',
+    'hr': 'Croatian',
+    'hu': 'Hungarian',
+    'ko': 'Korean',
+    'mk': 'Macedonian',
+    'ms': 'Malay',
+    'nb': 'Norwegian',
+    'ro': 'Romanian',
+    'sk': 'Slovak',
+    'sv': 'Swedish',
+    'th': 'Thai',
+    'ur': 'Urdu',
+    'vi': 'Vietnamese',
+    'yue': 'Cantonese'
+};
+
 const AIAssistant: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -73,6 +123,16 @@ const AIAssistant: React.FC = () => {
     const [isProcessingVoice, setIsProcessingVoice] = useState(false);
     const voiceChunkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Language selection states and constants
+    const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('auto'); // Default to auto-detect
+    const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
+    // Language selection handlers
+    const toggleLanguageDropdown = () => setShowLanguageDropdown(prev => !prev);
+    const handleLanguageSelect = (code: LanguageCode) => {
+        setSelectedLanguage(code);
+        setShowLanguageDropdown(false);
+    };
     
     const navigate = useNavigate();
     const location = useLocation();
@@ -93,53 +153,53 @@ const AIAssistant: React.FC = () => {
 
     // Available pages and their descriptions
     const availablePages = {
-        '/': { name: 'Home', icon: <Home className="w-4 h-4" />, description: 'Main landing page' },
-        '/playground': { name: 'Playground', icon: <Gamepad2 className="w-4 h-4" />, description: 'Games and activities' },
-        '/dashboard': { name: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, description: 'Your learning progress' },
-        '/forum': { name: 'Forum', icon: <Users className="w-4 h-4" />, description: 'Community discussions' },
-        '/forum-registration': { name: 'Forum Registration', icon: <FileText className="w-4 h-4" />, description: 'Join the forum' },
-        '/registration': { name: 'Registration', icon: <User className="w-4 h-4" />, description: 'Create an account' },
-        '/signin': { name: 'Sign In', icon: <User className="w-4 h-4" />, description: 'Login to your account' },
-        '/ai-report': { name: 'AI Report', icon: <BarChart3 className="w-4 h-4" />, description: 'AI learning analytics' },
-        '/about': { name: 'About Us', icon: <Info className="w-4 h-4" />, description: 'Learn about NeuraPlay' },
-        '/counting-test': { name: 'Counting Test', icon: <Gamepad2 className="w-4 h-4" />, description: 'Math practice' },
-        '/test': { name: 'Test Page', icon: <Gamepad2 className="w-4 h-4" />, description: 'Testing features' },
-        '/text-reveal': { name: 'Text Reveal', icon: <Sparkles className="w-4 h-4" />, description: 'Text animations' },
-        '/old-home': { name: 'Old Home', icon: <Home className="w-4 h-4" />, description: 'Previous home page' },
-        '/profile': { name: 'Profile', icon: <User className="w-4 h-4" />, description: 'Your user profile' },
-        '/user-profile': { name: 'User Profile', icon: <User className="w-4 h-4" />, description: 'Detailed user profile' }
+        '/': { name: 'Home', icon: Home, description: 'Main landing page' },
+        '/playground': { name: 'Playground', icon: Gamepad2, description: 'Games and activities' },
+        '/dashboard': { name: 'Dashboard', icon: BarChart3, description: 'Your learning progress' },
+        '/forum': { name: 'Forum', icon: Users, description: 'Community discussions' },
+        '/forum-registration': { name: 'Forum Registration', icon: FileText, description: 'Join the forum' },
+        '/registration': { name: 'Registration', icon: User, description: 'Create an account' },
+        '/signin': { name: 'Sign In', icon: User, description: 'Login to your account' },
+        '/ai-report': { name: 'AI Report', icon: BarChart3, description: 'AI learning analytics' },
+        '/about': { name: 'About Us', icon: Info, description: 'Learn about NeuraPlay' },
+        '/counting-test': { name: 'Counting Test', icon: Gamepad2, description: 'Math practice' },
+        '/test': { name: 'Test Page', icon: Gamepad2, description: 'Testing features' },
+        '/text-reveal': { name: 'Text Reveal', icon: Sparkles, description: 'Text animations' },
+        '/old-home': { name: 'Old Home', icon: Home, description: 'Previous home page' },
+        '/profile': { name: 'Profile', icon: User, description: 'Your user profile' },
+        '/user-profile': { name: 'User Profile', icon: User, description: 'Detailed user profile' }
     };
 
     // Available settings and their descriptions - COMPLETE LIST
     const availableSettings = {
-        'theme': { name: 'Theme', icon: <Settings className="w-4 h-4" />, description: 'Change light/dark mode' },
-        'accessibility': { name: 'Accessibility', icon: <Target className="w-4 h-4" />, description: 'Accessibility settings' },
-        'notifications': { name: 'Notifications', icon: <Bell className="w-4 h-4" />, description: 'Notification preferences' },
-        'language': { name: 'Language', icon: <Globe className="w-4 h-4" />, description: 'Language settings' },
-        'privacy': { name: 'Privacy', icon: <Shield className="w-4 h-4" />, description: 'Privacy settings' },
-        'help': { name: 'Help', icon: <HelpCircle className="w-4 h-4" />, description: 'Help and support' },
-        'about': { name: 'About', icon: <Info className="w-4 h-4" />, description: 'About NeuraPlay' }
+        'theme': { name: 'Theme', icon: Settings, description: 'Change light/dark mode' },
+        'accessibility': { name: 'Accessibility', icon: Target, description: 'Accessibility settings' },
+        'notifications': { name: 'Notifications', icon: Bell, description: 'Notification preferences' },
+        'language': { name: 'Language', icon: Globe, description: 'Language settings' },
+        'privacy': { name: 'Privacy', icon: Shield, description: 'Privacy settings' },
+        'help': { name: 'Help', icon: HelpCircle, description: 'Help and support' },
+        'about': { name: 'About', icon: Info, description: 'About NeuraPlay' }
     };
 
     // Available games and their descriptions
     const availableGames = {
-        'counting': { name: 'Counting Adventure', icon: <Gamepad2 className="w-4 h-4" />, description: 'Learn to count with fun games' },
-        'memory': { name: 'Memory Match', icon: <Brain className="w-4 h-4" />, description: 'Test your memory skills' },
-        'puzzle': { name: 'Puzzle Challenge', icon: <Target className="w-4 h-4" />, description: 'Solve brain teasers' },
-        'math': { name: 'Math Fun', icon: <Calculator className="w-4 h-4" />, description: 'Practice math skills' },
-        'spelling': { name: 'Spelling Bee', icon: <BookOpen className="w-4 h-4" />, description: 'Learn to spell' },
-        'science': { name: 'Science Lab', icon: <Lightbulb className="w-4 h-4" />, description: 'Explore science experiments' },
-        'art': { name: 'Art Studio', icon: <Palette className="w-4 h-4" />, description: 'Create digital art' },
-        'music': { name: 'Music Maker', icon: <Music className="w-4 h-4" />, description: 'Make music and rhythms' }
+        'counting': { name: 'Counting Adventure', icon: Gamepad2, description: 'Learn to count with fun games' },
+        'memory': { name: 'Memory Match', icon: Brain, description: 'Test your memory skills' },
+        'puzzle': { name: 'Puzzle Challenge', icon: Target, description: 'Solve brain teasers' },
+        'math': { name: 'Math Fun', icon: Calculator, description: 'Practice math skills' },
+        'spelling': { name: 'Spelling Bee', icon: BookOpen, description: 'Learn to spell' },
+        'science': { name: 'Science Lab', icon: Lightbulb, description: 'Explore science experiments' },
+        'art': { name: 'Art Studio', icon: Palette, description: 'Create digital art' },
+        'music': { name: 'Music Maker', icon: Music, description: 'Make music and rhythms' }
     };
 
     // Available AI agent personalities
     const availablePersonalities = {
-        'synapse-normal': { name: 'Synapse Normal', icon: <Brain className="w-4 h-4" />, description: 'Friendly and helpful AI teacher' },
-        'coach': { name: 'Coach', icon: <Target className="w-4 h-4" />, description: 'Motivational and goal-oriented' },
-        'mentor': { name: 'Mentor', icon: <Lightbulb className="w-4 h-4" />, description: 'Wise and guiding' },
-        'friend': { name: 'Friend', icon: <Heart className="w-4 h-4" />, description: 'Supportive and casual' },
-        'analyst': { name: 'Analyst', icon: <BarChart3 className="w-4 h-4" />, description: 'Detailed and analytical' }
+        'synapse-normal': { name: 'Synapse Normal', icon: Brain, description: 'Friendly and helpful AI teacher' },
+        'coach': { name: 'Coach', icon: Target, description: 'Motivational and goal-oriented' },
+        'mentor': { name: 'Mentor', icon: Lightbulb, description: 'Wise and guiding' },
+        'friend': { name: 'Friend', icon: Heart, description: 'Supportive and casual' },
+        'analyst': { name: 'Analyst', icon: BarChart3, description: 'Detailed and analytical' }
     };
 
     // AI Agent commands and their descriptions
@@ -1009,17 +1069,21 @@ Need help with anything specific? Just ask! 🌟`;
     // Updated processVoiceInput to use unified handler
     const processVoiceInput = async (audioBlob: Blob) => {
         try {
-            console.log('Processing voice input...');
+            console.log('Processing voice input with language:', selectedLanguage);
             
             // Convert audio to base64 for AssemblyAI
             const arrayBuffer = await audioBlob.arrayBuffer();
             const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
             
-            // Send to AssemblyAI for transcription
+            // Send to AssemblyAI for transcription with language support
             const response = await fetch('/.netlify/functions/assemblyai-transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ audio: base64Audio })
+                body: JSON.stringify({ 
+                    audio: base64Audio,
+                    language_code: selectedLanguage, // Will use auto-detect if set to 'auto'
+                    speech_model: 'universal' // Best model for multilingual support
+                })
             });
             
             if (!response.ok) {
@@ -1030,23 +1094,34 @@ Need help with anything specific? Just ask! 🌟`;
             
             const result = await response.json();
             const transcribedText = result.text;
+            const detectedLanguage = result.language_code || selectedLanguage;
             
             if (transcribedText && transcribedText.trim()) {
                 console.log('Transcribed text:', transcribedText);
+                console.log('Detected/Used language:', detectedLanguage);
+                
+                // Show language detection info if auto-detect was used
+                if (selectedLanguage === 'auto' && detectedLanguage) {
+                    const languageName = SUPPORTED_LANGUAGES[detectedLanguage] || detectedLanguage;
+                    console.log(`🌍 Detected language: ${languageName}`);
+                }
+                
                 // Use unified message handler
                 await handleSendMessage(transcribedText);
             } else {
                 console.log('No text transcribed');
+                const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || selectedLanguage;
                 addMessageToConversation(activeConversation, { 
-                    text: "I couldn't hear what you said. Could you try again? 🎤", 
+                    text: `I couldn't hear what you said in ${currentLang}. Could you try again? 🎤`, 
                     isUser: false, 
                     timestamp: new Date() 
                 });
             }
         } catch (error: any) {
             console.error('Voice processing error:', error);
+            const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || selectedLanguage;
             addMessageToConversation(activeConversation, { 
-                text: `Sorry, I couldn't process that voice input. Please try again! 🌟`, 
+                text: `Sorry, I couldn't process that voice input in ${currentLang}. Please try again! 🌟`, 
                 isUser: false, 
                 timestamp: new Date() 
             });
@@ -1513,7 +1588,7 @@ This two-step process is mandatory. Do not deviate.`;
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    task_type: 'image_generation',
+                    task_type: 'image',
                     input_data: {
                         prompt: prompt,
                         size: '512x512'
@@ -1644,9 +1719,9 @@ This two-step process is mandatory. Do not deviate.`;
             {!isOpen && (
                 <div
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 cursor-pointer z-50 hover:scale-110 transition-all duration-300"
+                    className="fixed bottom-6 right-6 cursor-pointer z-50 hover:scale-110 transition-all duration-300 bg-purple-500 text-white rounded-full p-4 shadow-lg hover:shadow-purple-500/50"
                 >
-                    <PlasmaBall size={48} />
+                    <Bot size={32} />
                 </div>
             )}
 
@@ -1758,34 +1833,34 @@ This two-step process is mandatory. Do not deviate.`;
                                     <Maximize2 size={16} />
                                 </button>
                                 
-                                {/* Conversation Mode Toggle */}
-                                <button
-                                    onMouseDown={(e) => {
-                                        e.stopPropagation();
-                                        setIsPlasmaPressed(true);
-                                    }}
-                                    onMouseUp={(e) => {
-                                        e.stopPropagation();
-                                        setIsPlasmaPressed(false);
-                                    }}
-                                    onMouseLeave={() => setIsPlasmaPressed(false)}
-                                    onClick={async (e) => {
-                                        e.stopPropagation();
-                                        await handleToggleConversationMode();
-                                    }}
-                                    className={`p-2 rounded-full transition-all duration-300 ${
-                                        mode === 'conversing' 
-                                            ? isLoading 
-                                                ? 'bg-green-500 text-white shadow-lg shadow-green-500/50 animate-pulse' 
-                                                : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-                                            : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-lg hover:shadow-white/20'
-                                    } ${isPlasmaPressed ? 'scale-95 shadow-lg shadow-purple-500/50' : ''}`}
-                                    title={mode === 'conversing' ? "Exit Conversation Mode" : "Enter Conversation Mode with Voice"}
-                                >
-                                    <PlasmaBall size={24} />
-                                </button>
-                                
-
+                                {/* Language Selector */}
+                                <div className="relative">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleLanguageDropdown();
+                                        }}
+                                        className="ai-language-selector"
+                                        title="Select Language"
+                                    >
+                                        <Globe size={16} />
+                                    </button>
+                                    {showLanguageDropdown && (
+                                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-[1000] w-48">
+                                            {Object.entries(SUPPORTED_LANGUAGES).map(([code, lang]) => (
+                                                <button
+                                                    key={code}
+                                                    onClick={() => handleLanguageSelect(code as LanguageCode)}
+                                                    className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 ${
+                                                        selectedLanguage === code ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300'
+                                                    }`}
+                                                >
+                                                    {lang}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 
                                 {/* Read Last Message */}
                                 {currentMessages.filter(msg => !msg.isUser).length > 0 && (
@@ -1951,93 +2026,49 @@ This two-step process is mandatory. Do not deviate.`;
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                disabled={isLoading || (!isDemoUser && promptCount >= 10) || mode === 'single_recording'}
-                                className="flex-1 ai-input-field"
+                                className="ai-input-field"
+                                disabled={isLoading || (!isDemoUser && promptCount >= 10)}
                             />
-                            
-                            {/* Voice Recording Button - Single button for all modes */}
+                        </label>
+                        
+                        {/* Control Buttons */}
+                        <div className="ai-input-controls mt-3 flex gap-2">
+                            {/* Text Send Button */}
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRecordButtonClick();
-                                }}
-                                className={`p-3 rounded-full transition-all duration-300 ${
-                                    mode === 'single_recording' 
-                                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/50 animate-pulse' 
-                                        : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/30'
-                                }`}
+                                onClick={handleSendText}
+                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
+                                className={`ai-mode-button flex-1 ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
+                                title="Send Message"
+                            >
+                                <Send size={16} />
+                                <span>Send</span>
+                            </button>
+                            
+                            {/* Plasma Ball Conversation Mode */}
+                            <div 
+                                className={`plasma-ball-conversation-container ${mode === 'conversing' ? 'active' : ''}`}
+                                onClick={handleToggleConversationMode}
+                                title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
+                            >
+                                <PlasmaBall 
+                                    size={36}
+                                    className={`conversation-plasma-ball ${mode === 'conversing' ? 'active' : ''}`}
+                                    intensity={mode === 'conversing' ? 1.0 : 0.3}
+                                />
+                                <span className="plasma-label">Chat</span>
+                            </div>
+                            
+                            {/* Voice Recording Button */}
+                            <button
+                                onClick={handleRecordButtonClick}
+                                className={`ai-mode-button flex-1 ${mode === 'single_recording' ? 'recording' : ''}`}
                                 title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
                                 disabled={isLoading || mode === 'conversing'}
                             >
-                                {mode === 'single_recording' ? <MicOff size={18} /> : <Mic size={18} />}
+                                {mode === 'single_recording' ? <MicOff size={16} /> : <Mic size={16} />}
+                                <span>{mode === 'single_recording' ? 'Stop' : 'Record'}</span>
                             </button>
-                            
-                            {/* Conversation Mode Button - Plasma Ball with Pulsating Animations */}
-                            <div className="relative">
-                                {/* Pulsating rings around the plasma ball */}
-                                <div className={`absolute inset-0 rounded-full ${
-                                    mode === 'conversing' 
-                                        ? 'animate-pulse-ring-1' 
-                                        : 'animate-pulse-ring-2'
-                                }`} style={{
-                                    animation: mode === 'conversing' 
-                                        ? 'pulseRing1 2s ease-in-out infinite' 
-                                        : 'pulseRing2 3s ease-in-out infinite'
-                                }}>
-                                    <div className="w-full h-full rounded-full border-2 border-purple-400/30"></div>
-                                </div>
-                                <div className={`absolute inset-0 rounded-full ${
-                                    mode === 'conversing' 
-                                        ? 'animate-pulse-ring-2' 
-                                        : 'animate-pulse-ring-1'
-                                }`} style={{
-                                    animation: mode === 'conversing' 
-                                        ? 'pulseRing2 2.5s ease-in-out infinite 0.5s' 
-                                        : 'pulseRing1 3.5s ease-in-out infinite 1s'
-                                }}>
-                                    <div className="w-full h-full rounded-full border-2 border-blue-400/20"></div>
-                                </div>
-                                <div className={`absolute inset-0 rounded-full ${
-                                    mode === 'conversing' 
-                                        ? 'animate-pulse-ring-3' 
-                                        : 'animate-pulse-ring-2'
-                                }`} style={{
-                                    animation: mode === 'conversing' 
-                                        ? 'pulseRing3 3s ease-in-out infinite 1s' 
-                                        : 'pulseRing2 4s ease-in-out infinite 1.5s'
-                                }}>
-                                    <div className="w-full h-full rounded-full border-2 border-green-400/15"></div>
-                                </div>
-                                
-                                {/* Plasma Ball */}
-                                <div 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleToggleConversationMode();
-                                    }}
-                                    className={`cursor-pointer transition-transform duration-300 hover:scale-110 ${
-                                        mode === 'conversing' ? 'scale-110' : 'scale-100'
-                                    }`}
-                                    title={mode === 'conversing' ? 'Exit Conversation Mode' : 'Start Conversation Mode'}
-                                >
-                                    <PlasmaBall 
-                                        size={60} 
-                                        className={`transition-all duration-300 ${
-                                            mode === 'conversing' ? 'shadow-lg shadow-purple-500/50' : ''
-                                        }`}
-                                    />
-                                </div>
-                            </div>
-                            
-                            <button 
-                                onClick={handleSendText}
-                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
-                                className="ai-send-button"
-                                title={(!isDemoUser && promptCount >= 10) ? "Daily limit reached! 🎯" : "Send message"}
-                            >
-                                <Send size={18} />
-                            </button>
-                        </label>
+                        </div>
                         {!isDemoUser && promptCount >= 10 && (
                             <div className="text-center text-amber-400 text-xs mt-2 font-bold">🎯 You've used all your daily questions! Come back tomorrow for more fun! 🌟</div>
                         )}
