@@ -977,10 +977,19 @@ Need help with anything specific? Just ask! 🌟`;
         if (mode === 'conversing') {
             // Stop the conversation
             await conversationService.current.endConversation();
+            
+            // Stop media recorder if it's running
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                mediaRecorderRef.current.stop();
+                mediaRecorderRef.current = null;
+            }
+            
+            // Stop audio stream
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
                 streamRef.current = null;
             }
+            
             setMode('idle');
             addMessageToConversation(activeConversation, { 
                 text: "Conversation mode ended. You can still chat with me via text! 🎤", 
@@ -1014,8 +1023,11 @@ Need help with anything specific? Just ask! 🌟`;
                     mimeType: 'audio/webm;codecs=opus'
                 });
                 
+                // Store reference for cleanup
+                mediaRecorderRef.current = mediaRecorder;
+                
                 mediaRecorder.ondataavailable = async (event) => {
-                    if (event.data.size > 0 && conversationService.current.connected) {
+                    if (event.data.size > 0 && conversationService.current.connected && mode === 'conversing') {
                         try {
                             // Convert audio chunk and send to ElevenLabs via Ably
                             const buffer = await event.data.arrayBuffer();
@@ -1037,6 +1049,17 @@ Need help with anything specific? Just ask! 🌟`;
                 
             } catch (error) {
                 console.error('Failed to start conversation mode:', error);
+                
+                // Clean up any started resources
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                    mediaRecorderRef.current.stop();
+                    mediaRecorderRef.current = null;
+                }
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                    streamRef.current = null;
+                }
+                
                 setMode('idle');
                 addMessageToConversation(activeConversation, { 
                     text: "Sorry, I couldn't start conversation mode. Please try again! 🌟", 
