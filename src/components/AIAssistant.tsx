@@ -1846,7 +1846,7 @@ This two-step process is mandatory. Do not deviate.`;
                                         <Globe size={16} />
                                     </button>
                                     {showLanguageDropdown && (
-                                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-[1000] w-48">
+                                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-[1000] w-56 max-h-64 overflow-y-auto">
                                             {Object.entries(SUPPORTED_LANGUAGES).map(([code, lang]) => (
                                                 <button
                                                     key={code}
