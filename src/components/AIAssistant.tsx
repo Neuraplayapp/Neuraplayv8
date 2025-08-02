@@ -1061,8 +1061,14 @@ Need help with anything specific? Just ask! 🌟`;
                 }
                 
                 setMode('idle');
+                
+                // Show more helpful error message
+                const errorMessage = (error as Error).message?.includes('Bridge service not available') 
+                    ? "🔧 Conversation mode is temporarily unavailable (bridge service needs deployment). But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟"
+                    : "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟";
+                
                 addMessageToConversation(activeConversation, { 
-                    text: "Sorry, I couldn't start conversation mode. Please try again! 🌟", 
+                    text: errorMessage, 
                     isUser: false, 
                     timestamp: new Date() 
                 });

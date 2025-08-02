@@ -155,6 +155,9 @@ export class AblyConversationService {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(`Bridge service not available. The conversation mode requires the bridge service to be deployed. Regular voice recording and text chat still work perfectly!`);
+        }
         throw new Error(`Failed to start conversation: ${response.statusText}`);
       }
 
@@ -263,10 +266,14 @@ export class AblyConversationService {
         });
       }
 
-      // End conversation on bridge service
-      await fetch(`${this.bridgeServiceUrl}/conversation/${this.conversationId}`, {
-        method: 'DELETE'
-      });
+      // End conversation on bridge service (gracefully handle if service is down)
+      try {
+        await fetch(`${this.bridgeServiceUrl}/conversation/${this.conversationId}`, {
+          method: 'DELETE'
+        });
+      } catch (error) {
+        console.log('🔌 Bridge service unavailable for cleanup, continuing with local cleanup');
+      }
 
       // Clean up local state
       this.cleanup();
