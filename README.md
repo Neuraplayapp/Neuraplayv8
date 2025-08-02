@@ -1,15 +1,15 @@
-﻿# Neuraplay v5 - Interactive Learning Platform
+﻿# Neuraplay v8 - Interactive Learning Platform
 
-Neuraplay v5 is a comprehensive interactive learning platform featuring AI-powered educational games, cognitive training modules, and personalized learning experiences. The main enhancement in v5 is the **Test Site** functionality, which provides comprehensive testing and evaluation capabilities.
+Neuraplay v8 is a comprehensive interactive learning platform featuring AI-powered educational games, cognitive training modules, and personalized learning experiences. The main enhancement in v8 is the **Advanced AI Integration** with enhanced streaming conversation capabilities and improved multi-service architecture.
 
-## Key Difference in v5: Test Site
+## Key Difference in v8: Advanced AI Integration
 
-The primary enhancement in Neuraplay v5 is the **Test Site** functionality, which includes:
-- Comprehensive testing interface for all games
-- Performance evaluation tools
-- User progress tracking
-- Assessment capabilities
-- Real-time feedback systems
+The primary enhancement in Neuraplay v8 is the **Advanced AI Integration** functionality, which includes:
+- Enhanced streaming conversation system with ElevenLabs WebSocket integration
+- Improved AI assistant with real-time voice conversations
+- Advanced bridge service architecture for persistent connections
+- Multi-language support with AssemblyAI transcription
+- Sophisticated AI agent context management
 
 ## Features
 - AI-Powered Games
@@ -18,7 +18,10 @@ The primary enhancement in Neuraplay v5 is the **Test Site** functionality, whic
 - Responsive Design
 - Netlify Integration
 - Enhanced AI Agent
-- **Test Site** (New in v5)
+- **Advanced AI Integration** (New in v8)
+- Real-time Voice Conversations
+- Multi-language Transcription
+- Streaming Conversation System
 
 ## Technology Stack
 - React 18 + TypeScript
@@ -128,8 +131,8 @@ Bridge Service (Fly.io) → ElevenLabs WebSocket
 - Starbloom Adventure
 - Mountain Climber
 
-## Test Site Access
-Navigate to `/test` to access the comprehensive testing interface.
+## AI Assistant Access
+Access the advanced AI assistant through the interactive interface or use the real-time conversation mode via the plasma ball component.
 
 ## Deployment Architecture
 
@@ -153,4 +156,4 @@ Navigate to `/test` to access the comprehensive testing interface.
 This architecture enables seamless voice conversations while working within the constraints of serverless platforms, providing a robust and scalable solution for AI-powered educational interactions.
 
 Last Updated: $(Get-Date -Format 'yyyy-MM-dd')
-Version: 5.0
+Version: 8.0
