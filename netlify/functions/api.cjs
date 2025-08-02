@@ -3,9 +3,12 @@
 async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
   for (let i = 0; i < retries; i++) {
     try {
-      // Add timeout to prevent 504 errors
+      // Add timeout to prevent 504 errors - increased timeout for image generation
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeout = url.includes('images/generations') ? 60000 : 30000; // 60s for images, 30s for others
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      console.log(`Making request to ${url} with ${timeout}ms timeout (attempt ${i + 1}/${retries})`);
       
       const response = await fetch(url, {
         ...options,
@@ -19,6 +22,13 @@ async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
         await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
         continue;
       }
+      
+      if (response.status === 504 && i < retries - 1) {
+        console.log(`Gateway timeout (504), retrying in ${delay * Math.pow(2, i)}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+        continue;
+      }
+      
       return response;
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -541,7 +551,7 @@ async function handleImageGeneration(prompt, token) {
     console.log('Image generation prompt:', enhancedPrompt);
     console.log('Using token length:', token.length);
 
-    // Try multiple models for better reliability, with Schnell first
+    // Try multiple models for better reliability, with faster models first
     const models = [
       'black-forest-labs/FLUX.1-schnell-Free',
       'stability-ai/stable-diffusion-xl-base-1.0',
@@ -555,6 +565,12 @@ async function handleImageGeneration(prompt, token) {
       try {
         console.log(`Trying model: ${model}`);
         
+        // Use different parameters for faster models
+        const isFastModel = model.includes('schnell') || model.includes('flux');
+        const steps = isFastModel ? 4 : 20;
+        const width = 512;
+        const height = 512;
+        
         const response = await fetchWithRetry('https://api.together.xyz/v1/images/generations', {
           method: 'POST',
           headers: {
@@ -565,9 +581,9 @@ async function handleImageGeneration(prompt, token) {
             model: model,
             prompt: enhancedPrompt,
             n: 1,
-            width: 512,
-            height: 512,
-            steps: 4,
+            width: width,
+            height: height,
+            steps: steps,
             response_format: 'b64_json'
           })
         });
@@ -577,7 +593,15 @@ async function handleImageGeneration(prompt, token) {
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Model ${model} error:`, errorText);
-          lastError = new Error(`Model ${model} failed: ${response.status} - ${errorText}`);
+          
+          // Handle specific error cases
+          if (response.status === 504) {
+            lastError = new Error(`Model ${model} timed out (504) - server overloaded`);
+          } else if (response.status === 429) {
+            lastError = new Error(`Model ${model} rate limited (429) - too many requests`);
+          } else {
+            lastError = new Error(`Model ${model} failed: ${response.status} - ${errorText}`);
+          }
           continue; // Try next model
         }
 
@@ -645,7 +669,9 @@ async function handleImageGeneration(prompt, token) {
       },
       body: JSON.stringify({
         data: fallbackImage,
-        contentType: 'image/png'
+        contentType: 'image/png',
+        error: error.message,
+        fallback: true
       })
     };
   }

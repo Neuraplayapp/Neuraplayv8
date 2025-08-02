@@ -29,29 +29,47 @@ exports.handler = async (event, context) => {
     console.log('AssemblyAI transcription started');
     console.log('Content-Type:', event.headers['content-type']);
     
-    // Parse the multipart form data
-    const boundary = event.headers['content-type']?.split('boundary=')[1];
-    if (!boundary) {
-      console.error('No boundary found in content-type');
-      throw new Error('No boundary found in content-type');
+    let audioData;
+    
+    // Check if it's JSON (base64 audio) or multipart form data
+    if (event.headers['content-type']?.includes('application/json')) {
+      const body = JSON.parse(event.body);
+      if (body.audio) {
+        audioData = Buffer.from(body.audio, 'base64');
+        console.log('Received base64 audio data, length:', audioData.length);
+      } else {
+        throw new Error('No audio data found in JSON request');
+      }
+    } else {
+      // Parse the multipart form data
+      const boundary = event.headers['content-type']?.split('boundary=')[1];
+      if (!boundary) {
+        console.error('No boundary found in content-type');
+        throw new Error('No boundary found in content-type');
+      }
+
+      console.log('Boundary:', boundary);
+      console.log('Body length:', event.body ? event.body.length : 'no body');
+
+      const body = Buffer.from(event.body, 'base64');
+      console.log('Decoded body length:', body.length);
+      
+      const parts = parseMultipartFormData(body, boundary);
+      console.log('Parsed parts count:', parts.length);
+      
+      const audioFile = parts.find(part => part.name === 'audio');
+      if (!audioFile) {
+        console.error('No audio file found in request');
+        throw new Error('No audio file found in request');
+      }
+
+      console.log('Audio file found:', audioFile.name, 'size:', audioFile.data.length);
+      audioData = audioFile.data;
     }
 
-    console.log('Boundary:', boundary);
-    console.log('Body length:', event.body ? event.body.length : 'no body');
-
-    const body = Buffer.from(event.body, 'base64');
-    console.log('Decoded body length:', body.length);
-    
-    const parts = parseMultipartFormData(body, boundary);
-    console.log('Parsed parts count:', parts.length);
-    
-    const audioFile = parts.find(part => part.name === 'audio');
-    if (!audioFile) {
-      console.error('No audio file found in request');
-      throw new Error('No audio file found in request');
+    if (!audioData || audioData.length === 0) {
+      throw new Error('No audio data provided');
     }
-
-    console.log('Audio file found:', audioFile.name, 'size:', audioFile.data.length);
 
     // AssemblyAI API configuration
     const ASSEMBLYAI_API_KEY = '70f0f98ec1ec4a49afe581069224eba1';
@@ -66,7 +84,7 @@ exports.handler = async (event, context) => {
         'Authorization': ASSEMBLYAI_API_KEY,
         'Content-Type': 'audio/webm'
       },
-      body: audioFile.data
+      body: audioData
     });
 
     console.log('Upload response status:', uploadResponse.status);

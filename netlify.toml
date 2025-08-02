@@ -4,6 +4,9 @@
   command = "npm run build"
   ignore = ".bolt/ .netlify/"
 
+[functions]
+  directory = "netlify/functions"
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -41,3 +44,11 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[edge_functions]]
+  path = "/.netlify/functions/elevenlabs-websocket"
+  function = "elevenlabs-websocket"
+
+[[edge_functions]]
+  path = "/.netlify/functions/ably-bridge"
+  function = "ably-elevenlabs-bridge"

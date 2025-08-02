@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Zap, Target, TrendingUp, Lightbulb, RotateCcw, Play, Pause, HelpCircle, Award, Clock, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff } from 'lucide-react';
+import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Zap, Target, TrendingUp, Lightbulb, RotateCcw, Play, Pause, HelpCircle, Award, Clock, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff, Bell, Globe, Shield, Calculator, BookOpen, Palette, Music, Heart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { AblyConversationService } from '../services/AblyConversationService';
+import { getAgentId, getVoiceId } from '../config/elevenlabs';
 import { useAIAgent } from '../contexts/AIAgentContext';
 import { useUser } from '../contexts/UserContext';
+import { base64ToBinary } from '../utils/videoUtils';
 
 import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
@@ -23,6 +26,9 @@ interface Conversation {
     timestamp: Date;
     context?: string;
 }
+
+// Define the assistant modes for cleaner state management
+type AssistantMode = 'idle' | 'text_input' | 'single_recording' | 'conversing';
 
 const AIAssistant: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -48,16 +54,24 @@ const AIAssistant: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isPlayingVoice, setIsPlayingVoice] = useState(false);
     const [promptCount, setPromptCount] = useState(0);
-    const [isConversationMode, setIsConversationMode] = useState(false); // Conversation mode is for audio only
     const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
     
-    // Voice recording states
-    const [isRecording, setIsRecording] = useState(false);
-    const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
-    const [isStreamingMode, setIsStreamingMode] = useState(false);
+    // WebSocket service instance
+    const conversationService = useRef<AblyConversationService>(AblyConversationService.getInstance());
+    
+    // NEW: Single mode state instead of multiple booleans
+    const [mode, setMode] = useState<AssistantMode>('idle');
+    
+    // Voice recording states (simplified)
+    const [isPlasmaPressed, setIsPlasmaPressed] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const streamingTranscriptionRef = useRef<any>(null);
+
+    // Chunked voice generation system
+    const [voiceChunks, setVoiceChunks] = useState<string[]>([]);
+    const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+    const voiceChunkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     
     const navigate = useNavigate();
@@ -68,6 +82,11 @@ const AIAssistant: React.FC = () => {
     
     // Remove limits for DemoUser
     const isDemoUser = user?.username === 'DemoUser';
+
+    // Debug MediaRecorder on mount
+    useEffect(() => {
+        debugMediaRecorder();
+    }, []);
 
     // Get current messages based on active conversation
     const currentMessages = conversations[activeConversation]?.messages || [];
@@ -93,23 +112,34 @@ const AIAssistant: React.FC = () => {
 
     // Available settings and their descriptions - COMPLETE LIST
     const availableSettings = {
-        'theme': { name: 'Theme', description: 'Change light/dark mode', options: ['light', 'dark', 'auto', 'bright', 'dark-gradient', 'white-purple-gradient'] },
-        'fontSize': { name: 'Font Size', description: 'Adjust text size', options: ['small', 'medium', 'large', 'extra-large'] },
-        'animations': { name: 'Animations', description: 'Enable/disable animations', options: ['enabled', 'disabled'] },
-        'sound': { name: 'Sound', description: 'Enable/disable sound effects', options: ['enabled', 'disabled'] },
-        'highContrast': { name: 'High Contrast', description: 'Enhanced visibility', options: ['enabled', 'disabled'] },
-        'reducedMotion': { name: 'Reduced Motion', description: 'Minimize animations', options: ['enabled', 'disabled'] },
-        'screenReader': { name: 'Screen Reader', description: 'Enable screen reader support', options: ['enabled', 'disabled'] },
-        'keyboardNavigation': { name: 'Keyboard Navigation', description: 'Enable keyboard navigation', options: ['enabled', 'disabled'] },
-        'focusIndicators': { name: 'Focus Indicators', description: 'Show focus indicators', options: ['enabled', 'disabled'] },
-        'colorBlindMode': { name: 'Color Blind Mode', description: 'Color accessibility', options: ['none', 'protanopia', 'deuteranopia', 'tritanopia'] },
-        'textSpacing': { name: 'Text Spacing', description: 'Adjust letter spacing', options: ['normal', 'increased', 'extra'] },
-        'aiPersonality': { name: 'AI Personality', description: 'Change AI assistant style', options: ['coach', 'mentor', 'friend', 'analyst'] },
-        'aiAgent': { name: 'AI Agent', description: 'Control AI agent behavior', options: ['enabled', 'disabled', 'auto', 'manual'] },
-        'voiceEnabled': { name: 'Voice', description: 'Enable voice features', options: ['enabled', 'disabled'] },
-        'notifications': { name: 'Notifications', description: 'Control notifications', options: ['enabled', 'disabled'] },
-        'autoSave': { name: 'Auto Save', description: 'Automatic saving', options: ['enabled', 'disabled'] },
-        'accessibility': { name: 'Accessibility', description: 'Accessibility features', options: ['enabled', 'disabled'] }
+        'theme': { name: 'Theme', icon: <Settings className="w-4 h-4" />, description: 'Change light/dark mode' },
+        'accessibility': { name: 'Accessibility', icon: <Target className="w-4 h-4" />, description: 'Accessibility settings' },
+        'notifications': { name: 'Notifications', icon: <Bell className="w-4 h-4" />, description: 'Notification preferences' },
+        'language': { name: 'Language', icon: <Globe className="w-4 h-4" />, description: 'Language settings' },
+        'privacy': { name: 'Privacy', icon: <Shield className="w-4 h-4" />, description: 'Privacy settings' },
+        'help': { name: 'Help', icon: <HelpCircle className="w-4 h-4" />, description: 'Help and support' },
+        'about': { name: 'About', icon: <Info className="w-4 h-4" />, description: 'About NeuraPlay' }
+    };
+
+    // Available games and their descriptions
+    const availableGames = {
+        'counting': { name: 'Counting Adventure', icon: <Gamepad2 className="w-4 h-4" />, description: 'Learn to count with fun games' },
+        'memory': { name: 'Memory Match', icon: <Brain className="w-4 h-4" />, description: 'Test your memory skills' },
+        'puzzle': { name: 'Puzzle Challenge', icon: <Target className="w-4 h-4" />, description: 'Solve brain teasers' },
+        'math': { name: 'Math Fun', icon: <Calculator className="w-4 h-4" />, description: 'Practice math skills' },
+        'spelling': { name: 'Spelling Bee', icon: <BookOpen className="w-4 h-4" />, description: 'Learn to spell' },
+        'science': { name: 'Science Lab', icon: <Lightbulb className="w-4 h-4" />, description: 'Explore science experiments' },
+        'art': { name: 'Art Studio', icon: <Palette className="w-4 h-4" />, description: 'Create digital art' },
+        'music': { name: 'Music Maker', icon: <Music className="w-4 h-4" />, description: 'Make music and rhythms' }
+    };
+
+    // Available AI agent personalities
+    const availablePersonalities = {
+        'synapse-normal': { name: 'Synapse Normal', icon: <Brain className="w-4 h-4" />, description: 'Friendly and helpful AI teacher' },
+        'coach': { name: 'Coach', icon: <Target className="w-4 h-4" />, description: 'Motivational and goal-oriented' },
+        'mentor': { name: 'Mentor', icon: <Lightbulb className="w-4 h-4" />, description: 'Wise and guiding' },
+        'friend': { name: 'Friend', icon: <Heart className="w-4 h-4" />, description: 'Supportive and casual' },
+        'analyst': { name: 'Analyst', icon: <BarChart3 className="w-4 h-4" />, description: 'Detailed and analytical' }
     };
 
     // AI Agent commands and their descriptions
@@ -127,16 +157,21 @@ const AIAssistant: React.FC = () => {
 
     // Child-friendly prompt suggestions
     const childPrompts = [
-        "🎨 Draw me a happy dinosaur!",
-        "🧮 Help me count to 10!",
-        "🌈 What colors make a rainbow?",
-        "🚀 Tell me about space!",
-        "🐾 What animals live in the jungle?",
-        "🌱 How do plants grow?",
-        "⚡ What is electricity?",
-        "🌊 Why is the ocean blue?",
-        "🦋 How do butterflies fly?",
-        "🏠 How do houses stay warm?"
+        "Tell me a fun fact about space! 🌟",
+        "What's the coolest animal you know? 🦁",
+        "Can you help me with my homework? 📚",
+        "Tell me a joke! 😄",
+        "What's your favorite color? 🎨",
+        "How do plants grow? 🌱",
+        "What makes rainbows? 🌈",
+        "Tell me about dinosaurs! 🦕",
+        "How do computers work? 💻",
+        "What's the biggest ocean? 🌊",
+        "Can you teach me to count? 🔢",
+        "What's the weather like? ☀️",
+        "Tell me about the planets! 🪐",
+        "How do birds fly? 🦅",
+        "What's your favorite food? 🍕"
     ];
 
     // Toggle fullscreen mode
@@ -199,6 +234,69 @@ const AIAssistant: React.FC = () => {
         document.addEventListener('pointerdown', handlePointerDown);
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, []);
+
+    // Conversation service event handlers
+    useEffect(() => {
+        const service = conversationService.current;
+        
+        // Handle conversation ready
+        service.on('conversation_ready', (data) => {
+            console.log('Conversation ready with ElevenLabs');
+            addMessageToConversation(activeConversation, { 
+                text: "Voice conversation ready! Start speaking! 🎤", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        });
+
+        // Handle AI responses
+        service.on('ai_response', (data) => {
+            console.log('Received AI response:', data);
+            if (data.text) {
+                const aiMessage = { 
+                    text: data.text, 
+                    isUser: false, 
+                    timestamp: new Date() 
+                };
+                addMessageToConversation(activeConversation, aiMessage);
+            }
+            
+            // Handle audio if present
+            if (data.audio) {
+                const audioBlob = new Blob(
+                    [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], 
+                    { type: 'audio/mpeg' }
+                );
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.play().catch(error => {
+                    console.error('Failed to play audio:', error);
+                });
+            }
+        });
+
+        // Handle status updates
+        service.on('status', (data) => {
+            console.log('Status update:', data);
+        });
+
+        // Handle errors
+        service.on('error', (data) => {
+            console.error('Conversation error:', data);
+            addMessageToConversation(activeConversation, { 
+                text: "Connection error. Please try again.", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        });
+
+        // Cleanup on unmount
+        return () => {
+            if (service.hasActiveConversation) {
+                service.endConversation();
+            }
+        };
+    }, [activeConversation, mode]);
 
     // Enhanced AI Agency Functions
     const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info' | 'agent' | 'game', action?: any } => {
@@ -751,594 +849,465 @@ Need help with anything specific? Just ask! 🌟`;
         return `❌ I didn't understand that command. Try asking for help!`;
     };
 
-    const sendMessage = async () => {
-        if (!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+    // NEW: Unified message handling function
+    const handleSendMessage = async (text: string) => {
+        if (!text.trim() || isLoading) return;
+        console.log(`Sending message in mode: ${mode}`);
 
-        const userMessage: Message = {
-            text: inputMessage,
-            isUser: true,
-            timestamp: new Date()
-        };
-
+        // Add user message to UI
+        const userMessage: Message = { text, isUser: true, timestamp: new Date() };
         addMessageToConversation(activeConversation, userMessage);
         setInputMessage('');
         setIsLoading(true);
-        setPromptCount(count => count + 1);
+
+        // Apply prompt count restrictions for non-demo users
+        if (!isDemoUser) {
+            setPromptCount(count => count + 1);
+        }
 
         try {
-            // FIXED: Check conversation mode first
-            if (isConversationMode) {
-                // Conversation mode: Check for image requests first, then use chat API
-                if (isImageRequest(inputMessage)) {
-                    console.log('Image request detected in conversation mode, calling handleImageRequest');
-                    await handleImageRequest(inputMessage);
-                    return;
-                }
-                // Conversation mode: Always use chat API, ignore commands
-                await handleConversationMode(inputMessage);
-            } else {
-                // Normal mode: Check for commands first
-                const command = analyzeCommand(inputMessage);
-                console.log('Command detected:', command);
-                
-                if (command.type !== 'chat') {
-                    // Execute the command
-                    const response = await executeCommand(command);
+            // In full conversation mode, always treat input as a chat message
+            if (mode === 'conversing') {
+                await handleConversationMode(text);
+                // Auto-play the response
+                setTimeout(async () => {
+                    const messages = conversations[activeConversation]?.messages || [];
+                    const userMessageTime = userMessage.timestamp;
+                    const recentAIMessages = messages
+                        .filter(msg => !msg.isUser && msg.timestamp > userMessageTime)
+                        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
                     
-                    const assistantMessage: Message = {
-                        text: response,
-                        isUser: false,
+                    if (recentAIMessages.length > 0) {
+                        const latestAIMessage = recentAIMessages[0];
+                        console.log('Auto-playing response to text input:', latestAIMessage.text.substring(0, 50) + '...');
+                        await playVoice(latestAIMessage.text);
+                    }
+                }, 1500);
+            } else {
+                // For text or single recordings, check for commands first
+                const command = analyzeCommand(text);
+                if (command.type !== 'chat') {
+                    const responseText = await executeCommand(command);
+                    addMessageToConversation(activeConversation, { 
+                        text: responseText, 
+                        isUser: false, 
                         timestamp: new Date(),
                         action: command.type as any
-                    };
-
-                    addMessageToConversation(activeConversation, assistantMessage);
-                    setIsLoading(false);
-                    return;
+                    });
+                } else if (isImageRequest(text)) {
+                    await handleImageRequest(text);
+                } else {
+                    await handleChatMode(text);
                 }
-
-                // Check if this is an image request
-                if (isImageRequest(inputMessage)) {
-                    console.log('Image request detected, calling handleImageRequest');
-                    await handleImageRequest(inputMessage);
-                    return;
-                }
-
-                // Normal chat mode
-                await handleChatMode(inputMessage);
             }
         } catch (error: any) {
-            console.error('Error sending message:', error);
-            const errorMessage: Message = {
-                text: `Oops! Something went wrong: ${error.message}. Let's try again in a moment! 🌟`,
-                isUser: false,
-                timestamp: new Date()
-            };
-            addMessageToConversation(activeConversation, errorMessage);
+            console.error('Error in handleSendMessage:', error);
+            addMessageToConversation(activeConversation, { 
+                text: `Oops! Something went wrong: ${error.message}. Let's try again in a moment! 🌟`, 
+                isUser: false, 
+                timestamp: new Date() 
+            });
         } finally {
             setIsLoading(false);
         }
     };
 
-    // NEW: Handle conversation mode (pure chat, no commands)
-    const handleConversationMode = async (inputMessage: string) => {
-        const conversationHistory = currentMessages
-            .filter(msg => !msg.image && !msg.action) // Exclude image and action messages
-            .slice(-10); // Keep last 10 messages (5 exchanges)
-        
-        const messagesForAPI = [];
-        
-        // Always add system context for conversation mode
-        messagesForAPI.push({
-            role: 'system',
-            content: `You are Synapse, a friendly AI teacher for children in conversation mode. You are having a natural conversation with a child. Be engaging, educational, and conversational. Don't execute commands or navigate - just have a friendly chat!`
-        });
-        
-        // Add conversation history
-        for (let i = 0; i < conversationHistory.length; i += 2) {
-            if (conversationHistory[i] && conversationHistory[i + 1]) {
-                messagesForAPI.push({
-                    role: 'user',
-                    content: conversationHistory[i].text
-                });
-                messagesForAPI.push({
-                    role: 'assistant',
-                    content: conversationHistory[i + 1].text
-                });
+    // NEW: Cleaner mode toggle functions
+    const handleToggleConversationMode = async () => {
+        if (mode === 'conversing') {
+            // Stop the conversation
+            await conversationService.current.endConversation();
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
             }
-        }
-        
-        // Add current user message
-        messagesForAPI.push({
-            role: 'user',
-            content: inputMessage
-        });
-
-        const response = await fetch('/.netlify/functions/api', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                task_type: 'chat',
-                input_data: {
-                    messages: messagesForAPI
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Failed to get response' }));
-            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        let aiResponse = parseAPIResponse(result);
-
-        const assistantMessage: Message = {
-            text: aiResponse,
-            isUser: false,
-            timestamp: new Date()
-        };
-
-        addMessageToConversation(activeConversation, assistantMessage);
-    };
-
-    // NEW: Handle normal chat mode (with commands and images)
-    const handleChatMode = async (inputMessage: string) => {
-        const conversationHistory = currentMessages
-            .filter(msg => !msg.image) // Exclude image messages from history
-            .slice(-12); // Keep last 12 messages (6 exchanges) for better context
-        
-        const messagesForAPI = [];
-        
-        // Only add system context if this is the first message or if we have no conversation history
-        if (currentMessages.length <= 2) { // First exchange or just the initial greeting
-            messagesForAPI.push({
-                role: 'system',
-                content: `You are Synapse, a friendly AI teacher for children. You are very knowledgeable about accessibility and can help with:
-- Color blindness (protanopia, deuteranopia, tritanopia)
-- Visual impairments and contrast needs
-- Text spacing and font size preferences
-- Motion sensitivity and animation preferences
-- Screen reader support
-- Keyboard navigation
-
-When users mention accessibility needs, you should:
-1. Acknowledge their needs with empathy
-2. Offer specific solutions and settings changes
-3. Maintain context across multiple messages
-4. Use child-friendly language while being informative
-5. Suggest relevant settings changes they can make
-
-Always be supportive and helpful with accessibility requests!`
+            setMode('idle');
+            addMessageToConversation(activeConversation, { 
+                text: "Conversation mode ended. You can still chat with me via text! 🎤", 
+                isUser: false, 
+                timestamp: new Date() 
             });
-        }
-        
-        // Add conversation history
-        for (let i = 0; i < conversationHistory.length; i += 2) {
-            if (conversationHistory[i] && conversationHistory[i + 1]) {
-                messagesForAPI.push({
-                    role: 'user',
-                    content: conversationHistory[i].text
-                });
-                messagesForAPI.push({
-                    role: 'assistant',
-                    content: conversationHistory[i + 1].text
-                });
-            }
-        }
-        
-        // Add current user message
-        messagesForAPI.push({
-            role: 'user',
-            content: inputMessage
-        });
-
-        const response = await fetch('/.netlify/functions/api', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                task_type: 'chat',
-                input_data: {
-                    messages: messagesForAPI
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Failed to get response' }));
-            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        let aiResponse = parseAPIResponse(result);
-
-        const assistantMessage: Message = {
-            text: aiResponse,
-            isUser: false,
-            timestamp: new Date()
-        };
-
-        addMessageToConversation(activeConversation, assistantMessage);
-    };
-
-    // NEW: Handle image requests
-    const handleImageRequest = async (inputMessage: string) => {
-        console.log('handleImageRequest called with:', inputMessage);
-        const imageData = await generateImage(inputMessage);
-        console.log('Image generation result:', !!imageData);
-        
-        let responseText = "Here's the image you requested!";
-        if (!imageData) {
-            responseText = "I'm sorry, I couldn't generate an image for that request. Please try again with a different description.";
-        }
-
-        const assistantMessage: Message = {
-            text: responseText,
-            isUser: false,
-            timestamp: new Date(),
-            image: imageData || undefined
-        };
-
-        addMessageToConversation(activeConversation, assistantMessage);
-    };
-
-    // NEW: Improved API response parsing
-    const parseAPIResponse = (result: any): string => {
-        if (Array.isArray(result) && result.length > 0) {
-            if (result[0].generated_text) {
-                return result[0].generated_text;
-            } else if (result[0].summary_text) {
-                return result[0].summary_text;
-            } else if (typeof result[0] === 'string') {
-                return result[0];
-            }
-        }
-        if (typeof result === 'string') {
-            return result;
-        }
-        if (result?.generated_text) {
-            return result.generated_text;
-        }
-        if (result?.summary_text) {
-            return result.summary_text;
-        }
-        if (result?.error) {
-            return `Oops! Something went wrong: ${result.error}. Let's try again! 🌟`;
-        }
-        return "I'm here to help! Could you ask me something else? 🎮✨";
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    };
-
-    const playVoice = async (text: string) => {
-        if (isPlayingVoice) {
-            setIsPlayingVoice(false);
-            return;
-        }
-
-        try {
-            console.log('Requesting voice for text:', text.substring(0, 50) + '...');
-            setIsPlayingVoice(true);
-            
-            const response = await fetch('/.netlify/functions/api', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    task_type: 'voice',
-                    input_data: text
-                })
+        } else {
+            // Start the conversation
+            setMode('conversing');
+            addMessageToConversation(activeConversation, { 
+                text: "Starting conversation mode... 🎤", 
+                isUser: false, 
+                timestamp: new Date() 
             });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Voice API error:', response.status, errorText);
-                throw new Error(`Failed to generate audio: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Voice API response received:', result);
             
-            if (result.data) {
-                // Use Hugging Face TTS
-                const audioBlob = `data:${result.contentType};base64,${result.data}`;
-                const audio = new Audio(audioBlob);
+            try {
+                // Initialize Ably connection
+                await conversationService.current.initialize();
                 
-                audio.onended = () => {
-                    console.log('Audio playback ended');
-                    setIsPlayingVoice(false);
+                // Start conversation with ElevenLabs via bridge service
+                await conversationService.current.startConversation({
+                    agentId: getAgentId(),
+                    voiceId: getVoiceId()
+                });
+                
+                // Start local audio recording for streaming
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                streamRef.current = stream;
+                
+                const mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                mediaRecorder.ondataavailable = async (event) => {
+                    if (event.data.size > 0 && conversationService.current.connected) {
+                        try {
+                            // Convert audio chunk and send to ElevenLabs via Ably
+                            const buffer = await event.data.arrayBuffer();
+                            await conversationService.current.sendAudio(buffer);
+                        } catch (error) {
+                            console.error('Error sending audio chunk:', error);
+                        }
+                    }
                 };
                 
-                audio.onerror = (e) => {
-                    console.error('Audio playback error:', e);
-                    setIsPlayingVoice(false);
-                };
+                // Start recording in small chunks
+                mediaRecorder.start(500);
                 
-                audio.onloadstart = () => console.log('Audio loading started');
-                audio.oncanplay = () => console.log('Audio can play');
+                addMessageToConversation(activeConversation, { 
+                    text: "Conversation mode active! Speak anytime to chat with me. 🎤", 
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
                 
-                await audio.play();
-                console.log('Audio playback started');
-            } else if (result.useBrowserTTS) {
-                // Fallback to browser TTS
-                console.log('Using browser TTS fallback');
-                if ('speechSynthesis' in window) {
-                    const utterance = new SpeechSynthesisUtterance(result.text || text);
-                    utterance.rate = 0.8;
-                    utterance.pitch = 1.1;
-                    utterance.volume = 0.9;
-                    
-                    utterance.onend = () => {
-                        console.log('Browser TTS ended');
-                        setIsPlayingVoice(false);
-                    };
-                    
-                    utterance.onerror = (e) => {
-                        console.error('Browser TTS error:', e);
-                        setIsPlayingVoice(false);
-                    };
-                    
-                    window.speechSynthesis.speak(utterance);
-                    console.log('Browser TTS started');
-                } else {
-                    console.error('Browser TTS not supported');
-                    setIsPlayingVoice(false);
-                }
-            } else {
-                console.error('No audio data received and no fallback available');
-                setIsPlayingVoice(false);
+            } catch (error) {
+                console.error('Failed to start conversation mode:', error);
+                setMode('idle');
+                addMessageToConversation(activeConversation, { 
+                    text: "Sorry, I couldn't start conversation mode. Please try again! 🌟", 
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
             }
-        } catch (error) {
-            console.error('Error playing voice:', error);
-            setIsPlayingVoice(false);
         }
     };
 
-    const readLastMessage = async () => {
-        const lastAIMessage = currentMessages
-            .filter(msg => !msg.isUser)
-            .pop();
-        
-        if (lastAIMessage && !isReadingLastMessage) {
-            setIsReadingLastMessage(true);
-            await playVoice(lastAIMessage.text);
-            setIsReadingLastMessage(false);
+    const handleRecordButtonClick = async () => {
+        if (mode === 'single_recording') {
+            // Stop recording and send
+            stopVoiceRecording();
+            setMode('idle');
+        } else {
+            // Start recording
+            setMode('single_recording');
+            await startVoiceRecording();
         }
     };
 
-    const isImageRequest = (text: string): boolean => {
-        const imageKeywords = [
-            'image', 'picture', 'photo', 'draw', 'create', 'generate', 'show me', 'make', 'design',
-            'illustration', 'visual', 'art', 'painting', 'sketch', 'drawing', 'graphic', 'schnell',
-            'generate image', 'create image', 'draw image', 'make image', 'show image'
-        ];
-        const lowerText = text.toLowerCase();
-        const isImage = imageKeywords.some(keyword => lowerText.includes(keyword));
-        console.log('Image request check:', { text, isImage, matchedKeywords: imageKeywords.filter(keyword => lowerText.includes(keyword)) });
-        return isImage;
+    const handleSendText = () => {
+        if (!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+        setMode('text_input');
+        handleSendMessage(inputMessage);
+        setMode('idle');
     };
 
-    const generateImage = async (prompt: string): Promise<string | null> => {
-        try {
-            console.log('Generating image for prompt:', prompt);
-            
-            const response = await fetch('/.netlify/functions/api', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    task_type: 'image',
-                    input_data: prompt
-                })
-            });
-
-            console.log('Image generation response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Image generation error response:', errorText);
-                throw new Error(`Failed to generate image: ${response.status} - ${errorText}`);
-            }
-
-            const result = await response.json();
-            console.log('Image generation result:', result);
-            
-            if (result.data) {
-                console.log('Image data received, length:', result.data.length);
-                return `data:${result.contentType};base64,${result.data}`;
-            } else {
-                console.error('No image data in response:', result);
-                return null;
-            }
-        } catch (error: any) {
-            console.error('Error generating image:', error);
-            return null;
-        }
-    };
-
-    // FIXED: Get personality from context (already declared above)
-    const currentPersonality = currentContext?.agentPersonality || 'synapse-normal';
-    
-    // Voice recording functions
-    const startVoiceRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
-            
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus'
-            });
-            
-            const audioChunks: Blob[] = [];
-            
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    audioChunks.push(event.data);
-                }
-            };
-            
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                await processVoiceInput(audioBlob);
-            };
-            
-            mediaRecorder.start(100); // Collect data every 100ms
-            mediaRecorderRef.current = mediaRecorder;
-            setIsRecording(true);
-            console.log('Voice recording started');
-        } catch (error) {
-            console.error('Failed to start voice recording:', error);
-            alert('Failed to access microphone. Please check permissions.');
-        }
-    };
-    
-    const stopVoiceRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-            setIsRecording(false);
-            console.log('Voice recording stopped');
-        }
-    };
-    
+    // Updated processVoiceInput to use unified handler
     const processVoiceInput = async (audioBlob: Blob) => {
         try {
-            console.log('Processing voice input, blob size:', audioBlob.size);
+            console.log('Processing voice input...');
             
-            // Convert blob to file for AssemblyAI
-            const audioFile = new File([audioBlob], 'voice-input.webm', { type: 'audio/webm' });
-            console.log('Created audio file:', audioFile.name, 'size:', audioFile.size);
+            // Convert audio to base64 for AssemblyAI
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
             
             // Send to AssemblyAI for transcription
-            const formData = new FormData();
-            formData.append('audio', audioFile);
-            
-            console.log('Sending to AssemblyAI...');
             const response = await fetch('/.netlify/functions/assemblyai-transcribe', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audio: base64Audio })
             });
-            
-            console.log('AssemblyAI response status:', response.status);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('AssemblyAI error response:', errorText);
+                console.error('Transcription failed:', errorText);
                 throw new Error(`Transcription failed: ${response.status} - ${errorText}`);
             }
             
             const result = await response.json();
-            console.log('AssemblyAI result:', result);
             const transcribedText = result.text;
             
             if (transcribedText && transcribedText.trim()) {
                 console.log('Transcribed text:', transcribedText);
-                // Process the transcribed text through Synapse
-                setInputMessage(transcribedText);
-                await sendMessage();
+                // Use unified message handler
+                await handleSendMessage(transcribedText);
             } else {
-                console.log('No transcribed text received');
-                alert('No speech detected. Please try speaking more clearly.');
+                console.log('No text transcribed');
+                addMessageToConversation(activeConversation, { 
+                    text: "I couldn't hear what you said. Could you try again? 🎤", 
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
             }
         } catch (error: any) {
             console.error('Voice processing error:', error);
-            alert(`Failed to process voice input: ${error.message}. Please try again.`);
+            addMessageToConversation(activeConversation, { 
+                text: `Sorry, I couldn't process that voice input. Please try again! 🌟`, 
+                isUser: false, 
+                timestamp: new Date() 
+            });
         }
     };
-    
-    const toggleVoiceRecording = () => {
-        if (isRecording) {
-            stopVoiceRecording();
-        } else {
-            startVoiceRecording();
-        }
-    };
-    
-    // Streaming conversation mode functions
-    const startStreamingConversation = async () => {
+
+    // Updated startVoiceRecording to set correct mode
+    const startVoiceRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
+            const mediaRecorder = new MediaRecorder(stream);
+            const audioChunks: Blob[] = [];
             
-            // Import AssemblyAI streaming transcription
-            const { createStreamingTranscription } = await import('../utils/assemblyAI');
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
             
-            streamingTranscriptionRef.current = createStreamingTranscription(
-                async (result) => {
-                    if (result.isFinal && result.text.trim()) {
-                        console.log('Streaming transcription:', result.text);
-                        // Process through Synapse
-                        await processStreamingInput(result.text);
-                    }
-                },
-                (error) => {
-                    console.error('Streaming transcription error:', error);
-                }
-            );
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                await processVoiceInput(audioBlob);
+            };
             
-            setIsStreamingMode(true);
-            console.log('Streaming conversation started');
+            mediaRecorder.onerror = (event) => {
+                console.error('MediaRecorder error:', event);
+                setMode('idle');
+                alert('Recording failed. Please try again.');
+            };
+            
+            mediaRecorder.start(100);
+            mediaRecorderRef.current = mediaRecorder;
+            console.log('Voice recording started');
         } catch (error) {
-            console.error('Failed to start streaming conversation:', error);
-            alert('Failed to access microphone for streaming mode.');
+            console.error('Failed to start voice recording:', error);
+            setMode('idle');
+            alert('Failed to access microphone.');
         }
     };
-    
-    const stopStreamingConversation = () => {
-        if (streamingTranscriptionRef.current) {
-            streamingTranscriptionRef.current.close();
-            streamingTranscriptionRef.current = null;
+
+    // Updated stopVoiceRecording to handle mode correctly
+    const stopVoiceRecording = () => {
+        if (mediaRecorderRef.current && mode === 'single_recording') {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+            console.log('Voice recording stopped');
         }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        setIsStreamingMode(false);
-        console.log('Streaming conversation stopped');
     };
-    
-    const processStreamingInput = async (transcribedText: string) => {
+
+    // Updated toggleVoiceRecording to use new mode system
+    const toggleVoiceRecording = () => {
+        if (mode === 'single_recording') {
+            stopVoiceRecording();
+        } else {
+            // Try recording first, if it fails, fall back to streaming
+            startVoiceRecording().catch((error) => {
+                console.log('Recording failed:', error);
+            });
+        }
+    };
+
+
+
+    // Updated processVoiceChunk to use unified handler
+    const processVoiceChunk = async (transcribedText: string) => {
         try {
-            // Add user message to conversation
-            const userMessage: Message = {
-                text: transcribedText,
-                isUser: true,
+            console.log('Processing voice chunk:', transcribedText);
+            
+            // Add to chunks
+            setVoiceChunks(prev => [...prev, transcribedText]);
+            
+            // Clear existing timeout
+            if (voiceChunkTimeoutRef.current) {
+                clearTimeout(voiceChunkTimeoutRef.current);
+            }
+            
+            // Set timeout to process chunks after silence
+            voiceChunkTimeoutRef.current = setTimeout(async () => {
+                await processCompleteVoiceInput();
+            }, 2000); // Wait 2 seconds of silence
+        } catch (error: any) {
+            console.error('Voice chunk processing error:', error);
+        }
+    };
+
+    // Updated processCompleteVoiceInput to use unified handler
+    const processCompleteVoiceInput = async () => {
+        try {
+            const completeText = voiceChunks.join(' ').trim();
+            if (completeText) {
+                console.log('Processing complete voice input:', completeText);
+                // Use unified message handler
+                await handleSendMessage(completeText);
+            }
+            
+            // Clear chunks
+            setVoiceChunks([]);
+            setIsProcessingVoice(false);
+        } catch (error: any) {
+            console.error('Complete voice input processing error:', error);
+            setVoiceChunks([]);
+            setIsProcessingVoice(false);
+        }
+    };
+
+    // Updated handleKeyPress to use new mode system
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendText();
+        }
+    };
+
+    // Updated activateConversationMode to use new mode system
+    const activateConversationMode = () => {
+        setMode('conversing');
+        
+        // Don't add a greeting message automatically - let the user start the conversation
+        console.log('Conversation mode activated');
+    };
+
+    // Updated processVoiceMessage to use unified handler
+    const processVoiceMessage = async (transcribedText: string) => {
+        try {
+            console.log('Processing voice message:', transcribedText);
+            
+            if (transcribedText && transcribedText.trim()) {
+                // Use unified message handler
+                await handleSendMessage(transcribedText);
+            }
+        } catch (error: any) {
+            console.error('Voice message processing error:', error);
+            addMessageToConversation(activeConversation, { 
+                text: `Sorry, I couldn't process that voice input. Please try again! 🌟`, 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        }
+    };
+
+    // Updated handleConversationModeToggle to use new mode system
+    const handleConversationModeToggle = async () => {
+        if (mode !== 'conversing') {
+            // Enter conversation mode
+            activateConversationMode();
+            
+            // Add a greeting message
+            const greetings = [
+                "Hello there! I'm Synapse, your AI learning assistant. I'm now in conversation mode with voice capabilities. How are you doing today?",
+                "Hi! I'm Synapse, your friendly AI teacher. I'm ready for a conversation with voice! What would you like to talk about?",
+                "Hey there! I'm Synapse, your learning companion. I'm now in conversation mode with voice. How can I help you today?",
+                "Hello! I'm Synapse, your AI assistant. I'm excited to chat with you in conversation mode with voice! What's on your mind?",
+                "Hi there! I'm Synapse, your AI teacher. I'm now ready for voice conversations! How are you feeling today?"
+            ];
+            
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            
+            const greetingMessage: Message = {
+                text: randomGreeting,
+                isUser: false,
                 timestamp: new Date()
             };
             
-            addMessageToConversation(activeConversation, userMessage);
+            addMessageToConversation(activeConversation, greetingMessage);
             
-            // Process through Synapse
-            const response = await sendMessageToSynapse(transcribedText);
+            // Play the greeting voice
+            setTimeout(() => {
+                playVoice(randomGreeting);
+            }, 500);
+        } else {
+            // Exit conversation mode
+            elevenLabsService.disconnect();
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
+        }
+    };
+
+    // Updated processTextMessage to use unified handler
+    const processTextMessage = async (inputText: string) => {
+        if (!inputText.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+
+        // Use unified message handler
+        await handleSendMessage(inputText);
+    };
+
+    // Updated sendVoiceMessage to use unified handler
+    const sendVoiceMessage = async (inputMessage: string) => {
+        if (!inputMessage.trim() || isLoading) return;
+
+        // Use unified message handler
+        await handleSendMessage(inputMessage);
+    };
+
+    // Updated sendTextMessage to use unified handler
+    const sendTextMessage = async () => {
+        if (!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+
+        // Use unified message handler
+        await handleSendMessage(inputMessage);
+    };
+
+    // NEW: Handle conversation mode (pure chat, no commands)
+    const handleConversationMode = async (inputMessage: string) => {
+        try {
+            console.log('Handling conversation mode message:', inputMessage);
             
-            // Add AI response to conversation
-            const aiMessage: Message = {
+            // Check for image requests first
+            if (isImageRequest(inputMessage)) {
+                console.log('Image request detected in conversation mode, calling handleImageRequest');
+                await handleImageRequest(inputMessage);
+                return;
+            }
+            
+            // Send to Synapse API for conversation
+            const response = await sendMessageToSynapse(inputMessage);
+            
+            const assistantMessage: Message = {
                 text: response,
                 isUser: false,
                 timestamp: new Date()
             };
             
-            addMessageToConversation(activeConversation, aiMessage);
-            
-            // Play voice response
-            await playVoice(response);
-            
-        } catch (error) {
-            console.error('Error processing streaming input:', error);
+            addMessageToConversation(activeConversation, assistantMessage);
+        } catch (error: any) {
+            console.error('Error in conversation mode:', error);
+            const errorMessage: Message = {
+                text: `I'm having trouble with that right now. Could you try again? 🌟`,
+                isUser: false,
+                timestamp: new Date()
+            };
+            addMessageToConversation(activeConversation, errorMessage);
         }
     };
-    
+
+    // NEW: Handle chat mode (with commands)
+    const handleChatMode = async (inputMessage: string) => {
+        try {
+            console.log('Handling chat mode message:', inputMessage);
+            
+            // Send to Synapse API for chat
+            const response = await sendMessageToSynapse(inputMessage);
+            
+            const assistantMessage: Message = {
+                text: response,
+                isUser: false,
+                timestamp: new Date()
+            };
+            
+            addMessageToConversation(activeConversation, assistantMessage);
+        } catch (error: any) {
+            console.error('Error in chat mode:', error);
+            const errorMessage: Message = {
+                text: `I'm having trouble with that right now. Could you try again? 🌟`,
+                isUser: false,
+                timestamp: new Date()
+            };
+            addMessageToConversation(activeConversation, errorMessage);
+        }
+    };
+
+    // NEW: Send message to Synapse API
     const sendMessageToSynapse = async (message: string): Promise<string> => {
         try {
             const response = await fetch('/.netlify/functions/api', {
@@ -1367,9 +1336,31 @@ Always be supportive and helpful with accessibility requests!`
         }
     };
 
-    // FIXED: Apply personality to system prompt
+    // NEW: Get system prompt with personality
     const getSystemPrompt = () => {
-        const basePrompt = "You are NeuraPlay's AI assistant, helping children learn through interactive games and activities.";
+        const basePrompt = `You are NeuraPlay's AI assistant, helping children learn through interactive games and activities.
+
+You are a highly structured, multilingual AI assistant. You must follow a strict two-step process for every response.
+
+**Step 1: Analyze User Intent**
+First, silently and internally classify the user's request into one of the following categories:
+- **[Question]**: The user is asking for information, an explanation, or an answer.
+- **[Fact Request]**: The user is explicitly asking for a single, concise fact.
+- **[Story Request]**: The user is asking for a narrative, an anecdote, or a story.
+- **[General Conversation]**: The request is a greeting, command, or conversational statement that doesn't fit the other categories.
+
+**Step 2: Generate Response Based on Strict Rules**
+After classifying the intent, generate your response adhering to the following length and language rules:
+
+- **Language Rule**: Your response MUST be in the same language as the user's query (English, Arabic, or Russian), unless they explicitly ask for a different language.
+
+- **Content Rules**:
+    - If the intent is **[Question]**: Your response must be **1-2 sentences**. Provide a direct and concise answer.
+    - If the intent is **[Fact Request]**: Your response must be **1 sentence only**. State the fact clearly and without elaboration.
+    - If the intent is **[Story Request]**: Your response must be a **3-5 sentence** narrative.
+    - If the intent is **[General Conversation]**: Your response must be **1-2 sentences**.
+
+This two-step process is mandatory. Do not deviate.`;
         
         const personalityPrompts = {
             'synapse-normal': "You are friendly, helpful, and encouraging. Explain concepts clearly and celebrate small wins.",
@@ -1379,7 +1370,272 @@ Always be supportive and helpful with accessibility requests!`
             'analyst': "You are detailed and analytical. Provide thorough explanations, break down complex concepts, and focus on understanding."
         };
 
+        // Default to synapse-normal personality
+        const currentPersonality = 'synapse-normal';
+        
         return `${basePrompt} ${personalityPrompts[currentPersonality as keyof typeof personalityPrompts]}`;
+    };
+
+    // NEW: Parse API response
+    const parseAPIResponse = (result: any): string => {
+        try {
+            console.log('Parsing API response:', result);
+            
+            // Handle array responses (common with some APIs)
+            if (Array.isArray(result)) {
+                if (result.length > 0) {
+                    const firstItem = result[0];
+                    if (typeof firstItem === 'string') {
+                        return firstItem;
+                    }
+                    if (firstItem && typeof firstItem === 'object') {
+                        if (firstItem.generated_text) {
+                            return firstItem.generated_text;
+                        }
+                        if (firstItem.text) {
+                            return firstItem.text;
+                        }
+                        if (firstItem.response) {
+                            return firstItem.response;
+                        }
+                        if (firstItem.message) {
+                            return firstItem.message;
+                        }
+                    }
+                }
+                console.warn('Array response but no valid content found:', result);
+                return "I received an unexpected response format. Could you try again?";
+            }
+            
+            // Handle object responses
+            if (result && typeof result === 'object') {
+                if (result.error) {
+                    console.error('API error:', result.error);
+                    return "I'm having trouble processing that right now. Could you try again?";
+                }
+                
+                if (result.response) {
+                    return result.response;
+                }
+                
+                if (result.text) {
+                    return result.text;
+                }
+                
+                if (result.message) {
+                    return result.message;
+                }
+                
+                if (result.generated_text) {
+                    return result.generated_text;
+                }
+                
+                if (result.summary_text) {
+                    return result.summary_text;
+                }
+            }
+            
+            // Handle string responses
+            if (typeof result === 'string') {
+                return result;
+            }
+            
+            console.warn('Unexpected API response format:', result);
+            return "I received an unexpected response format. Could you try again?";
+        } catch (error) {
+            console.error('Error parsing API response:', error);
+            return "I'm having trouble processing the response. Could you try again?";
+        }
+    };
+
+    // NEW: Check if text is an image request
+    const isImageRequest = (text: string): boolean => {
+        const imageKeywords = [
+            'generate', 'create', 'make', 'draw', 'show', 'image', 'picture', 'photo', 'art',
+            'generate an image', 'create an image', 'make an image', 'draw an image',
+            'show me an image', 'picture of', 'photo of', 'art of'
+        ];
+        
+        const lowerText = text.toLowerCase();
+        return imageKeywords.some(keyword => lowerText.includes(keyword));
+    };
+
+    // NEW: Handle image generation requests
+    const handleImageRequest = async (prompt: string) => {
+        try {
+            console.log('Handling image request:', prompt);
+            
+            // Extract the image prompt from the user's message
+            const imagePrompt = prompt.replace(/^(generate|create|make|draw|show)\s+(an\s+)?(image|picture|photo|art)\s+of?\s*/i, '');
+            
+            if (!imagePrompt.trim()) {
+                addMessageToConversation(activeConversation, {
+                    text: "Please tell me what kind of image you'd like me to create! 🎨",
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                return;
+            }
+            
+            // Generate the image
+            const imageUrl = await generateImage(imagePrompt);
+            
+            if (imageUrl) {
+                addMessageToConversation(activeConversation, {
+                    text: `Here's your image: "${imagePrompt}" 🎨`,
+                    isUser: false,
+                    timestamp: new Date(),
+                    image: imageUrl
+                });
+            } else {
+                addMessageToConversation(activeConversation, {
+                    text: "Sorry, I couldn't generate that image. Please try again! 🎨",
+                    isUser: false,
+                    timestamp: new Date()
+                });
+            }
+        } catch (error: any) {
+            console.error('Error handling image request:', error);
+            addMessageToConversation(activeConversation, {
+                text: `Sorry, I couldn't generate that image: ${error.message} 🎨`,
+                isUser: false,
+                timestamp: new Date()
+            });
+        }
+    };
+
+    // NEW: Generate image using API
+    const generateImage = async (prompt: string, retryCount = 0): Promise<string | null> => {
+        try {
+            console.log('Generating image for prompt:', prompt);
+            
+            const response = await fetch('/.netlify/functions/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    task_type: 'image_generation',
+                    input_data: {
+                        prompt: prompt,
+                        size: '512x512'
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Image generation failed: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            if (result.image_url) {
+                return result.image_url;
+            }
+            
+            if (result.url) {
+                return result.url;
+            }
+            
+            console.warn('Unexpected image generation response format:', result);
+            return null;
+        } catch (error: any) {
+            console.error('Image generation error:', error);
+            
+            if (retryCount < 2) {
+                console.log(`Retrying image generation (attempt ${retryCount + 1})`);
+                return generateImage(prompt, retryCount + 1);
+            }
+            
+            return null;
+        }
+    };
+
+    // NEW: Debug MediaRecorder
+    const debugMediaRecorder = () => {
+        console.log('MediaRecorder supported:', !!window.MediaRecorder);
+        console.log('getUserMedia supported:', !!navigator.mediaDevices?.getUserMedia);
+    };
+
+    const playVoice = async (text: string) => {
+        if (isPlayingVoice) {
+            setIsPlayingVoice(false);
+            return;
+        }
+
+        try {
+            console.log('Requesting ElevenLabs TTS for text:', text.substring(0, 50) + '...');
+            setIsPlayingVoice(true);
+            
+            // Use the dedicated ElevenLabs TTS endpoint
+            const response = await fetch('/.netlify/functions/elevenlabs-tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: text,
+                    voiceId: '8LVfoRdkh4zgjr8v5ObE', // English voice
+                    modelId: 'eleven_turbo_v2_5'
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('ElevenLabs TTS API error:', response.status, errorText);
+                throw new Error(`Failed to generate audio: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('ElevenLabs TTS response received:', result);
+            
+            if (result.audio_base64) {
+                // Use ElevenLabs TTS
+                console.log('Creating audio blob from ElevenLabs data');
+                const audioBlob = new Blob([base64ToBinary(result.audio_base64)], { type: 'audio/mpeg' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                
+                audio.onended = () => {
+                    console.log('ElevenLabs audio playback ended');
+                    setIsPlayingVoice(false);
+                };
+                
+                audio.onerror = (e) => {
+                    console.error('ElevenLabs audio playback error:', e);
+                    setIsPlayingVoice(false);
+                };
+                
+                audio.onloadstart = () => console.log('ElevenLabs audio loading started');
+                audio.oncanplay = () => console.log('ElevenLabs audio can play');
+                
+                await audio.play();
+                console.log('ElevenLabs audio playback started');
+                
+                // Clean up the URL after a delay
+                setTimeout(() => URL.revokeObjectURL(audioUrl), 10000);
+            } else {
+                console.error('No ElevenLabs audio data received');
+                setIsPlayingVoice(false);
+            }
+        } catch (error) {
+            console.error('Error playing ElevenLabs voice:', error);
+            setIsPlayingVoice(false);
+        }
+    };
+
+    const readLastMessage = async () => {
+        const lastAIMessage = currentMessages
+            .filter(msg => !msg.isUser)
+            .pop();
+        
+        if (lastAIMessage && !isReadingLastMessage) {
+            setIsReadingLastMessage(true);
+            await playVoice(lastAIMessage.text);
+            setIsReadingLastMessage(false);
+        }
     };
 
     return (
@@ -1412,50 +1668,33 @@ Always be supportive and helpful with accessibility requests!`
                         <div className="ai-fullscreen-header">
                             <div className="ai-fullscreen-title flex items-center gap-2">
                                 <span>Synapse - Fullscreen Mode</span>
-                                {isConversationMode && (
-                                    <button
-                                        onClick={toggleVoiceRecording}
-                                        className={`p-2 rounded-full transition-all duration-200 ${
-                                            isRecording 
-                                                ? 'bg-red-500 text-white animate-pulse' 
-                                                : 'bg-purple-600 text-white hover:bg-purple-700'
-                                        }`}
-                                        title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
-                                    >
-                                        {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
-                                    </button>
-                                )}
-                                {isConversationMode && (
-                                    <button
-                                        onClick={isStreamingMode ? stopStreamingConversation : startStreamingConversation}
-                                        className={`p-2 rounded-full transition-all duration-200 ${
-                                            isStreamingMode 
-                                                ? 'bg-green-500 text-white animate-pulse' 
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                        }`}
-                                        title={isStreamingMode ? 'Stop Streaming Conversation' : 'Start Streaming Conversation'}
-                                    >
-                                        {isStreamingMode ? <MicOff size={16} /> : <Mic size={16} />}
-                                    </button>
-                                )}
                             </div>
                             <div className="ai-fullscreen-controls">
                                 <button
-                                    onClick={createNewConversation}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        createNewConversation();
+                                    }}
                                     className="ai-fullscreen-button"
                                     title="New Conversation"
                                 >
                                     <MessageSquare size={16} />
                                 </button>
                                 <button
-                                    onClick={toggleFullscreen}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleFullscreen();
+                                    }}
                                     className="ai-fullscreen-button"
                                     title="Exit Fullscreen"
                                 >
                                     <Minimize2 size={16} />
                                 </button>
                                 <button
-                                    onClick={() => setIsOpen(false)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsOpen(false);
+                                    }}
                                     className="ai-fullscreen-button"
                                     title="Close"
                                 >
@@ -1471,7 +1710,10 @@ Always be supportive and helpful with accessibility requests!`
                             {Object.values(conversations).map((conversation) => (
                                 <button
                                     key={conversation.id}
-                                    onClick={() => setActiveConversation(conversation.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveConversation(conversation.id);
+                                    }}
                                     className={`ai-context-tab ${activeConversation === conversation.id ? 'active' : ''}`}
                                     title={conversation.title}
                                 >
@@ -1482,7 +1724,10 @@ Always be supportive and helpful with accessibility requests!`
                                 </button>
                             ))}
                             <button
-                                onClick={createNewConversation}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    createNewConversation();
+                                }}
                                 className="ai-context-tab"
                                 title="New Conversation"
                             >
@@ -1503,7 +1748,10 @@ Always be supportive and helpful with accessibility requests!`
                             <div className="flex items-center gap-2">
                                 {/* Fullscreen Toggle */}
                                 <button
-                                    onClick={toggleFullscreen}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleFullscreen();
+                                    }}
                                     className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
                                     title="Enter Fullscreen Mode"
                                 >
@@ -1512,55 +1760,44 @@ Always be supportive and helpful with accessibility requests!`
                                 
                                 {/* Conversation Mode Toggle */}
                                 <button
-                                    onClick={() => setIsConversationMode(!isConversationMode)}
-                                    className={`p-2 rounded-full transition-all ${
-                                        isConversationMode 
-                                            ? 'bg-green-500 text-white' 
-                                            : 'bg-white/20 text-white hover:bg-white/30'
-                                    }`}
-                                    title={isConversationMode ? "Exit Conversation Mode" : "Enter Conversation Mode"}
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        setIsPlasmaPressed(true);
+                                    }}
+                                    onMouseUp={(e) => {
+                                        e.stopPropagation();
+                                        setIsPlasmaPressed(false);
+                                    }}
+                                    onMouseLeave={() => setIsPlasmaPressed(false)}
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        await handleToggleConversationMode();
+                                    }}
+                                    className={`p-2 rounded-full transition-all duration-300 ${
+                                        mode === 'conversing' 
+                                            ? isLoading 
+                                                ? 'bg-green-500 text-white shadow-lg shadow-green-500/50 animate-pulse' 
+                                                : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                                            : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-lg hover:shadow-white/20'
+                                    } ${isPlasmaPressed ? 'scale-95 shadow-lg shadow-purple-500/50' : ''}`}
+                                    title={mode === 'conversing' ? "Exit Conversation Mode" : "Enter Conversation Mode with Voice"}
                                 >
                                     <PlasmaBall size={24} />
                                 </button>
                                 
-                                {/* Voice Recording Button - Only show in conversation mode */}
-                                {isConversationMode && (
-                                    <button
-                                        onClick={toggleVoiceRecording}
-                                        className={`p-2 rounded-full transition-all duration-200 ${
-                                            isRecording 
-                                                ? 'bg-red-500 text-white animate-pulse' 
-                                                : 'bg-purple-600 text-white hover:bg-purple-700'
-                                        }`}
-                                        title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
-                                    >
-                                        {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
-                                    </button>
-                                )}
-                                
-                                {/* Streaming Conversation Button - Only show in conversation mode */}
-                                {isConversationMode && (
-                                    <button
-                                        onClick={isStreamingMode ? stopStreamingConversation : startStreamingConversation}
-                                        className={`p-2 rounded-full transition-all duration-200 ${
-                                            isStreamingMode 
-                                                ? 'bg-green-500 text-white animate-pulse' 
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                        }`}
-                                        title={isStreamingMode ? 'Stop Streaming Conversation' : 'Start Streaming Conversation'}
-                                    >
-                                        {isStreamingMode ? <MicOff size={16} /> : <Mic size={16} />}
-                                    </button>
-                                )}
+
                                 
                                 {/* Read Last Message */}
                                 {currentMessages.filter(msg => !msg.isUser).length > 0 && (
                                     <button
-                                        onClick={readLastMessage}
-                                        className={`p-2 rounded-full transition-all ${
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            readLastMessage();
+                                        }}
+                                        className={`p-2 rounded-full transition-all duration-300 ${
                                             isReadingLastMessage 
-                                                ? 'bg-blue-500 text-white' 
-                                                : 'bg-white/20 text-white hover:bg-white/30'
+                                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50 animate-pulse' 
+                                                : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-lg hover:shadow-white/20'
                                         }`}
                                         title="Read Last Message Aloud"
                                     >
@@ -1568,7 +1805,16 @@ Always be supportive and helpful with accessibility requests!`
                                     </button>
                                 )}
                                 
-                                <button onClick={() => setIsOpen(false)}><X size={20}/></button>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsOpen(false);
+                                    }}
+                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    title="Close Chat"
+                                >
+                                    <X size={16} />
+                                </button>
                             </div>
                         </div>
                     )}
@@ -1597,11 +1843,14 @@ Always be supportive and helpful with accessibility requests!`
                                         </div>
                                         {!msg.isUser && (
                                             <button
-                                                onClick={() => playVoice(msg.text)}
-                                                className={`p-1 rounded-full transition-colors ${
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    playVoice(msg.text);
+                                                }}
+                                                className={`p-1 rounded-full transition-all duration-300 ${
                                                     isPlayingVoice 
-                                                        ? 'bg-green-500 text-white' 
-                                                        : 'bg-white/20 text-gray-600 hover:bg-white/30'
+                                                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/50 animate-pulse' 
+                                                        : 'bg-white/20 text-gray-600 hover:bg-white/30 hover:shadow-lg hover:shadow-white/20'
                                                 }`}
                                                 title="Listen to message"
                                             >
@@ -1621,9 +1870,10 @@ Always be supportive and helpful with accessibility requests!`
                                     {childPrompts.slice(0, 5).map((prompt, index) => (
                                         <button
                                             key={index}
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 setInputMessage(prompt);
-                                                setTimeout(() => sendMessage(), 100);
+                                                setTimeout(() => handleSendText(), 100);
                                             }}
                                             className="text-left p-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/30 rounded-xl hover:from-amber-500/30 hover:to-yellow-500/30 transition-all duration-200 text-amber-200 font-semibold text-sm"
                                         >
@@ -1652,8 +1902,29 @@ Always be supportive and helpful with accessibility requests!`
 
                     {/* Chat Input */}
                     <div className="p-2">
+                        {/* Voice Processing Indicator */}
+                        {(voiceChunks.length > 0 || isProcessingVoice) && (
+                            <div className="mb-2 p-2 bg-blue-500/20 border border-blue-400/30 rounded-lg">
+                                <div className="flex items-center gap-2 text-blue-300 text-sm">
+                                    <div className="flex gap-1">
+                                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                    </div>
+                                    <span className="font-semibold">
+                                        {isProcessingVoice ? 'Processing voice...' : `Voice chunks: ${voiceChunks.length}`}
+                                    </span>
+                                    {voiceChunks.length > 0 && (
+                                        <span className="text-xs opacity-70">
+                                            "{voiceChunks.join(' ').substring(0, 50)}..."
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        
                         {/* Conversation Mode Indicator */}
-                        {isConversationMode && (
+                        {mode === 'conversing' && (
                             <div className="mb-2 p-2 bg-green-500/20 border border-green-400/30 rounded-lg">
                                 <div className="flex items-center gap-2 text-green-300 text-sm">
                                     <PlasmaBall size={20} />
@@ -1671,7 +1942,7 @@ Always be supportive and helpful with accessibility requests!`
                             <input 
                                 type="text"
                                 placeholder={
-                                    isConversationMode 
+                                    mode === 'conversing' 
                                         ? "Talk to Synapse in conversation mode! 🗣️" 
                                         : (!isDemoUser && promptCount >= 10)
                                             ? "Daily limit reached! 🎯" 
@@ -1680,19 +1951,91 @@ Always be supportive and helpful with accessibility requests!`
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                disabled={isLoading || (!isDemoUser && promptCount >= 10)}
+                                disabled={isLoading || (!isDemoUser && promptCount >= 10) || mode === 'single_recording'}
                                 className="flex-1 ai-input-field"
                             />
-                            <button 
-                                onClick={sendMessage}
-                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
-                                className="ai-send-button p-3 rounded-full transition-all duration-300 disabled:opacity-50 transform hover:scale-110 active:scale-95"
-                                title="Send your message to Synapse! 🚀"
+                            
+                            {/* Voice Recording Button - Single button for all modes */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRecordButtonClick();
+                                }}
+                                className={`p-3 rounded-full transition-all duration-300 ${
+                                    mode === 'single_recording' 
+                                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/50 animate-pulse' 
+                                        : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/30'
+                                }`}
+                                title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
+                                disabled={isLoading || mode === 'conversing'}
                             >
-                                <div className="flex items-center gap-1">
-                                    <Send size={18} className="text-white" />
-                                    <span className="text-white font-bold text-sm">Send!</span>
+                                {mode === 'single_recording' ? <MicOff size={18} /> : <Mic size={18} />}
+                            </button>
+                            
+                            {/* Conversation Mode Button - Plasma Ball with Pulsating Animations */}
+                            <div className="relative">
+                                {/* Pulsating rings around the plasma ball */}
+                                <div className={`absolute inset-0 rounded-full ${
+                                    mode === 'conversing' 
+                                        ? 'animate-pulse-ring-1' 
+                                        : 'animate-pulse-ring-2'
+                                }`} style={{
+                                    animation: mode === 'conversing' 
+                                        ? 'pulseRing1 2s ease-in-out infinite' 
+                                        : 'pulseRing2 3s ease-in-out infinite'
+                                }}>
+                                    <div className="w-full h-full rounded-full border-2 border-purple-400/30"></div>
                                 </div>
+                                <div className={`absolute inset-0 rounded-full ${
+                                    mode === 'conversing' 
+                                        ? 'animate-pulse-ring-2' 
+                                        : 'animate-pulse-ring-1'
+                                }`} style={{
+                                    animation: mode === 'conversing' 
+                                        ? 'pulseRing2 2.5s ease-in-out infinite 0.5s' 
+                                        : 'pulseRing1 3.5s ease-in-out infinite 1s'
+                                }}>
+                                    <div className="w-full h-full rounded-full border-2 border-blue-400/20"></div>
+                                </div>
+                                <div className={`absolute inset-0 rounded-full ${
+                                    mode === 'conversing' 
+                                        ? 'animate-pulse-ring-3' 
+                                        : 'animate-pulse-ring-2'
+                                }`} style={{
+                                    animation: mode === 'conversing' 
+                                        ? 'pulseRing3 3s ease-in-out infinite 1s' 
+                                        : 'pulseRing2 4s ease-in-out infinite 1.5s'
+                                }}>
+                                    <div className="w-full h-full rounded-full border-2 border-green-400/15"></div>
+                                </div>
+                                
+                                {/* Plasma Ball */}
+                                <div 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleConversationMode();
+                                    }}
+                                    className={`cursor-pointer transition-transform duration-300 hover:scale-110 ${
+                                        mode === 'conversing' ? 'scale-110' : 'scale-100'
+                                    }`}
+                                    title={mode === 'conversing' ? 'Exit Conversation Mode' : 'Start Conversation Mode'}
+                                >
+                                    <PlasmaBall 
+                                        size={60} 
+                                        className={`transition-all duration-300 ${
+                                            mode === 'conversing' ? 'shadow-lg shadow-purple-500/50' : ''
+                                        }`}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={handleSendText}
+                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
+                                className="ai-send-button"
+                                title={(!isDemoUser && promptCount >= 10) ? "Daily limit reached! 🎯" : "Send message"}
+                            >
+                                <Send size={18} />
                             </button>
                         </label>
                         {!isDemoUser && promptCount >= 10 && (
@@ -1701,7 +2044,7 @@ Always be supportive and helpful with accessibility requests!`
                         {isDemoUser && (
                             <div className="text-center text-green-400 text-xs mt-2 font-bold">🌟 Demo User: Unlimited access! 🚀</div>
                         )}
-                        {isStreamingMode && (
+                        {mode === 'conversing' && (
                             <div className="text-center text-blue-400 text-xs mt-2 font-bold animate-pulse">🎤 Streaming Conversation Active - Speak to Synapse! 🔊</div>
                         )}
                         
@@ -1709,9 +2052,10 @@ Always be supportive and helpful with accessibility requests!`
                         {isDemoUser && (
                             <div className="mt-2 text-center">
                                 <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setInputMessage("Generate an image of a cute robot");
-                                        setTimeout(() => sendMessage(), 100);
+                                        setTimeout(() => handleSendText(), 100);
                                     }}
                                     className="px-3 py-1 bg-purple-500/20 border border-purple-400/30 rounded-lg text-purple-300 text-xs hover:bg-purple-500/30 transition-all"
                                 >

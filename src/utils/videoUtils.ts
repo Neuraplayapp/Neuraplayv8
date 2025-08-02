@@ -225,3 +225,54 @@ export const estimateVideoLoadTime = (fileSizeMB: number, connectionSpeedMbps: n
   
   return Math.round(loadTimeSeconds);
 }; 
+
+/**
+ * Convert base64 string to binary data (browser-compatible)
+ * This replaces Buffer.from() which is not available in browsers
+ */
+export function base64ToBinary(base64: string): Uint8Array {
+  try {
+    // Decode base64 to binary string
+    const binaryString = atob(base64);
+    
+    // Convert binary string to Uint8Array
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    return bytes;
+  } catch (error) {
+    console.error('Error converting base64 to binary:', error);
+    throw new Error('Failed to convert base64 to binary data');
+  }
+} 
+
+/**
+ * Test function to verify base64ToBinary works correctly
+ * This can be called from the browser console for testing
+ */
+export function testBase64ToBinary(): void {
+  try {
+    // Test with a simple base64 string
+    const testBase64 = 'SGVsbG8gV29ybGQ='; // "Hello World" in base64
+    const result = base64ToBinary(testBase64);
+    
+    console.log('Test base64ToBinary:');
+    console.log('Input base64:', testBase64);
+    console.log('Output Uint8Array length:', result.length);
+    console.log('First few bytes:', result.slice(0, 5));
+    
+    // Convert back to string to verify
+    const decodedString = new TextDecoder().decode(result);
+    console.log('Decoded string:', decodedString);
+    
+    if (decodedString === 'Hello World') {
+      console.log('✅ base64ToBinary test passed!');
+    } else {
+      console.log('❌ base64ToBinary test failed!');
+    }
+  } catch (error) {
+    console.error('❌ base64ToBinary test error:', error);
+  }
+} 

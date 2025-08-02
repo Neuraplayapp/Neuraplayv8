@@ -5,6 +5,10 @@ export interface ElevenLabsConfig {
         russian: string;
         arabic: string;
     };
+    models: {
+        turbo: string;
+        standard: string;
+    };
     apiKey: string;
 }
 
@@ -15,8 +19,16 @@ export const elevenLabsConfig: ElevenLabsConfig = {
         russian: 'RUB3PhT3UqHowKru61Ns',
         arabic: 'mRdG9GYEjJmIzqbYTidv'
     },
-    apiKey: process.env.REACT_APP_ELVEN_LABS_API_KEY || ''
+    models: {
+        turbo: 'eleven_turbo_v2_5',
+        standard: 'eleven_multilingual_v2'
+    },
+    apiKey: import.meta.env.VITE_ELVEN_LABS_API_KEY || ''
 };
+
+// Debug: Log available environment variables
+console.log('Available env vars:', Object.keys(import.meta.env));
+console.log('ElevenLabs API Key available:', !!import.meta.env.VITE_ELVEN_LABS_API_KEY);
 
 export const getVoiceId = (language: 'english' | 'russian' | 'arabic' = 'english'): string => {
     return elevenLabsConfig.voices[language];
@@ -28,4 +40,8 @@ export const getAgentId = (): string => {
 
 export const getApiKey = (): string => {
     return elevenLabsConfig.apiKey;
+};
+
+export const getModelId = (model: 'turbo' | 'standard' = 'turbo'): string => {
+    return elevenLabsConfig.models[model];
 }; 

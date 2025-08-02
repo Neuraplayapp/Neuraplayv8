@@ -18,6 +18,7 @@ import CountingTestPage from './pages/CountingTestPage';
 import TestPage from './pages/TestPage';
 import ProfilePage from './pages/ProfilePage';
 import EnhancedTextRevealExample from './components/EnhancedTextRevealExample';
+import StreamingDemoPage from './pages/StreamingDemoPage';
 
 // Components
 import Header from './components/Header';
@@ -52,6 +53,7 @@ function App() {
             <Route path="/test" element={<TestPage />} />
             <Route path="/text-reveal" element={<EnhancedTextRevealExample />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/streaming-demo" element={<StreamingDemoPage />} />
             {/* ... etc */}
           </Routes>
         </main>

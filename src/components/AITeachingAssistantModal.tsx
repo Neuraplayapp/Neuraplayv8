@@ -86,25 +86,76 @@ const AITeachingAssistantModal: React.FC<AITeachingAssistantModalProps> = ({ isO
   };
 
   const speakMessage = async (text: string, language: string) => {
-    if ('speechSynthesis' in window) {
+    try {
       setIsSpeaking(true);
-      const utterance = new SpeechSynthesisUtterance(text);
       
-      // Set language based on selection
-      const languageMap = {
-        english: 'en-US',
-        russian: 'ru-RU',
-        arabic: 'ar-SA'
-      };
+      // Use ElevenLabs TTS instead of browser speech synthesis
+      const response = await fetch('/.netlify/functions/elevenlabs-tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          voiceId: language === 'english' ? '8LVfoRdkh4zgjr8v5ObE' : 
+                   language === 'russian' ? 'RUB3PhT3UqHowKru61Ns' : 'mRdG9GYEjJmIzqbYTidv',
+          modelId: 'eleven_turbo_v2'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`TTS failed: ${response.status}`);
+      }
+
+      const result = await response.json();
       
-      utterance.lang = languageMap[language as keyof typeof languageMap] || 'en-US';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
+      if (result.audio_base_64) {
+        // Create and play audio using browser-compatible base64 conversion
+        const binaryString = atob(result.audio_base_64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      } else {
+        throw new Error('No audio data received');
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+      setIsSpeaking(false);
       
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      
-      speechSynthesis.speak(utterance);
+      // Fallback to browser speech synthesis
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const languageMap = {
+          english: 'en-US',
+          russian: 'ru-RU',
+          arabic: 'ar-SA'
+        };
+        
+        utterance.lang = languageMap[language as keyof typeof languageMap] || 'en-US';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.1;
+        
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        
+        speechSynthesis.speak(utterance);
+      }
     }
   };
 

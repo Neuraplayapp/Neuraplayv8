@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bot, X, Send, Volume2, VolumeX, Mic, MicOff, Settings } from 'lucide-react';
 import './AIAssistant.css';
 import { getAgentId, getVoiceId, getApiKey } from '../config/elevenlabs';
+import { base64ToBinary } from '../utils/videoUtils';
 
 interface Message {
     text: string;
@@ -129,7 +130,7 @@ const ElevenLabsAIAssistant: React.FC = () => {
                 case 'audio':
                     if (result.data?.audio_base_64) {
                         // Play the audio response
-                        const audioBlob = new Blob([Buffer.from(result.data.audio_base_64, 'base64')], { type: 'audio/wav' });
+                        const audioBlob = new Blob([base64ToBinary(result.data.audio_base_64)], { type: 'audio/wav' });
                         const audioUrl = URL.createObjectURL(audioBlob);
                         const audio = new Audio(audioUrl);
                         audio.play();

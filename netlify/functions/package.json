@@ -1,0 +1,24 @@
+{
+  "name": "neuraplay-functions",
+  "version": "1.0.0",
+  "description": "Netlify functions for Neuraplay AI platform",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "ws": "^8.16.0",
+    "ably": "^1.2.29"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "netlify",
+    "functions",
+    "websocket",
+    "elevenlabs",
+    "ably"
+  ],
+  "author": "Neuraplay Team",
+  "license": "MIT"
+} 
