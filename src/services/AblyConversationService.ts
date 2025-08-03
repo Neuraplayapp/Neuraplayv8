@@ -1,7 +1,7 @@
 import Ably from 'ably';
 
 export interface ConversationMessage {
-  type: 'init_conversation' | 'user_message' | 'user_audio_chunk' | 'ai_response' | 'audio_chunk' | 'status' | 'error';
+  type: 'init_conversation' | 'user_message' | 'user_audio_chunk' | 'ai_response' | 'audio_chunk' | 'status' | 'error' | 'conversation_initiation_metadata';
   data: any;
   timestamp: number;
   clientId?: string;
@@ -10,6 +10,18 @@ export interface ConversationMessage {
 export interface ElevenLabsConfig {
   agentId: string;
   voiceId: string;
+  // 2025 updates: Add dynamic variables and conversation config
+  dynamicVariables?: Record<string, any>;
+  conversationConfig?: {
+    agent?: {
+      prompt?: string;
+      firstMessage?: string;
+      language?: string;
+    };
+    tts?: {
+      voiceId?: string;
+    };
+  };
 }
 
 export class AblyConversationService {
@@ -147,11 +159,36 @@ export class AblyConversationService {
     }
 
     try {
-      // Start conversation on bridge service
+      // Enhanced 2025 conversation payload
+      const conversationPayload = {
+        type: "conversation_initiation_client_data",
+        conversation_config_override: config.conversationConfig || {
+          agent: {
+            prompt: "You are a helpful AI assistant.",
+            first_message: "Hi! How can I help you today?",
+            language: "en"
+          },
+          tts: {
+            voice_id: config.voiceId
+          }
+        },
+        dynamic_variables: config.dynamicVariables || {},
+        // 2025 standard: Include metadata for better conversation tracking
+        conversation_metadata: {
+          user_agent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+          platform: "web"
+        }
+      };
+
+      // Start conversation on bridge service with enhanced payload
       const response = await fetch(`${this.bridgeServiceUrl}/conversation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId: this.conversationId || undefined })
+        body: JSON.stringify({ 
+          conversationId: this.conversationId || undefined,
+          elevenlabsConfig: conversationPayload // Pass full 2025 config
+        })
       });
 
       if (!response.ok) {
@@ -170,10 +207,20 @@ export class AblyConversationService {
       // Set up event listeners
       this.setupChannelListeners();
       
-      // Initialize the ElevenLabs connection via bridge
-      await this.channel.publish('init_conversation', config);
+      // Initialize the ElevenLabs connection via bridge with 2025 standards
+      await this.channel.publish('init_conversation', conversationPayload);
       
       console.log(`🎤 Started conversation: ${conversationId}`);
+      
+      // 2025 Fix: Emit proper conversation ready state immediately
+      setTimeout(() => {
+        this.emit('conversation_ready', { 
+          conversationId: this.conversationId,
+          status: 'ready',
+          type: 'connected'
+        });
+      }, 100);
+      
       return conversationId;
       
     } catch (error: any) {
@@ -185,26 +232,85 @@ export class AblyConversationService {
   private setupChannelListeners(): void {
     if (!this.channel) return;
 
+    // Listen for conversation initiation metadata (2025 standard)
+    this.channel.subscribe('conversation_initiation_metadata', (message: any) => {
+      console.log('📥 Received conversation initiation metadata:', message.data);
+      this.emit('conversation_initiation_metadata', message.data);
+      
+      // 2025 Fix: This is the key event that should trigger 'conversing' mode
+      this.emit('status', { 
+        type: 'connected', 
+        conversationId: this.conversationId,
+        metadata: message.data
+      });
+    });
+
     // Listen for AI responses
     this.channel.subscribe('ai_response', (message: any) => {
       console.log('📥 Received AI response:', message.data);
       this.emit('ai_response', message.data);
     });
 
-    // Listen for status updates
+    // Enhanced status handling for 2025
     this.channel.subscribe('status', (message: any) => {
       console.log('📊 Status update:', message.data);
       this.emit('status', message.data);
       
-      if (message.data.type === 'connected') {
-        this.emit('conversation_ready', { conversationId: this.conversationId });
+      // 2025 Fix: Handle different connection states properly
+      if (message.data.type === 'connected' || message.data.type === 'conversation_ready') {
+        console.log('🎯 Conversation ready with ElevenLabs');
+        this.emit('conversation_ready', { 
+          conversationId: this.conversationId,
+          status: message.data.type,
+          data: message.data
+        });
       }
     });
 
-    // Listen for errors
+    // Listen for user transcripts (2025 addition)
+    this.channel.subscribe('user_transcript', (message: any) => {
+      console.log('📝 User transcript:', message.data);
+      this.emit('user_transcript', message.data);
+    });
+
+    // Listen for agent responses (2025 distinction from ai_response)
+    this.channel.subscribe('agent_response', (message: any) => {
+      console.log('🤖 Agent response:', message.data);
+      this.emit('agent_response', message.data);
+    });
+
+    // Listen for audio chunks (enhanced for 2025)
+    this.channel.subscribe('audio', (message: any) => {
+      console.log('🔊 Audio response received');
+      this.emit('audio_response', message.data);
+    });
+
+    // Listen for interruptions (2025 addition)
+    this.channel.subscribe('interruption', (message: any) => {
+      console.log('⚡ Conversation interrupted:', message.data);
+      this.emit('interruption', message.data);
+    });
+
+    // Listen for VAD (Voice Activity Detection) scores (2025 addition)
+    this.channel.subscribe('vad_score', (message: any) => {
+      console.log('🎙️ VAD Score:', message.data);
+      this.emit('vad_score', message.data);
+    });
+
+    // Enhanced error handling
     this.channel.subscribe('error', (message: any) => {
       console.error('❌ Bridge error:', message.data);
       this.emit('error', message.data);
+    });
+
+    // Listen for ping/pong to maintain connection (2025 standard)
+    this.channel.subscribe('ping', (message: any) => {
+      console.log('🏓 Ping received');
+      // Auto-respond with pong
+      this.channel.publish('pong', { 
+        event_id: message.data.event_id,
+        timestamp: Date.now()
+      });
     });
   }
 
@@ -234,15 +340,20 @@ export class AblyConversationService {
     }
 
     try {
-      // Convert ArrayBuffer to base64 for transmission
+      // 2025 Standard: Convert ArrayBuffer to base64 for transmission
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioData)));
       
-      await this.channel.publish('user_audio', {
-        audio: base64Audio,
-        timestamp: Date.now()
-      });
+      // Enhanced payload for 2025 ElevenLabs format
+      const audioPayload = {
+        user_audio_chunk: base64Audio, // 2025 standard field name
+        timestamp: Date.now(),
+        audio_format: "pcm_16000", // Standard format for 2025
+        chunk_size: audioData.byteLength
+      };
       
-      console.log('🎵 Sent audio chunk');
+      await this.channel.publish('user_audio_chunk', audioPayload);
+      
+      console.log(`🔊 Audio data available: ${audioData.byteLength} bytes`);
       this.emit('audio_sent', { size: audioData.byteLength });
       
     } catch (error: any) {

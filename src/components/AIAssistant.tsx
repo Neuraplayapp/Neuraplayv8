@@ -112,6 +112,14 @@ const AIAssistant: React.FC = () => {
     // NEW: Single mode state instead of multiple booleans
     const [mode, setMode] = useState<AssistantMode>('idle');
     
+    // Use a ref to track mode for MediaRecorder callback (avoids closure issue)
+    const modeRef = useRef<AssistantMode>('idle');
+    
+    // Keep modeRef in sync with mode state
+    useEffect(() => {
+        modeRef.current = mode;
+    }, [mode]);
+    
     // Voice recording states (simplified)
     const [isPlasmaPressed, setIsPlasmaPressed] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -295,68 +303,68 @@ const AIAssistant: React.FC = () => {
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, []);
 
-    // Conversation service event handlers
+    // Set up conversation service event listeners
     useEffect(() => {
-        const service = conversationService.current;
-        
-        // Handle conversation ready
-        service.on('conversation_ready', (data) => {
-            console.log('Conversation ready with ElevenLabs');
-            addMessageToConversation(activeConversation, { 
-                text: "Voice conversation ready! Start speaking! 🎤", 
-                isUser: false, 
-                timestamp: new Date() 
-            });
-        });
-
-        // Handle AI responses
-        service.on('ai_response', (data) => {
-            console.log('Received AI response:', data);
-            if (data.text) {
-                const aiMessage = { 
-                    text: data.text, 
-                    isUser: false, 
-                    timestamp: new Date() 
-                };
-                addMessageToConversation(activeConversation, aiMessage);
-            }
-            
-            // Handle audio if present
-            if (data.audio) {
-                const audioBlob = new Blob(
-                    [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], 
-                    { type: 'audio/mpeg' }
-                );
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
-                audio.play().catch(error => {
-                    console.error('Failed to play audio:', error);
-                });
-            }
-        });
-
-        // Handle status updates
-        service.on('status', (data) => {
-            console.log('Status update:', data);
-        });
-
-        // Handle errors
-        service.on('error', (data) => {
-            console.error('Conversation error:', data);
-            addMessageToConversation(activeConversation, { 
-                text: "Connection error. Please try again.", 
-                isUser: false, 
-                timestamp: new Date() 
-            });
-        });
-
-        // Cleanup on unmount
-        return () => {
-            if (service.hasActiveConversation) {
-                service.endConversation();
+        const handleConnectionStatus = (data: any) => {
+            console.log('📊 Status update:', data);
+            if (data.type === 'connected') {
+                setMode('conversing'); // 2025 Fix: Switch to conversing mode when connected
+                console.log('🎯 Switched to conversing mode');
             }
         };
-    }, [activeConversation]);
+
+        const handleConversationReady = (data: any) => {
+            console.log('Conversation ready with ElevenLabs');
+            setMode('conversing'); // 2025 Fix: Ensure mode switches on conversation ready
+            console.log('🎯 Conversation ready - mode set to conversing');
+        };
+
+        const handleAIResponse = (data: any) => {
+            console.log('📥 Received AI response:', data);
+            if (data.conversation_initiation_metadata_event) {
+                // 2025 Fix: Handle conversation initiation metadata
+                setMode('conversing');
+                console.log('🎯 Conversation initiated - switching to conversing mode');
+            }
+        };
+
+        const handleError = (data: any) => {
+            console.error('❌ Conversation service error:', data);
+            const errorMessage = data.error?.includes?.('Bridge service not available') 
+                ? 'Bridge service is not available. Conversation mode is temporarily disabled, but voice recording and text chat work perfectly!'
+                : (data.error || 'Unknown conversation error');
+            
+            // Add error message to current conversation instead of undefined setErrorMessage
+            addMessageToConversation(activeConversation, {
+                text: errorMessage,
+                isUser: false,
+                timestamp: new Date()
+            });
+            setIsLoading(false);
+            setMode('idle'); // Reset mode on error
+        };
+
+        const handleConversationInitMetadata = (data: any) => {
+            console.log('📥 Received AI response:', data);
+            setMode('conversing'); // 2025 Fix: This is the key event that triggers conversing mode
+            console.log('🎯 Conversation metadata received - mode set to conversing');
+        };
+
+        // 2025 Event Listeners
+        conversationService.current.on('status', handleConnectionStatus);
+        conversationService.current.on('conversation_ready', handleConversationReady);
+        conversationService.current.on('ai_response', handleAIResponse);
+        conversationService.current.on('conversation_initiation_metadata', handleConversationInitMetadata);
+        conversationService.current.on('error', handleError);
+
+        return () => {
+            conversationService.current.off('status', handleConnectionStatus);
+            conversationService.current.off('conversation_ready', handleConversationReady);
+            conversationService.current.off('ai_response', handleAIResponse);
+            conversationService.current.off('conversation_initiation_metadata', handleConversationInitMetadata);
+            conversationService.current.off('error', handleError);
+        };
+    }, []);
 
     // Enhanced AI Agency Functions
     const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info' | 'agent' | 'game', action?: any } => {
@@ -845,12 +853,9 @@ const AIAssistant: React.FC = () => {
                         `• "${page.name}" or "Go to ${page.name}" or "Show ${page.name}"`
                     ).join('\n');
                     
-                    const allSettings = Object.entries(availableSettings).map(([key, setting]) => {
-                        if (setting.options) {
-                            return `• "${setting.name}" - ${setting.description} (${setting.options.join(', ')})`;
-                        }
-                        return `• "${setting.name}" - ${setting.description}`;
-                    }).join('\n');
+                    const allSettings = Object.entries(availableSettings).map(([key, setting]) => 
+                        `• "${setting.name}" - ${setting.description}`
+                    ).join('\n');
                     
                     return `🌟 Here's what I can do for you! 🚀
 
@@ -975,137 +980,101 @@ Need help with anything specific? Just ask! 🌟`;
     // NEW: Cleaner mode toggle functions
     const handleToggleConversationMode = async () => {
         if (mode === 'conversing') {
-            // Stop the conversation
+            // Exit conversation mode
+            setMode('idle');
             await conversationService.current.endConversation();
-            
-            // Stop media recorder if it's running
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                mediaRecorderRef.current.stop();
-                mediaRecorderRef.current = null;
-            }
-            
-            // Stop audio stream
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
                 streamRef.current = null;
             }
-            
-            setMode('idle');
-            addMessageToConversation(activeConversation, { 
-                text: "Conversation mode ended. You can still chat with me via text! 🎤", 
-                isUser: false, 
-                timestamp: new Date() 
-            });
         } else {
-            // Start the conversation
-            setMode('conversing');
-            addMessageToConversation(activeConversation, { 
-                text: "Starting conversation mode... 🎤", 
-                isUser: false, 
-                timestamp: new Date() 
-            });
-            
+            // Enter conversation mode
             try {
-                // Initialize Ably connection
-                await conversationService.current.initialize();
-                
-                // Start conversation with ElevenLabs via bridge service
-                await conversationService.current.startConversation({
-                    agentId: getAgentId(),
-                    voiceId: getVoiceId()
-                });
-                
-                // Start local audio recording for streaming
-                console.log('🎤 Requesting microphone access...');
+                setIsLoading(true);
+
+                // Get microphone access
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('✅ Microphone access granted');
                 streamRef.current = stream;
+
+                // Initialize conversation service
+                await conversationService.current.initialize();
+
+                // Enhanced 2025 configuration
+                const config = {
+                    agentId: getAgentId(),
+                    voiceId: getVoiceId(),
+                    // 2025 additions for better conversation handling
+                    dynamicVariables: {
+                        user_name: "User",
+                        platform: "neuraplay",
+                        session_id: Date.now().toString()
+                    },
+                    conversationConfig: {
+                        agent: {
+                            prompt: "You are Synapse, a helpful AI assistant for NeuraPlay. Be friendly, supportive, and engaging.",
+                            firstMessage: "Hi! I'm Synapse, your AI assistant. How can I help you today?",
+                            language: selectedLanguage === 'auto' ? 'en' : selectedLanguage
+                        },
+                        tts: {
+                            voiceId: getVoiceId()
+                        }
+                    }
+                };
+
+                // Start conversation with enhanced config
+                const conversationId = await conversationService.current.startConversation(config);
+                console.log('🎤 Conversation started:', conversationId);
                 
+                // DIRECT FIX: Immediately set mode to conversing
+                setMode('conversing');
+                console.log('🎯 Mode set to conversing immediately');
+                
+                // Start MediaRecorder for audio streaming
                 const mediaRecorder = new MediaRecorder(stream, {
                     mimeType: 'audio/webm;codecs=opus'
                 });
-                console.log('🎙️ MediaRecorder created');
-                
-                // Store reference for cleanup
-                mediaRecorderRef.current = mediaRecorder;
                 
                 mediaRecorder.ondataavailable = async (event) => {
                     console.log(`🔊 Audio data available: ${event.data.size} bytes`);
                     
-                    // Debug each condition separately
-                    const hasData = event.data.size > 0;
-                    const isConnected = conversationService.current.connected;
-                    const isConversing = mode === 'conversing';
-                    
-                    console.log(`🔍 Condition check:`, {
-                        hasData,
-                        isConnected,
-                        isConversing,
-                        currentMode: mode
-                    });
-                    
-                    if (hasData && isConnected && isConversing) {
+                    // SIMPLE CHECK: Just check if we have data and are connected
+                    if (event.data.size > 0 && conversationService.current.connected) {
                         try {
-                            // Convert audio chunk and send to ElevenLabs via Ably
                             const buffer = await event.data.arrayBuffer();
-                            console.log(`📤 Sending audio buffer: ${buffer.byteLength} bytes`);
+                            console.log(`📤 Sending audio: ${buffer.byteLength} bytes`);
                             await conversationService.current.sendAudio(buffer);
                         } catch (error) {
-                            console.error('Error sending audio chunk:', error);
+                            console.error('❌ Error sending audio:', error);
                         }
-                    } else {
-                        console.log('⚠️ Skipping audio send - conditions not met:', {
-                            hasData,
-                            isConnected,
-                            isConversing,
-                            currentMode: mode
-                        });
                     }
                 };
                 
                 mediaRecorder.onstart = () => {
-                    console.log('🟢 MediaRecorder started successfully');
+                    console.log('🟢 MediaRecorder started');
                 };
                 
-                mediaRecorder.onerror = (event) => {
-                    console.error('❌ MediaRecorder error:', event);
-                };
+                // Start recording
+                mediaRecorder.start(500); // 500ms chunks
                 
-                // Start recording in small chunks
-                console.log('▶️ Starting MediaRecorder...');
-                mediaRecorder.start(500);
-                console.log('🎵 Recording started with 500ms chunks');
+                setIsLoading(false);
                 
-                addMessageToConversation(activeConversation, { 
-                    text: "Conversation mode active! Speak anytime to chat with me. 🎤", 
-                    isUser: false, 
-                    timestamp: new Date() 
+                // Add success message
+                addMessageToConversation(activeConversation, {
+                    text: "🎤 Conversation mode active! Start speaking to chat with me.",
+                    isUser: false,
+                    timestamp: new Date()
                 });
-                
-            } catch (error) {
-                console.error('Failed to start conversation mode:', error);
-                
-                // Clean up any started resources
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                    mediaRecorderRef.current.stop();
-                    mediaRecorderRef.current = null;
-                }
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach(track => track.stop());
-                    streamRef.current = null;
-                }
-                
+
+            } catch (error: any) {
+                console.error('❌ Failed to start conversation:', error);
                 setMode('idle');
+                setIsLoading(false);
                 
-                // Show more helpful error message
-                const errorMessage = (error as Error).message?.includes('Bridge service not available') 
-                    ? "🔧 Conversation mode is temporarily unavailable (bridge service needs deployment). But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟"
-                    : "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟";
-                
-                addMessageToConversation(activeConversation, { 
-                    text: errorMessage, 
-                    isUser: false, 
-                    timestamp: new Date() 
+                // Add error message to conversation
+                addMessageToConversation(activeConversation, {
+                    text: error.message || 'Failed to start conversation mode',
+                    isUser: false,
+                    timestamp: new Date()
                 });
             }
         }
@@ -1355,7 +1324,8 @@ Need help with anything specific? Just ask! 🌟`;
             }, 500);
         } else {
             // Exit conversation mode
-            elevenLabsService.disconnect();
+            setMode('idle');
+            await conversationService.current.endConversation();
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
                 streamRef.current = null;

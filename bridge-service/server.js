@@ -39,6 +39,7 @@ class ConversationBridge {
     this.elevenLabsWs = null;
     this.ablyChannel = null;
     this.isConnected = false;
+    this.pendingConfig = null; // 2025 Addition: Store config until connection
     
     console.log(`🔗 Creating bridge for conversation: ${conversationId}`);
     this.initialize();
@@ -54,6 +55,12 @@ class ConversationBridge {
         this.handleUserMessage(message.data);
       });
       
+      // 2025 Update: Handle user_audio_chunk instead of user_audio
+      this.ablyChannel.subscribe('user_audio_chunk', (message) => {
+        this.handleUserAudio(message.data);
+      });
+      
+      // Keep backward compatibility
       this.ablyChannel.subscribe('user_audio', (message) => {
         this.handleUserAudio(message.data);
       });
@@ -64,6 +71,13 @@ class ConversationBridge {
       
       this.ablyChannel.subscribe('end_conversation', () => {
         this.cleanup();
+      });
+
+      // 2025 Addition: Handle pong responses from client
+      this.ablyChannel.subscribe('pong', (message) => {
+        if (this.elevenLabsWs && this.isConnected) {
+          this.elevenLabsWs.send(JSON.stringify(message.data));
+        }
       });
       
       console.log(`✅ Ably channel setup complete for: ${this.conversationId}`);
@@ -77,36 +91,51 @@ class ConversationBridge {
     try {
       console.log(`🎤 Initializing ElevenLabs connection for: ${this.conversationId}`);
       
-      // Connect to ElevenLabs Conversational AI WebSocket API (new API)
-      const agentId = config.agentId || 'agent_2201k13zjq5nf9faywz14701hyhb';
+      // 2025 Enhancement: Merge pending config with current config
+      const finalConfig = { ...this.pendingConfig, ...config };
+      console.log('📋 Final merged config:', JSON.stringify(finalConfig, null, 2));
+      
+      // Connect to ElevenLabs Conversational AI WebSocket API (2025)
+      const agentId = finalConfig.agentId || 'agent_2201k13zjq5nf9faywz14701hyhb';
       this.elevenLabsWs = new WebSocket(`wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`);
       
       this.elevenLabsWs.on('open', () => {
         console.log(`🔗 ElevenLabs WebSocket connected for: ${this.conversationId} with agent: ${agentId}`);
         
-        // Initialize conversation with new API format
-        this.elevenLabsWs.send(JSON.stringify({
+        // 2025 Enhanced conversation initiation
+        const initiationPayload = {
           type: 'conversation_initiation_client_data',
-          conversation_config_override: {
+          conversation_config_override: finalConfig.conversation_config_override || finalConfig.conversationConfig || {
             agent: {
-              prompt: {
-                prompt: "You are Synapse, a friendly AI learning assistant for the NeuraPlay platform. Help users learn through engaging conversations."
-              },
-              first_message: "🌟 Hi! I'm Synapse, your AI learning assistant! How can I help you today?",
-              language: "en"
+              prompt: finalConfig.prompt || "You are Synapse, a friendly AI learning assistant for the NeuraPlay platform. Help users learn through engaging conversations.",
+              first_message: finalConfig.firstMessage || "🌟 Hi! I'm Synapse, your AI learning assistant! How can I help you today?",
+              language: finalConfig.language || "en"
             },
             tts: {
-              voice_id: config.voiceId || '8LVfoRdkh4zgjr8v5ObE'
+              voice_id: finalConfig.voiceId || finalConfig.voice_id || '8LVfoRdkh4zgjr8v5ObE'
             }
+          },
+          // 2025 Addition: Dynamic variables support
+          dynamic_variables: finalConfig.dynamic_variables || finalConfig.dynamicVariables || {},
+          // 2025 Addition: Conversation metadata
+          conversation_metadata: finalConfig.conversation_metadata || {
+            platform: "neuraplay",
+            bridge_service: "v1.0",
+            timestamp: new Date().toISOString()
           }
-        }));
+        };
+        
+        console.log('📤 Sending conversation initiation:', JSON.stringify(initiationPayload, null, 2));
+        this.elevenLabsWs.send(JSON.stringify(initiationPayload));
         
         this.isConnected = true;
         
-        // Notify frontend that connection is ready
+        // 2025 Fix: Notify frontend that connection is ready
         this.ablyChannel.publish('status', {
           type: 'connected',
-          conversationId: this.conversationId
+          conversationId: this.conversationId,
+          agentId: agentId,
+          timestamp: new Date().toISOString()
         });
       });
       
@@ -171,13 +200,22 @@ class ConversationBridge {
       return;
     }
     
-    console.log(`🎵 Forwarding user audio for: ${this.conversationId}`);
+    console.log(`🔊 Audio data available: ${data.chunk_size || 'unknown'} bytes for: ${this.conversationId}`);
     
     try {
-      // New API format: send audio data directly as user_audio_chunk
+      // 2025 Format: Handle both old and new audio field names
+      const audioData = data.user_audio_chunk || data.audio;
+      
+      if (!audioData) {
+        console.warn(`⚠️ No audio data found in message for: ${this.conversationId}`);
+        return;
+      }
+      
+      // Send to ElevenLabs in the expected format
       this.elevenLabsWs.send(JSON.stringify({
-        user_audio_chunk: data.audio || data.user_audio_chunk
+        user_audio_chunk: audioData
       }));
+      
     } catch (error) {
       console.error(`❌ Error sending user audio for ${this.conversationId}:`, error);
     }
@@ -199,16 +237,68 @@ class ConversationBridge {
         return;
       }
       
-      // Forward all other messages to the frontend via Ably
-      this.ablyChannel.publish('ai_response', message);
+      // 2025 Update: Route different message types to appropriate Ably channels
+      switch (message.type) {
+        case 'conversation_initiation_metadata':
+          console.log('📋 Conversation initiation metadata received');
+          this.ablyChannel.publish('conversation_initiation_metadata', message);
+          // CRITICAL: Also send status update for mode switching
+          this.ablyChannel.publish('status', {
+            type: 'connected',
+            conversationId: this.conversationId,
+            metadata: message
+          });
+          break;
+          
+        case 'user_transcript':
+          console.log('📝 User transcript received');
+          this.ablyChannel.publish('user_transcript', message);
+          break;
+          
+        case 'agent_response':
+          console.log('🤖 Agent response received');
+          this.ablyChannel.publish('agent_response', message);
+          break;
+          
+        case 'audio':
+          console.log('🔊 Audio response received');
+          this.ablyChannel.publish('audio', message);
+          break;
+          
+        case 'interruption':
+          console.log('⚡ Interruption received');
+          this.ablyChannel.publish('interruption', message);
+          break;
+          
+        case 'vad_score':
+          console.log('🎙️ VAD score received');
+          this.ablyChannel.publish('vad_score', message);
+          break;
+          
+        case 'internal_tentative_agent_response':
+          console.log('💭 Tentative agent response');
+          this.ablyChannel.publish('ai_response', message);
+          break;
+          
+        case 'ping':
+          // Already handled above
+          break;
+          
+        default:
+          // Forward unknown/generic messages to ai_response for backward compatibility
+          console.log(`📨 Forwarding unknown message type: ${message.type}`);
+          this.ablyChannel.publish('ai_response', message);
+      }
       
     } catch (error) {
       console.error(`❌ Error handling ElevenLabs message for ${this.conversationId}:`, error);
       
       // Send raw data if JSON parsing fails
-      this.ablyChannel.publish('ai_response', {
-        type: 'raw_data',
-        data: data.toString()
+      this.ablyChannel.publish('error', {
+        type: 'parse_error',
+        conversationId: this.conversationId,
+        error: error.message,
+        rawData: data.toString()
       });
     }
   }
@@ -257,6 +347,8 @@ app.post('/conversation/start', (req, res) => {
   try {
     const conversationId = req.body.conversationId || uuidv4();
     
+    console.log('🎯 Starting conversation with config:', JSON.stringify(req.body, null, 2));
+    
     if (activeConversations.has(conversationId)) {
       return res.status(400).json({
         error: 'Conversation already exists',
@@ -266,12 +358,19 @@ app.post('/conversation/start', (req, res) => {
     
     // Create new conversation bridge
     const bridge = new ConversationBridge(conversationId, ably);
+    
+    // 2025 Addition: Store the ElevenLabs config for later use
+    if (req.body.elevenlabsConfig) {
+      bridge.pendingConfig = req.body.elevenlabsConfig;
+      console.log('📋 Stored ElevenLabs config for conversation:', conversationId);
+    }
+    
     activeConversations.set(conversationId, bridge);
     
     res.json({
       success: true,
       conversationId,
-      message: 'Conversation bridge created'
+      message: 'Conversation bridge created successfully'
     });
     
   } catch (error) {
