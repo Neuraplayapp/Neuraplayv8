@@ -311,8 +311,14 @@ const AIAssistant: React.FC = () => {
 
         // Handle AI responses
         service.on('ai_response', (data) => {
-            console.log('Received AI response:', data);
+            console.log('📥 Received AI response:', data);
+            console.log('📥 Response has text:', !!data.text);
+            console.log('📥 Response has audio:', !!data.audio);
+            console.log('📥 Response type:', data.type);
+            console.log('📥 Full response keys:', Object.keys(data));
+            
             if (data.text) {
+                console.log('📝 Processing text response:', data.text);
                 const aiMessage = { 
                     text: data.text, 
                     isUser: false, 
@@ -323,15 +329,33 @@ const AIAssistant: React.FC = () => {
             
             // Handle audio if present
             if (data.audio) {
-                const audioBlob = new Blob(
-                    [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], 
-                    { type: 'audio/mpeg' }
-                );
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
-                audio.play().catch(error => {
-                    console.error('Failed to play audio:', error);
-                });
+                console.log('🔊 Processing audio response, length:', data.audio.length);
+                try {
+                    const audioBlob = new Blob(
+                        [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], 
+                        { type: 'audio/mpeg' }
+                    );
+                    console.log('🔊 Audio blob created, size:', audioBlob.size);
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    console.log('🔊 Audio URL created:', audioUrl);
+                    const audio = new Audio(audioUrl);
+                    
+                    audio.onloadstart = () => console.log('🔊 Audio loading started');
+                    audio.oncanplay = () => console.log('🔊 Audio can play');
+                    audio.onplay = () => console.log('🔊 Audio playback started');
+                    audio.onended = () => console.log('🔊 Audio playback ended');
+                    audio.onerror = (e) => console.error('🔊 Audio error:', e);
+                    
+                    audio.play().then(() => {
+                        console.log('🔊 Audio play() succeeded');
+                    }).catch(error => {
+                        console.error('❌ Failed to play audio:', error);
+                    });
+                } catch (error) {
+                    console.error('❌ Error processing audio response:', error);
+                }
+            } else {
+                console.log('⚠️ No audio in response');
             }
         });
 
