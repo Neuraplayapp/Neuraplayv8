@@ -356,7 +356,7 @@ const AIAssistant: React.FC = () => {
                 service.endConversation();
             }
         };
-    }, [activeConversation, mode]);
+    }, [activeConversation]);
 
     // Enhanced AI Agency Functions
     const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info' | 'agent' | 'game', action?: any } => {
@@ -1031,7 +1031,20 @@ Need help with anything specific? Just ask! 🌟`;
                 
                 mediaRecorder.ondataavailable = async (event) => {
                     console.log(`🔊 Audio data available: ${event.data.size} bytes`);
-                    if (event.data.size > 0 && conversationService.current.connected && mode === 'conversing') {
+                    
+                    // Debug each condition separately
+                    const hasData = event.data.size > 0;
+                    const isConnected = conversationService.current.connected;
+                    const isConversing = mode === 'conversing';
+                    
+                    console.log(`🔍 Condition check:`, {
+                        hasData,
+                        isConnected,
+                        isConversing,
+                        currentMode: mode
+                    });
+                    
+                    if (hasData && isConnected && isConversing) {
                         try {
                             // Convert audio chunk and send to ElevenLabs via Ably
                             const buffer = await event.data.arrayBuffer();
@@ -1041,7 +1054,12 @@ Need help with anything specific? Just ask! 🌟`;
                             console.error('Error sending audio chunk:', error);
                         }
                     } else {
-                        console.log('⚠️ Skipping audio send - conditions not met');
+                        console.log('⚠️ Skipping audio send - conditions not met:', {
+                            hasData,
+                            isConnected,
+                            isConversing,
+                            currentMode: mode
+                        });
                     }
                 };
                 
