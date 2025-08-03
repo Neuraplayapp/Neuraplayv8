@@ -3,7 +3,7 @@ services:
     name: neuraplay-ai-platform
     env: node
     buildCommand: npm install && npm run build
-    startCommand: npm run render
+    startCommand: node server-static.js
     envVars:
       - key: NODE_ENV
         value: production
