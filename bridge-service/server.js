@@ -289,9 +289,12 @@ app.delete('/conversation/:conversationId', (req, res) => {
     
     const bridge = activeConversations.get(conversationId);
     if (!bridge) {
-      return res.status(404).json({
-        error: 'Conversation not found',
-        conversationId
+      // Conversation already cleaned up - this is OK, return success
+      console.log(`🧹 Conversation ${conversationId} already cleaned up`);
+      return res.json({
+        success: true,
+        conversationId,
+        message: 'Conversation already ended (cleaned up)'
       });
     }
     
