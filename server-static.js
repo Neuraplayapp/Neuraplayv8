@@ -1,12 +1,17 @@
-const express = require('express');
-const path = require('path');
-const WebSocket = require('ws');
-const http = require('http');
-const fetch = require('node-fetch');
+import express from 'express';
+import path from 'path';
+import { WebSocketServer } from 'ws';
+import http from 'http';
+import fetch from 'node-fetch';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 // Middleware for parsing JSON
 app.use(express.json({ limit: '50mb' }));
@@ -221,7 +226,7 @@ app.get('/.netlify/functions/test-elevenlabs', async (req, res) => {
 app.get('/.netlify/functions/ably-auth', async (req, res) => {
   try {
     console.log('🔐 Ably auth request received');
-    const Ably = require('ably');
+    const Ably = (await import('ably')).default;
     
     const ABLY_API_KEY = process.env.VITE_ABLY_API_KEY;
     
