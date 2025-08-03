@@ -77,25 +77,29 @@ class ConversationBridge {
     try {
       console.log(`🎤 Initializing ElevenLabs connection for: ${this.conversationId}`);
       
-      // Connect to ElevenLabs WebSocket API
-      this.elevenLabsWs = new WebSocket('wss://api.elevenlabs.io/v1/voice-chat');
+      // Connect to ElevenLabs Conversational AI WebSocket API (new API)
+      const agentId = config.agentId || 'agent_2201k13zjq5nf9faywz14701hyhb';
+      this.elevenLabsWs = new WebSocket(`wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`);
       
       this.elevenLabsWs.on('open', () => {
-        console.log(`🔗 ElevenLabs WebSocket connected for: ${this.conversationId}`);
+        console.log(`🔗 ElevenLabs WebSocket connected for: ${this.conversationId} with agent: ${agentId}`);
         
-        // Authenticate with ElevenLabs
+        // Initialize conversation with new API format
         this.elevenLabsWs.send(JSON.stringify({
-          xi_api_key: ELEVENLABS_API_KEY
+          type: 'conversation_initiation_client_data',
+          conversation_config_override: {
+            agent: {
+              prompt: {
+                prompt: "You are Synapse, a friendly AI learning assistant for the NeuraPlay platform. Help users learn through engaging conversations."
+              },
+              first_message: "🌟 Hi! I'm Synapse, your AI learning assistant! How can I help you today?",
+              language: "en"
+            },
+            tts: {
+              voice_id: config.voiceId || '8LVfoRdkh4zgjr8v5ObE'
+            }
+          }
         }));
-        
-        // Send initial conversation config if provided
-        if (config.agentId) {
-          this.elevenLabsWs.send(JSON.stringify({
-            type: 'init_conversation',
-            agent_id: config.agentId,
-            ...config
-          }));
-        }
         
         this.isConnected = true;
         
@@ -170,10 +174,9 @@ class ConversationBridge {
     console.log(`🎵 Forwarding user audio for: ${this.conversationId}`);
     
     try {
+      // New API format: send audio data directly as user_audio_chunk
       this.elevenLabsWs.send(JSON.stringify({
-        type: 'user_audio_chunk',
-        audio: data.audio,
-        ...data
+        user_audio_chunk: data.audio || data.user_audio_chunk
       }));
     } catch (error) {
       console.error(`❌ Error sending user audio for ${this.conversationId}:`, error);
@@ -186,7 +189,17 @@ class ConversationBridge {
       
       console.log(`📥 Received from ElevenLabs for ${this.conversationId}:`, message.type || 'unknown');
       
-      // Forward all messages to the frontend via Ably
+      // Handle ping/pong for connection keep-alive
+      if (message.type === 'ping') {
+        console.log(`🏓 Responding to ping for ${this.conversationId}`);
+        this.elevenLabsWs.send(JSON.stringify({
+          type: 'pong',
+          event_id: message.ping_event.event_id
+        }));
+        return;
+      }
+      
+      // Forward all other messages to the frontend via Ably
       this.ablyChannel.publish('ai_response', message);
       
     } catch (error) {
