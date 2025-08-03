@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 import Ably from 'ably';
-import WebSocket from 'ws';
+import fetch from 'node-fetch';
 
 // Load environment variables
 dotenv.config();
@@ -18,11 +18,11 @@ app.use(express.json());
 // Environment variables
 const ABLY_API_KEY = process.env.ABLY_API;
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || process.env.elven_labs_api_key;
+const ASSEMBLYAI_API_KEY = process.env.ASSEMBLY_API_KEY || process.env.ASSEMBLYAI_API_KEY;
 
-if (!ABLY_API_KEY || !ELEVENLABS_API_KEY) {
+if (!ABLY_API_KEY) {
   console.error('❌ Missing required environment variables:');
   console.error('  - ABLY_API:', !!ABLY_API_KEY);
-  console.error('  - ELEVENLABS_API_KEY (or elven_labs_api_key):', !!ELEVENLABS_API_KEY);
   process.exit(1);
 }
 
@@ -36,16 +36,14 @@ class ConversationBridge {
   constructor(conversationId, ably) {
     this.conversationId = conversationId;
     this.ably = ably;
-    this.elevenLabsWs = null;
     this.ablyChannel = null;
     this.isConnected = false;
-    this.pendingConfig = null; // 2025 Addition: Store config until connection
     
     console.log(`🔗 Creating bridge for conversation: ${conversationId}`);
     this.initialize();
   }
 
-  async initialize() {
+  initialize() {
     try {
       // Set up Ably channel for this conversation
       this.ablyChannel = this.ably.channels.get(`conversation:${this.conversationId}`);
@@ -55,29 +53,16 @@ class ConversationBridge {
         this.handleUserMessage(message.data);
       });
       
-      // 2025 Update: Handle user_audio_chunk instead of user_audio
-      this.ablyChannel.subscribe('user_audio_chunk', (message) => {
-        this.handleUserAudio(message.data);
-      });
-      
-      // Keep backward compatibility
       this.ablyChannel.subscribe('user_audio', (message) => {
         this.handleUserAudio(message.data);
       });
       
       this.ablyChannel.subscribe('init_conversation', (message) => {
-        this.initializeElevenLabsConnection(message.data);
+        this.initializeConversation(message.data);
       });
       
       this.ablyChannel.subscribe('end_conversation', () => {
         this.cleanup();
-      });
-
-      // 2025 Addition: Handle pong responses from client
-      this.ablyChannel.subscribe('pong', (message) => {
-        if (this.elevenLabsWs && this.isConnected) {
-          this.elevenLabsWs.send(JSON.stringify(message.data));
-        }
       });
       
       console.log(`✅ Ably channel setup complete for: ${this.conversationId}`);
@@ -87,229 +72,250 @@ class ConversationBridge {
     }
   }
 
-  async initializeElevenLabsConnection(config) {
+  async initializeConversation(config) {
     try {
-      console.log(`🎤 Initializing ElevenLabs connection for: ${this.conversationId}`);
+      console.log(`🎤 Initializing conversation for: ${this.conversationId}`);
+      console.log(`🎤 Config received:`, JSON.stringify(config, null, 2));
       
-      // 2025 Enhancement: Merge pending config with current config
-      const finalConfig = { ...this.pendingConfig, ...config };
-      console.log('📋 Final merged config:', JSON.stringify(finalConfig, null, 2));
+      // Send initial greeting
+      const greeting = "🌟 Hi! I'm Synapse, your AI learning assistant! How can I help you today?";
       
-      // Connect to ElevenLabs Conversational AI WebSocket API (2025)
-      const agentId = finalConfig.agentId || 'agent_2201k13zjq5nf9faywz14701hyhb';
-      this.elevenLabsWs = new WebSocket(`wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`);
+      // Generate TTS for greeting
+      if (ELEVENLABS_API_KEY) {
+        await this.generateAndSendTTS(greeting, config.voiceId || '8LVfoRdkh4zgjr8v5ObE');
+      }
       
-      this.elevenLabsWs.on('open', () => {
-        console.log(`🔗 ElevenLabs WebSocket connected for: ${this.conversationId} with agent: ${agentId}`);
-        
-        // 2025 Enhanced conversation initiation
-        const initiationPayload = {
-          type: 'conversation_initiation_client_data',
-          conversation_config_override: finalConfig.conversation_config_override || finalConfig.conversationConfig || {
-            agent: {
-              prompt: finalConfig.prompt || "You are Synapse, a friendly AI learning assistant for the NeuraPlay platform. Help users learn through engaging conversations.",
-              first_message: finalConfig.firstMessage || "🌟 Hi! I'm Synapse, your AI learning assistant! How can I help you today?",
-              language: finalConfig.language || "en"
-            },
-            tts: {
-              voice_id: finalConfig.voiceId || finalConfig.voice_id || '8LVfoRdkh4zgjr8v5ObE'
-            }
-          },
-          // 2025 Addition: Dynamic variables support
-          dynamic_variables: finalConfig.dynamic_variables || finalConfig.dynamicVariables || {},
-          // 2025 Addition: Conversation metadata
-          conversation_metadata: finalConfig.conversation_metadata || {
-            platform: "neuraplay",
-            bridge_service: "v1.0",
-            timestamp: new Date().toISOString()
-          }
-        };
-        
-        console.log('📤 Sending conversation initiation:', JSON.stringify(initiationPayload, null, 2));
-        this.elevenLabsWs.send(JSON.stringify(initiationPayload));
-        
-        this.isConnected = true;
-        
-        // 2025 Fix: Notify frontend that connection is ready
-        this.ablyChannel.publish('status', {
-          type: 'connected',
-          conversationId: this.conversationId,
-          agentId: agentId,
-          timestamp: new Date().toISOString()
-        });
+      // Send text response
+      this.ablyChannel.publish('ai_response', {
+        type: 'text_response',
+        text: greeting,
+        timestamp: Date.now()
       });
       
-      this.elevenLabsWs.on('message', (data) => {
-        this.handleElevenLabsMessage(data);
-      });
+      this.isConnected = true;
       
-      this.elevenLabsWs.on('close', (code, reason) => {
-        console.log(`🔌 ElevenLabs connection closed for ${this.conversationId}: ${code} ${reason}`);
-        this.isConnected = false;
-        
-        this.ablyChannel.publish('status', {
-          type: 'disconnected',
-          conversationId: this.conversationId,
-          reason: `Connection closed: ${code} ${reason}`
-        });
-      });
-      
-      this.elevenLabsWs.on('error', (error) => {
-        console.error(`❌ ElevenLabs WebSocket error for ${this.conversationId}:`, error);
-        
-        this.ablyChannel.publish('error', {
-          type: 'websocket_error',
-          conversationId: this.conversationId,
-          error: error.message
-        });
+      // Notify frontend that connection is ready
+      this.ablyChannel.publish('status', {
+        type: 'connected',
+        conversationId: this.conversationId
       });
       
     } catch (error) {
-      console.error(`❌ Failed to initialize ElevenLabs connection for ${this.conversationId}:`, error);
+      console.error(`❌ Failed to initialize conversation for ${this.conversationId}:`, error);
+      
+      if (this.ablyChannel) {
+        this.ablyChannel.publish('error', {
+          type: 'conversation_init_error',
+          conversationId: this.conversationId,
+          error: error.message
+        });
+      }
+    }
+  }
+
+  async handleUserMessage(data) {
+    console.log(`📤 Received user message for: ${this.conversationId}`, data.text);
+    
+    try {
+      // Process the message (you can add your own LLM logic here)
+      const response = await this.processMessage(data.text);
+      
+      // Send text response
+      this.ablyChannel.publish('ai_response', {
+        type: 'text_response',
+        text: response,
+        timestamp: Date.now()
+      });
+      
+      // Generate TTS for response
+      if (ELEVENLABS_API_KEY) {
+        await this.generateAndSendTTS(response, data.voiceId || '8LVfoRdkh4zgjr8v5ObE');
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error handling user message for ${this.conversationId}:`, error);
       
       this.ablyChannel.publish('error', {
-        type: 'connection_error',
+        type: 'message_processing_error',
         conversationId: this.conversationId,
         error: error.message
       });
     }
   }
 
-  handleUserMessage(data) {
-    if (!this.isConnected || !this.elevenLabsWs) {
-      console.warn(`⚠️ Attempted to send message but ElevenLabs not connected for: ${this.conversationId}`);
-      return;
-    }
-    
-    console.log(`📤 Forwarding user message for: ${this.conversationId}`);
+  async handleUserAudio(data) {
+    console.log(`🎵 Received user audio for: ${this.conversationId}`);
     
     try {
-      this.elevenLabsWs.send(JSON.stringify({
-        type: 'user_message',
-        text: data.text,
-        ...data
-      }));
-    } catch (error) {
-      console.error(`❌ Error sending user message for ${this.conversationId}:`, error);
-    }
-  }
-
-  handleUserAudio(data) {
-    if (!this.isConnected || !this.elevenLabsWs) {
-      console.warn(`⚠️ Attempted to send audio but ElevenLabs not connected for: ${this.conversationId}`);
-      return;
-    }
-    
-    console.log(`🔊 Audio data available: ${data.chunk_size || 'unknown'} bytes for: ${this.conversationId}`);
-    
-    try {
-      // 2025 Format: Handle both old and new audio field names
-      const audioData = data.user_audio_chunk || data.audio;
-      
-      if (!audioData) {
-        console.warn(`⚠️ No audio data found in message for: ${this.conversationId}`);
-        return;
-      }
-      
-      // Send to ElevenLabs in the expected format
-      this.elevenLabsWs.send(JSON.stringify({
-        user_audio_chunk: audioData
-      }));
-      
-    } catch (error) {
-      console.error(`❌ Error sending user audio for ${this.conversationId}:`, error);
-    }
-  }
-
-  handleElevenLabsMessage(data) {
-    try {
-      const message = JSON.parse(data.toString());
-      
-      console.log(`📥 Received from ElevenLabs for ${this.conversationId}:`, message.type || 'unknown');
-      
-      // Handle ping/pong for connection keep-alive
-      if (message.type === 'ping') {
-        console.log(`🏓 Responding to ping for ${this.conversationId}`);
-        this.elevenLabsWs.send(JSON.stringify({
-          type: 'pong',
-          event_id: message.ping_event.event_id
-        }));
-        return;
-      }
-      
-      // 2025 Update: Route different message types to appropriate Ably channels
-      switch (message.type) {
-        case 'conversation_initiation_metadata':
-          console.log('📋 Conversation initiation metadata received');
-          this.ablyChannel.publish('conversation_initiation_metadata', message);
-          // CRITICAL: Also send status update for mode switching
-          this.ablyChannel.publish('status', {
-            type: 'connected',
-            conversationId: this.conversationId,
-            metadata: message
-          });
-          break;
-          
-        case 'user_transcript':
-          console.log('📝 User transcript received');
-          this.ablyChannel.publish('user_transcript', message);
-          break;
-          
-        case 'agent_response':
-          console.log('🤖 Agent response received');
-          this.ablyChannel.publish('agent_response', message);
-          break;
-          
-        case 'audio':
-          console.log('🔊 Audio response received');
-          this.ablyChannel.publish('audio', message);
-          break;
-          
-        case 'interruption':
-          console.log('⚡ Interruption received');
-          this.ablyChannel.publish('interruption', message);
-          break;
-          
-        case 'vad_score':
-          console.log('🎙️ VAD score received');
-          this.ablyChannel.publish('vad_score', message);
-          break;
-          
-        case 'internal_tentative_agent_response':
-          console.log('💭 Tentative agent response');
-          this.ablyChannel.publish('ai_response', message);
-          break;
-          
-        case 'ping':
-          // Already handled above
-          break;
-          
-        default:
-          // Forward unknown/generic messages to ai_response for backward compatibility
-          console.log(`📨 Forwarding unknown message type: ${message.type}`);
-          this.ablyChannel.publish('ai_response', message);
+      // Convert audio to text using AssemblyAI
+      if (ASSEMBLYAI_API_KEY) {
+        const transcribedText = await this.transcribeAudio(data.audio);
+        
+        if (transcribedText) {
+          // Process the transcribed text
+          await this.handleUserMessage({ text: transcribedText });
+        }
+      } else {
+        console.warn('⚠️ AssemblyAI API key not configured, skipping audio transcription');
       }
       
     } catch (error) {
-      console.error(`❌ Error handling ElevenLabs message for ${this.conversationId}:`, error);
+      console.error(`❌ Error handling user audio for ${this.conversationId}:`, error);
       
-      // Send raw data if JSON parsing fails
       this.ablyChannel.publish('error', {
-        type: 'parse_error',
+        type: 'audio_processing_error',
         conversationId: this.conversationId,
-        error: error.message,
-        rawData: data.toString()
+        error: error.message
       });
+    }
+  }
+
+  async processMessage(text) {
+    // Simple response logic - you can replace this with your own LLM API
+    const responses = [
+      "That's a great question! Let me help you with that.",
+      "I'm here to help you learn and explore!",
+      "That's interesting! Tell me more about what you'd like to know.",
+      "I'm excited to help you with your learning journey!",
+      "What a wonderful question! Let's explore this together."
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  async generateAndSendTTS(text, voiceId) {
+    try {
+      console.log(`🎤 Generating TTS for: ${text.substring(0, 50)}...`);
+      
+      // Use ElevenLabs streaming endpoint for better performance
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVENLABS_API_KEY
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5
+          },
+          output_format: 'mp3_44100_128'
+        })
+      });
+
+      if (response.ok) {
+        const audioBuffer = await response.arrayBuffer();
+        const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+        
+        // Send audio response
+        this.ablyChannel.publish('ai_response', {
+          type: 'audio_response',
+          audio: audioBase64,
+          text: text,
+          timestamp: Date.now(),
+          streaming: true,
+          content_type: 'audio/mpeg'
+        });
+        
+        console.log(`✅ TTS generated successfully for: ${this.conversationId} (${audioBuffer.byteLength} bytes)`);
+      } else {
+        console.error(`❌ TTS generation failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`❌ TTS error details: ${errorText}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error generating TTS for ${this.conversationId}:`, error);
+    }
+  }
+
+  async transcribeAudio(audioBase64) {
+    try {
+      console.log(`🎤 Transcribing audio for: ${this.conversationId}`);
+      
+      // Upload audio to AssemblyAI
+      const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': ASSEMBLYAI_API_KEY,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: Buffer.from(audioBase64, 'base64'),
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload audio to AssemblyAI');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const audioUrl = uploadResult.upload_url;
+
+      // Request transcription
+      const transcribeResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+        method: 'POST',
+        headers: {
+          'Authorization': ASSEMBLYAI_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audio_url: audioUrl,
+          speech_model: 'universal',
+          punctuate: true,
+          format_text: true
+        }),
+      });
+
+      if (!transcribeResponse.ok) {
+        throw new Error('Failed to request transcription');
+      }
+
+      const transcribeResult = await transcribeResponse.json();
+      const transcriptId = transcribeResult.id;
+
+      // Poll for completion
+      let attempts = 0;
+      const maxAttempts = 60;
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+          headers: {
+            'Authorization': ASSEMBLYAI_API_KEY,
+          },
+        });
+
+        if (!pollResponse.ok) {
+          throw new Error('Failed to poll transcription status');
+        }
+
+        const pollResult = await pollResponse.json();
+        
+        if (pollResult.status === 'completed') {
+          console.log(`✅ Transcription completed: ${pollResult.text}`);
+          return pollResult.text;
+        }
+        
+        if (pollResult.status === 'error') {
+          throw new Error(`Transcription failed: ${pollResult.error}`);
+        }
+        
+        attempts++;
+      }
+
+      throw new Error('Transcription timeout');
+      
+    } catch (error) {
+      console.error(`❌ Error transcribing audio for ${this.conversationId}:`, error);
+      return null;
     }
   }
 
   cleanup() {
     console.log(`🧹 Cleaning up conversation: ${this.conversationId}`);
-    
-    if (this.elevenLabsWs) {
-      this.elevenLabsWs.close();
-      this.elevenLabsWs = null;
-    }
     
     if (this.ablyChannel) {
       this.ablyChannel.unsubscribe();
@@ -339,15 +345,18 @@ app.get('/health', (req, res) => {
     activeConversations: activeConversations.size,
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: {
+      ablyConfigured: !!ABLY_API_KEY,
+      elevenLabsConfigured: !!ELEVENLABS_API_KEY,
+      assemblyAIConfigured: !!ASSEMBLYAI_API_KEY
+    }
   });
 });
 
 app.post('/conversation/start', (req, res) => {
   try {
     const conversationId = req.body.conversationId || uuidv4();
-    
-    console.log('🎯 Starting conversation with config:', JSON.stringify(req.body, null, 2));
     
     if (activeConversations.has(conversationId)) {
       return res.status(400).json({
@@ -356,21 +365,18 @@ app.post('/conversation/start', (req, res) => {
       });
     }
     
+    console.log(`🚀 Starting conversation: ${conversationId}`);
+    
     // Create new conversation bridge
     const bridge = new ConversationBridge(conversationId, ably);
-    
-    // 2025 Addition: Store the ElevenLabs config for later use
-    if (req.body.elevenlabsConfig) {
-      bridge.pendingConfig = req.body.elevenlabsConfig;
-      console.log('📋 Stored ElevenLabs config for conversation:', conversationId);
-    }
-    
     activeConversations.set(conversationId, bridge);
+    
+    console.log(`✅ Conversation bridge created successfully: ${conversationId}`);
     
     res.json({
       success: true,
       conversationId,
-      message: 'Conversation bridge created successfully'
+      message: 'Conversation bridge created'
     });
     
   } catch (error) {
@@ -450,4 +456,5 @@ app.listen(PORT, () => {
   console.log(`🚀 NeuraPlay Bridge Service running on port ${PORT}`);
   console.log(`📡 Ably connection: ${ABLY_API_KEY ? 'configured' : 'missing'}`);
   console.log(`🎤 ElevenLabs API: ${ELEVENLABS_API_KEY ? 'configured' : 'missing'}`);
-}); 
+  console.log(`🎤 AssemblyAI API: ${ASSEMBLYAI_API_KEY ? 'configured' : 'missing'}`);
+});

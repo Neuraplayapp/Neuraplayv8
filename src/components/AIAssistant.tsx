@@ -111,6 +111,7 @@ const AIAssistant: React.FC = () => {
     
     // NEW: Single mode state instead of multiple booleans
     const [mode, setMode] = useState<AssistantMode>('idle');
+    const modeRef = useRef<AssistantMode>('idle'); // Add ref to track current mode
     
     // Voice recording states (simplified)
     const [isPlasmaPressed, setIsPlasmaPressed] = useState(false);
@@ -295,6 +296,11 @@ const AIAssistant: React.FC = () => {
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, []);
 
+    // Update ref whenever mode changes
+    useEffect(() => {
+        modeRef.current = mode;
+    }, [mode]);
+
     // Conversation service event handlers
     useEffect(() => {
         const service = conversationService.current;
@@ -325,11 +331,58 @@ const AIAssistant: React.FC = () => {
                     timestamp: new Date() 
                 };
                 addMessageToConversation(activeConversation, aiMessage);
+                
+                // Generate TTS if needed
+                if (data.needsTTS) {
+                    console.log('🎤 Generating TTS for response...');
+                    generateAndPlayTTS(data.text, data.voiceId || '8LVfoRdkh4zgjr8v5ObE');
+                }
             }
             
-            // Handle audio if present
-            if (data.audio) {
-                console.log('🔊 Processing audio response, length:', data.audio.length);
+            // Handle different types of audio responses
+            if (data.type === 'audio_chunk') {
+                console.log(`🔊 Processing audio chunk ${data.chunkIndex + 1}/${data.totalChunks}`);
+                // Store audio chunks for later assembly
+                if (!(window as any).audioChunks) (window as any).audioChunks = [];
+                (window as any).audioChunks.push(data.audio);
+                
+            } else if (data.type === 'audio_complete') {
+                console.log('🔊 Audio complete, assembling chunks...');
+                if ((window as any).audioChunks && (window as any).audioChunks.length > 0) {
+                    const completeAudio = (window as any).audioChunks.join('');
+                    (window as any).audioChunks = []; // Clear for next response
+                    
+                    try {
+                        const audioBlob = new Blob(
+                            [Uint8Array.from(atob(completeAudio), c => c.charCodeAt(0))], 
+                            { type: 'audio/mpeg' }
+                        );
+                        console.log('🔊 Complete audio blob created, size:', audioBlob.size);
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        
+                        audio.onloadstart = () => console.log('🔊 Audio loading started');
+                        audio.oncanplay = () => console.log('🔊 Audio can play');
+                        audio.onplay = () => console.log('🔊 Audio playback started');
+                        audio.onended = () => {
+                            console.log('🔊 Audio playback ended');
+                            URL.revokeObjectURL(audioUrl);
+                        };
+                        audio.onerror = (e) => console.error('🔊 Audio error:', e);
+                        
+                        audio.play().then(() => {
+                            console.log('🔊 Audio play() succeeded');
+                        }).catch(error => {
+                            console.error('❌ Failed to play audio:', error);
+                        });
+                    } catch (error) {
+                        console.error('❌ Error processing complete audio:', error);
+                    }
+                }
+                
+            } else if (data.audio) {
+                // Handle single audio response (non-streaming)
+                console.log('🔊 Processing single audio response, length:', data.audio.length);
                 try {
                     const audioBlob = new Blob(
                         [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], 
@@ -337,13 +390,15 @@ const AIAssistant: React.FC = () => {
                     );
                     console.log('🔊 Audio blob created, size:', audioBlob.size);
                     const audioUrl = URL.createObjectURL(audioBlob);
-                    console.log('🔊 Audio URL created:', audioUrl);
                     const audio = new Audio(audioUrl);
                     
                     audio.onloadstart = () => console.log('🔊 Audio loading started');
                     audio.oncanplay = () => console.log('🔊 Audio can play');
                     audio.onplay = () => console.log('🔊 Audio playback started');
-                    audio.onended = () => console.log('🔊 Audio playback ended');
+                    audio.onended = () => {
+                        console.log('🔊 Audio playback ended');
+                        URL.revokeObjectURL(audioUrl);
+                    };
                     audio.onerror = (e) => console.error('🔊 Audio error:', e);
                     
                     audio.play().then(() => {
@@ -1036,11 +1091,8 @@ Need help with anything specific? Just ask! 🌟`;
             // Start the conversation
             console.log('🔄 Setting mode to conversing...');
             setMode('conversing');
-            console.log('✅ Mode set to conversing');
+            modeRef.current = 'conversing'; // Set ref immediately
             
-            // Add a small delay to let React state update
-            await new Promise(resolve => setTimeout(resolve, 50));
-            console.log('🔍 Mode after state update delay:', mode);
             addMessageToConversation(activeConversation, { 
                 text: "Starting conversation mode... 🎤", 
                 isUser: false, 
@@ -1053,7 +1105,7 @@ Need help with anything specific? Just ask! 🌟`;
                 await conversationService.current.initialize();
                 console.log('✅ Ably initialized successfully');
                 
-                // Start conversation with ElevenLabs via bridge service
+                // Start conversation with ElevenLabs
                 console.log('🎯 Starting conversation with ElevenLabs...');
                 console.log('🎯 Agent ID:', getAgentId());
                 console.log('🎯 Voice ID:', getVoiceId());
@@ -1063,6 +1115,15 @@ Need help with anything specific? Just ask! 🌟`;
                     voiceId: getVoiceId()
                 });
                 console.log('✅ ElevenLabs conversation started successfully');
+                
+                // Ensure mode is set to conversing before proceeding
+                setMode('conversing');
+                modeRef.current = 'conversing';
+                
+                // Small delay to ensure mode transition is complete
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                console.log('✅ Mode confirmed as conversing:', modeRef.current);
                 
                 // Start local audio recording for streaming
                 console.log('🎤 Requesting microphone access...');
@@ -1088,26 +1149,25 @@ Need help with anything specific? Just ask! 🌟`;
                 mediaRecorder.ondataavailable = async (event) => {
                     console.log(`🔊 Audio data available: ${event.data.size} bytes`);
                     
-                    // Debug each condition separately - BUT CHECK ACTUAL CONVERSATION STATE NOT MODE
+                    // Check if we're still in conversation mode and have an active conversation
                     const hasData = event.data.size > 0;
                     const isConnected = conversationService.current.connected;
                     const hasActiveConversation = conversationService.current.hasActiveConversation;
-                    const isConversing = mode === 'conversing';
+                    const currentMode = modeRef.current; // Use ref instead of state
                     
                     console.log(`🔍 Condition check:`, {
                         hasData,
                         isConnected,
-                        isConversing,
+                        currentMode,
                         hasActiveConversation,
-                        currentMode: mode,
                         mediaRecorderState: mediaRecorder.state,
                         conversationServiceStatus: conversationService.current ? 'exists' : 'null'
                     });
                     
-                    // TRY USING hasActiveConversation INSTEAD OF MODE CHECK
-                    if (hasData && isConnected && hasActiveConversation) {
+                    // Only process audio if we're in conversing mode and have an active conversation
+                    if (hasData && isConnected && hasActiveConversation && currentMode === 'conversing') {
                         try {
-                            // Convert audio chunk and send to ElevenLabs via Ably
+                            // Convert audio chunk and send to Ably
                             const buffer = await event.data.arrayBuffer();
                             console.log(`📤 Sending audio buffer: ${buffer.byteLength} bytes`);
                             await conversationService.current.sendAudio(buffer);
@@ -1119,10 +1179,9 @@ Need help with anything specific? Just ask! 🌟`;
                         console.log('⚠️ Skipping audio send - conditions not met:', {
                             hasData,
                             isConnected,
-                            isConversing,
+                            currentMode,
                             hasActiveConversation,
-                            currentMode: mode,
-                            reason: !hasData ? 'no data' : !isConnected ? 'not connected' : !hasActiveConversation ? 'no active conversation' : 'unknown'
+                            reason: !hasData ? 'no data' : !isConnected ? 'not connected' : currentMode !== 'conversing' ? 'not in conversing mode' : !hasActiveConversation ? 'no active conversation' : 'unknown'
                         });
                     }
                 };
@@ -1138,17 +1197,20 @@ Need help with anything specific? Just ask! 🌟`;
                 // Start recording in small chunks
                 console.log('▶️ Starting MediaRecorder...');
                 console.log('▶️ Current mode before start:', mode);
+                console.log('▶️ Mode ref before start:', modeRef.current);
                 console.log('▶️ MediaRecorder state before start:', mediaRecorder.state);
                 
                 mediaRecorder.start(500);
                 console.log('🎵 Recording started with 500ms chunks');
                 console.log('🎵 MediaRecorder state after start:', mediaRecorder.state);
                 console.log('🎵 Current mode after start:', mode);
+                console.log('🎵 Mode ref after start:', modeRef.current);
                 
                 // Final verification
                 console.log('🎉 CONVERSATION SETUP COMPLETE!');
                 console.log('🎉 Final status check:', {
                     mode: mode,
+                    modeRef: modeRef.current,
                     mediaRecorderState: mediaRecorder.state,
                     streamActive: stream.active,
                     conversationServiceConnected: conversationService.current.connected,
@@ -1754,12 +1816,27 @@ This two-step process is mandatory. Do not deviate.`;
                 throw new Error(result.error);
             }
             
+            // Handle different response formats
             if (result.image_url) {
                 return result.image_url;
             }
             
             if (result.url) {
                 return result.url;
+            }
+            
+            // Handle base64 data URL format
+            if (result.data && result.contentType) {
+                // Convert base64 to data URL
+                const dataUrl = `data:${result.contentType};base64,${result.data}`;
+                return dataUrl;
+            }
+            
+            // Handle direct base64 data
+            if (result.data && typeof result.data === 'string' && result.data.startsWith('/9j/')) {
+                // This is a base64 JPEG image
+                const dataUrl = `data:image/jpeg;base64,${result.data}`;
+                return dataUrl;
             }
             
             console.warn('Unexpected image generation response format:', result);
@@ -1858,6 +1935,95 @@ This two-step process is mandatory. Do not deviate.`;
             setIsReadingLastMessage(true);
             await playVoice(lastAIMessage.text);
             setIsReadingLastMessage(false);
+        }
+    };
+
+    // Test function to verify all services are working
+    const testServices = async () => {
+        try {
+            console.log('🧪 Testing all services...');
+            
+            // Test Ably
+            console.log('🔗 Testing Ably connection...');
+            await conversationService.current.initialize();
+            console.log('✅ Ably connection successful');
+            
+            // Test ElevenLabs
+            console.log('🎤 Testing ElevenLabs API...');
+            const ttsResponse = await fetch('/.netlify/functions/test-elevenlabs');
+            const ttsResult = await ttsResponse.json();
+            console.log('✅ ElevenLabs test result:', ttsResult);
+            
+            // Test AssemblyAI
+            console.log('🎙️ Testing AssemblyAI...');
+            const sttResponse = await fetch('/.netlify/functions/assemblyai-transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audio_base64: 'dGVzdA==' }) // "test" in base64
+            });
+            console.log('✅ AssemblyAI test completed, status:', sttResponse.status);
+            
+            console.log('🎉 All services are working!');
+            return true;
+        } catch (error) {
+            console.error('❌ Service test failed:', error);
+            return false;
+        }
+    };
+
+    // Generate and play TTS for text
+    const generateAndPlayTTS = async (text: string, voiceId: string = '8LVfoRdkh4zgjr8v5ObE') => {
+        try {
+            console.log('🎤 Generating TTS for:', text.substring(0, 50) + '...');
+            
+            const response = await fetch('/.netlify/functions/elevenlabs-streaming-tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: text,
+                    voiceId: voiceId,
+                    modelId: 'eleven_turbo_v2_5'
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('TTS API error:', response.status, errorText);
+                throw new Error(`Failed to generate audio: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.audio_base64) {
+                try {
+                    const audioBlob = new Blob(
+                        [Uint8Array.from(atob(result.audio_base64), c => c.charCodeAt(0))], 
+                        { type: 'audio/mpeg' }
+                    );
+                    console.log('🔊 TTS audio blob created, size:', audioBlob.size);
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    
+                    audio.onloadstart = () => console.log('🔊 TTS audio loading started');
+                    audio.oncanplay = () => console.log('🔊 TTS audio can play');
+                    audio.onplay = () => console.log('🔊 TTS audio playback started');
+                    audio.onended = () => {
+                        console.log('🔊 TTS audio playback ended');
+                        URL.revokeObjectURL(audioUrl);
+                    };
+                    audio.onerror = (e) => console.error('🔊 TTS audio error:', e);
+                    
+                    await audio.play();
+                    console.log('🔊 TTS audio play() succeeded');
+                } catch (error) {
+                    console.error('❌ Error playing TTS audio:', error);
+                }
+            }
+
+        } catch (error) {
+            console.error('❌ Error generating TTS:', error);
         }
     };
 

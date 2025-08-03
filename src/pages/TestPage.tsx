@@ -9,7 +9,6 @@ import CardReveal from '../components/CardReveal';
 import SequentialVideoScrubber from '../components/SequentialVideoScrubber';
 import PlasmaBall from '../components/PlasmaBall';
 
-import ElevenLabsAIAssistant from '../components/ElevenLabsAIAssistant';
 import AIAssistant from '../components/AIAssistant';
 import AIGame from '../components/AIGame';
 import AITeachingAssistantCard from '../components/AITeachingAssistantCard';
@@ -560,7 +559,6 @@ const TestPage: React.FC = () => {
                  <h3 className="text-xl font-bold text-white mb-4">AI & Assistant Components</h3>
                  <ul className="text-white/70 space-y-2 text-left">
                    
-                   <li>• ElevenLabsAIAssistant</li>
                    <li>• AIAssistant</li>
                    <li>• AIGame</li>
                    <li>• AITeachingAssistantCard</li>

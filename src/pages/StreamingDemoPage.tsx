@@ -1,5 +1,5 @@
 import React from 'react';
-import StreamingConversationAssistant from '../components/StreamingConversationAssistant';
+// import StreamingConversationAssistant from '../components/legacy/StreamingConversationAssistant';
 
 const StreamingDemoPage: React.FC = () => {
   return (
@@ -54,7 +54,7 @@ const StreamingDemoPage: React.FC = () => {
       </div>
 
       {/* The streaming conversation assistant */}
-      <StreamingConversationAssistant />
+      {/* <StreamingConversationAssistant /> */}
     </div>
   );
 };

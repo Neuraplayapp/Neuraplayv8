@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Netlify functions for Neuraplay AI platform",
   "main": "index.js",
-  "type": "module",
   "dependencies": {
     "ws": "^8.16.0",
-    "ably": "^1.2.29"
+    "ably": "^1.2.29",
+    "node-fetch": "^2.6.7"
   },
   "devDependencies": {},
   "scripts": {

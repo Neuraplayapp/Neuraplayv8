@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: neuraplay-ai-platform
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run render
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_ABLY_API_KEY
+        sync: false
+      - key: VITE_ELEVENLABS_API_KEY
+        sync: false
+      - key: VITE_ASSEMBLYAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true 

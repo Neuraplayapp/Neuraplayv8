@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bot, X, Send, Volume2, VolumeX, Mic, MicOff, Settings, Play, Pause } from 'lucide-react';
-import './AIAssistant.css';
-import { StreamingConversationService, ConversationEvent, StreamingConversationConfig } from '../services/StreamingConversationService';
+import '../AIAssistant.css';
+import { StreamingConversationService, ConversationEvent, StreamingConversationConfig } from '../../services/legacy/StreamingConversationService';
 
 interface Message {
     text: string;

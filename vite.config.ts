@@ -68,6 +68,11 @@ export default defineConfig({
   publicDir: 'public',
   build: {
     rollupOptions: {
+      // Exclude legacy folders from the build
+      external: [
+        'src/components/legacy/**',
+        'src/services/legacy/**'
+      ],
       output: {
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.wasm')) {

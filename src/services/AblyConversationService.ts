@@ -1,7 +1,7 @@
 import Ably from 'ably';
 
 export interface ConversationMessage {
-  type: 'init_conversation' | 'user_message' | 'user_audio_chunk' | 'ai_response' | 'audio_chunk' | 'status' | 'error' | 'conversation_initiation_metadata';
+  type: 'init_conversation' | 'user_message' | 'user_audio_chunk' | 'ai_response' | 'audio_chunk' | 'status' | 'error';
   data: any;
   timestamp: number;
   clientId?: string;
@@ -10,18 +10,6 @@ export interface ConversationMessage {
 export interface ElevenLabsConfig {
   agentId: string;
   voiceId: string;
-  // 2025 updates: Add dynamic variables and conversation config
-  dynamicVariables?: Record<string, any>;
-  conversationConfig?: {
-    agent?: {
-      prompt?: string;
-      firstMessage?: string;
-      language?: string;
-    };
-    tts?: {
-      voiceId?: string;
-    };
-  };
 }
 
 export class AblyConversationService {
@@ -31,7 +19,6 @@ export class AblyConversationService {
   private isConnected: boolean = false;
   private conversationId: string = '';
   private eventListeners: Map<string, ((data: any) => void)[]> = new Map();
-  private bridgeServiceUrl: string = import.meta.env.VITE_BRIDGE_SERVICE_URL || 'https://neuraplay-bridge-service.fly.dev';
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
 
@@ -159,69 +146,20 @@ export class AblyConversationService {
     }
 
     try {
-      // Enhanced 2025 conversation payload
-      const conversationPayload = {
-        type: "conversation_initiation_client_data",
-        conversation_config_override: config.conversationConfig || {
-          agent: {
-            prompt: "You are a helpful AI assistant.",
-            first_message: "Hi! How can I help you today?",
-            language: "en"
-          },
-          tts: {
-            voice_id: config.voiceId
-          }
-        },
-        dynamic_variables: config.dynamicVariables || {},
-        // 2025 standard: Include metadata for better conversation tracking
-        conversation_metadata: {
-          user_agent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
-          platform: "web"
-        }
-      };
-
-      // Start conversation on bridge service with enhanced payload
-      const response = await fetch(`${this.bridgeServiceUrl}/conversation/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          conversationId: this.conversationId || undefined,
-          elevenlabsConfig: conversationPayload // Pass full 2025 config
-        })
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(`Bridge service not available. The conversation mode requires the bridge service to be deployed. Regular voice recording and text chat still work perfectly!`);
-        }
-        throw new Error(`Failed to start conversation: ${response.statusText}`);
-      }
-
-      const { conversationId } = await response.json();
-      this.conversationId = conversationId;
+      // Generate a unique conversation ID
+      this.conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Set up Ably channel for this conversation
-      this.channel = this.ably.channels.get(`conversation:${conversationId}`);
+      this.channel = this.ably.channels.get(`conversation:${this.conversationId}`);
       
       // Set up event listeners
       this.setupChannelListeners();
       
-      // Initialize the ElevenLabs connection via bridge with 2025 standards
-      await this.channel.publish('init_conversation', conversationPayload);
+      // Initialize the conversation with ElevenLabs config
+      await this.channel.publish('init_conversation', config);
       
-      console.log(`🎤 Started conversation: ${conversationId}`);
-      
-      // 2025 Fix: Emit proper conversation ready state immediately
-      setTimeout(() => {
-        this.emit('conversation_ready', { 
-          conversationId: this.conversationId,
-          status: 'ready',
-          type: 'connected'
-        });
-      }, 100);
-      
-      return conversationId;
+      console.log(`🎤 Started conversation: ${this.conversationId}`);
+      return this.conversationId;
       
     } catch (error: any) {
       console.error('❌ Failed to start conversation:', error);
@@ -232,86 +170,64 @@ export class AblyConversationService {
   private setupChannelListeners(): void {
     if (!this.channel) return;
 
-    // Listen for conversation initiation metadata (2025 standard)
-    this.channel.subscribe('conversation_initiation_metadata', (message: any) => {
-      console.log('📥 Received conversation initiation metadata:', message.data);
-      this.emit('conversation_initiation_metadata', message.data);
-      
-      // 2025 Fix: This is the key event that should trigger 'conversing' mode
-      this.emit('status', { 
-        type: 'connected', 
-        conversationId: this.conversationId,
-        metadata: message.data
-      });
-    });
-
     // Listen for AI responses
     this.channel.subscribe('ai_response', (message: any) => {
       console.log('📥 Received AI response:', message.data);
       this.emit('ai_response', message.data);
     });
 
-    // Enhanced status handling for 2025
+    // Listen for status updates
     this.channel.subscribe('status', (message: any) => {
       console.log('📊 Status update:', message.data);
       this.emit('status', message.data);
       
-      // 2025 Fix: Handle different connection states properly
-      if (message.data.type === 'connected' || message.data.type === 'conversation_ready') {
-        console.log('🎯 Conversation ready with ElevenLabs');
-        this.emit('conversation_ready', { 
-          conversationId: this.conversationId,
-          status: message.data.type,
-          data: message.data
-        });
+      if (message.data.type === 'connected') {
+        this.emit('conversation_ready', { conversationId: this.conversationId });
       }
     });
 
-    // Listen for user transcripts (2025 addition)
-    this.channel.subscribe('user_transcript', (message: any) => {
-      console.log('📝 User transcript:', message.data);
-      this.emit('user_transcript', message.data);
-    });
-
-    // Listen for agent responses (2025 distinction from ai_response)
-    this.channel.subscribe('agent_response', (message: any) => {
-      console.log('🤖 Agent response:', message.data);
-      this.emit('agent_response', message.data);
-    });
-
-    // Listen for audio chunks (enhanced for 2025)
-    this.channel.subscribe('audio', (message: any) => {
-      console.log('🔊 Audio response received');
-      this.emit('audio_response', message.data);
-    });
-
-    // Listen for interruptions (2025 addition)
-    this.channel.subscribe('interruption', (message: any) => {
-      console.log('⚡ Conversation interrupted:', message.data);
-      this.emit('interruption', message.data);
-    });
-
-    // Listen for VAD (Voice Activity Detection) scores (2025 addition)
-    this.channel.subscribe('vad_score', (message: any) => {
-      console.log('🎙️ VAD Score:', message.data);
-      this.emit('vad_score', message.data);
-    });
-
-    // Enhanced error handling
+    // Listen for errors
     this.channel.subscribe('error', (message: any) => {
-      console.error('❌ Bridge error:', message.data);
+      console.error('❌ Ably error:', message.data);
       this.emit('error', message.data);
     });
 
-    // Listen for ping/pong to maintain connection (2025 standard)
-    this.channel.subscribe('ping', (message: any) => {
-      console.log('🏓 Ping received');
-      // Auto-respond with pong
-      this.channel.publish('pong', { 
-        event_id: message.data.event_id,
+    // Listen for conversation initialization
+    this.channel.subscribe('init_conversation', (message: any) => {
+      console.log('🎯 Conversation initialized:', message.data);
+      this.handleConversationInit(message.data);
+    });
+  }
+
+  private async handleConversationInit(config: ElevenLabsConfig): Promise<void> {
+    try {
+      console.log('🎤 Handling conversation initialization with config:', config);
+      
+      // Send initial greeting
+      const greeting = "🌟 Hi! I'm Synapse, your AI learning assistant! How can I help you today?";
+      
+      // Send text response immediately
+      this.channel.publish('ai_response', {
+        type: 'text_response',
+        text: greeting,
         timestamp: Date.now()
       });
-    });
+      
+      // Generate TTS for greeting
+      await this.generateAndSendTTS(greeting, config.voiceId);
+      
+      // Notify frontend that connection is ready
+      this.channel.publish('status', {
+        type: 'connected',
+        conversationId: this.conversationId
+      });
+      
+      console.log('✅ Conversation initialization complete');
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize conversation:', error);
+      this.emit('error', { error: 'Failed to initialize conversation' });
+    }
   }
 
   async sendMessage(text: string): Promise<void> {
@@ -320,6 +236,7 @@ export class AblyConversationService {
     }
 
     try {
+      // Send message to Ably channel
       await this.channel.publish('user_message', {
         text,
         timestamp: Date.now()
@@ -328,9 +245,107 @@ export class AblyConversationService {
       console.log('📤 Sent message:', text);
       this.emit('message_sent', { text });
       
+      // Process the message and generate response
+      await this.processMessageAndRespond(text);
+      
     } catch (error: any) {
       console.error('❌ Failed to send message:', error);
       throw error;
+    }
+  }
+
+  private async processMessageAndRespond(text: string): Promise<void> {
+    try {
+      // Send to AI API for processing
+      const response = await fetch('/.netlify/functions/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_type: 'chat',
+          input_data: {
+            messages: [
+              { role: 'system', content: 'You are Synapse, a friendly AI learning assistant for children. Keep responses concise and engaging.' },
+              { role: 'user', content: text }
+            ]
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const aiResponse = this.parseAPIResponse(result);
+      
+      // Send AI response via Ably
+      await this.channel.publish('ai_response', {
+        type: 'text_response',
+        text: aiResponse,
+        timestamp: Date.now()
+      });
+      
+      // Generate TTS for the response
+      await this.generateAndSendTTS(aiResponse, '8LVfoRdkh4zgjr8v5ObE');
+      
+    } catch (error) {
+      console.error('Error processing message:', error);
+      this.emit('error', { error: 'Failed to process message' });
+    }
+  }
+
+  private parseAPIResponse(result: any): string {
+    try {
+      if (Array.isArray(result)) {
+        if (result.length > 0) {
+          const firstItem = result[0];
+          if (typeof firstItem === 'string') {
+            return firstItem;
+          }
+          if (firstItem && typeof firstItem === 'object') {
+            return firstItem.generated_text || firstItem.text || firstItem.response || firstItem.message || 'I received an unexpected response format.';
+          }
+        }
+        return 'I received an unexpected response format.';
+      }
+      
+      if (result && typeof result === 'object') {
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        return result.response || result.text || result.message || result.generated_text || 'I received an unexpected response format.';
+      }
+      
+      if (typeof result === 'string') {
+        return result;
+      }
+      
+      return 'I received an unexpected response format.';
+    } catch (error) {
+      console.error('Error parsing API response:', error);
+      return 'I received an unexpected response format.';
+    }
+  }
+
+  private async generateAndSendTTS(text: string, voiceId: string): Promise<void> {
+    try {
+      console.log(`🎤 Generating TTS for: ${text.substring(0, 50)}...`);
+      
+      // Don't send audio via Ably (size limit issue)
+      // Instead, send text response and let frontend handle TTS
+      this.channel.publish('ai_response', {
+        type: 'text_response',
+        text: text,
+        timestamp: Date.now(),
+        needsTTS: true, // Flag for frontend to generate TTS
+        voiceId: voiceId
+      });
+      
+      console.log(`✅ Text response sent for: ${this.conversationId}`);
+      
+    } catch (error) {
+      console.error('Error generating TTS:', error);
+      this.emit('error', { error: 'Failed to generate TTS' });
     }
   }
 
@@ -340,25 +355,98 @@ export class AblyConversationService {
     }
 
     try {
-      // 2025 Standard: Convert ArrayBuffer to base64 for transmission
+      // Convert ArrayBuffer to base64 for transmission
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioData)));
       
-      // Enhanced payload for 2025 ElevenLabs format
-      const audioPayload = {
-        user_audio_chunk: base64Audio, // 2025 standard field name
-        timestamp: Date.now(),
-        audio_format: "pcm_16000", // Standard format for 2025
-        chunk_size: audioData.byteLength
-      };
+      // Send audio chunk to Ably channel for processing
+      await this.channel.publish('user_audio_chunk', {
+        audio: base64Audio,
+        timestamp: Date.now()
+      });
       
-      await this.channel.publish('user_audio_chunk', audioPayload);
-      
-      console.log(`🔊 Audio data available: ${audioData.byteLength} bytes`);
+      console.log('🎵 Sent audio chunk via Ably');
       this.emit('audio_sent', { size: audioData.byteLength });
+      
+      // Process the audio immediately (since we're not using a bridge service)
+      await this.processAudioChunk(base64Audio);
       
     } catch (error: any) {
       console.error('❌ Failed to send audio:', error);
       throw error;
+    }
+  }
+
+  private async processAudioChunk(audioBase64: string): Promise<void> {
+    try {
+      // Send to AssemblyAI for transcription
+      const response = await fetch('/.netlify/functions/assemblyai-transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audio: audioBase64 // Correct parameter name
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Transcription failed:', response.status, errorText);
+        throw new Error(`Transcription failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const transcribedText = result.text;
+
+      if (transcribedText && transcribedText.trim()) {
+        console.log('🎤 Transcribed text:', transcribedText);
+        
+        // Process the transcribed text with direct API call
+        await this.processMessageWithDirectAPI(transcribedText);
+      }
+
+    } catch (error) {
+      console.error('Error processing audio chunk:', error);
+      this.emit('error', { error: 'Failed to process audio' });
+    }
+  }
+
+  private async processMessageWithDirectAPI(text: string): Promise<void> {
+    try {
+      // Send to AI API for processing (direct call, no Ably)
+      const response = await fetch('/.netlify/functions/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_type: 'chat',
+          input_data: {
+            messages: [
+              { role: 'system', content: 'You are Synapse, a friendly AI learning assistant for children. Keep responses concise and engaging.' },
+              { role: 'user', content: text }
+            ]
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const aiResponse = this.parseAPIResponse(result);
+      
+      // Send AI response via Ably (text only)
+      await this.channel.publish('ai_response', {
+        type: 'text_response',
+        text: aiResponse,
+        timestamp: Date.now(),
+        needsTTS: true,
+        voiceId: '8LVfoRdkh4zgjr8v5ObE'
+      });
+      
+    } catch (error) {
+      console.error('Error processing message:', error);
+      this.emit('error', { error: 'Failed to process message' });
     }
   }
 
@@ -369,21 +457,12 @@ export class AblyConversationService {
     }
 
     try {
-      // Notify bridge service to end conversation
+      // Notify channel to end conversation
       if (this.channel) {
         await this.channel.publish('end_conversation', {
           conversationId: this.conversationId,
           timestamp: Date.now()
         });
-      }
-
-      // End conversation on bridge service (gracefully handle if service is down)
-      try {
-        await fetch(`${this.bridgeServiceUrl}/conversation/${this.conversationId}`, {
-          method: 'DELETE'
-        });
-      } catch (error) {
-        console.log('🔌 Bridge service unavailable for cleanup, continuing with local cleanup');
       }
 
       // Clean up local state
@@ -452,4 +531,4 @@ export class AblyConversationService {
   get hasActiveConversation(): boolean {
     return !!this.conversationId && !!this.channel;
   }
-} 
+}
