@@ -1016,30 +1016,47 @@ Need help with anything specific? Just ask! 🌟`;
                 });
                 
                 // Start local audio recording for streaming
+                console.log('🎤 Requesting microphone access...');
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('✅ Microphone access granted');
                 streamRef.current = stream;
                 
                 const mediaRecorder = new MediaRecorder(stream, {
                     mimeType: 'audio/webm;codecs=opus'
                 });
+                console.log('🎙️ MediaRecorder created');
                 
                 // Store reference for cleanup
                 mediaRecorderRef.current = mediaRecorder;
                 
                 mediaRecorder.ondataavailable = async (event) => {
+                    console.log(`🔊 Audio data available: ${event.data.size} bytes`);
                     if (event.data.size > 0 && conversationService.current.connected && mode === 'conversing') {
                         try {
                             // Convert audio chunk and send to ElevenLabs via Ably
                             const buffer = await event.data.arrayBuffer();
+                            console.log(`📤 Sending audio buffer: ${buffer.byteLength} bytes`);
                             await conversationService.current.sendAudio(buffer);
                         } catch (error) {
                             console.error('Error sending audio chunk:', error);
                         }
+                    } else {
+                        console.log('⚠️ Skipping audio send - conditions not met');
                     }
                 };
                 
+                mediaRecorder.onstart = () => {
+                    console.log('🟢 MediaRecorder started successfully');
+                };
+                
+                mediaRecorder.onerror = (event) => {
+                    console.error('❌ MediaRecorder error:', event);
+                };
+                
                 // Start recording in small chunks
+                console.log('▶️ Starting MediaRecorder...');
                 mediaRecorder.start(500);
+                console.log('🎵 Recording started with 500ms chunks');
                 
                 addMessageToConversation(activeConversation, { 
                     text: "Conversation mode active! Speak anytime to chat with me. 🎤", 
