@@ -1013,6 +1013,10 @@ Need help with anything specific? Just ask! 🌟`;
             console.log('🔄 Setting mode to conversing...');
             setMode('conversing');
             console.log('✅ Mode set to conversing');
+            
+            // Add a small delay to let React state update
+            await new Promise(resolve => setTimeout(resolve, 50));
+            console.log('🔍 Mode after state update delay:', mode);
             addMessageToConversation(activeConversation, { 
                 text: "Starting conversation mode... 🎤", 
                 isUser: false, 
@@ -1060,21 +1064,24 @@ Need help with anything specific? Just ask! 🌟`;
                 mediaRecorder.ondataavailable = async (event) => {
                     console.log(`🔊 Audio data available: ${event.data.size} bytes`);
                     
-                    // Debug each condition separately
+                    // Debug each condition separately - BUT CHECK ACTUAL CONVERSATION STATE NOT MODE
                     const hasData = event.data.size > 0;
                     const isConnected = conversationService.current.connected;
+                    const hasActiveConversation = conversationService.current.hasActiveConversation;
                     const isConversing = mode === 'conversing';
                     
                     console.log(`🔍 Condition check:`, {
                         hasData,
                         isConnected,
                         isConversing,
+                        hasActiveConversation,
                         currentMode: mode,
                         mediaRecorderState: mediaRecorder.state,
                         conversationServiceStatus: conversationService.current ? 'exists' : 'null'
                     });
                     
-                    if (hasData && isConnected && isConversing) {
+                    // TRY USING hasActiveConversation INSTEAD OF MODE CHECK
+                    if (hasData && isConnected && hasActiveConversation) {
                         try {
                             // Convert audio chunk and send to ElevenLabs via Ably
                             const buffer = await event.data.arrayBuffer();
@@ -1089,8 +1096,9 @@ Need help with anything specific? Just ask! 🌟`;
                             hasData,
                             isConnected,
                             isConversing,
+                            hasActiveConversation,
                             currentMode: mode,
-                            reason: !hasData ? 'no data' : !isConnected ? 'not connected' : !isConversing ? 'not conversing' : 'unknown'
+                            reason: !hasData ? 'no data' : !isConnected ? 'not connected' : !hasActiveConversation ? 'no active conversation' : 'unknown'
                         });
                     }
                 };
