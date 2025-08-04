@@ -1,13 +1,9 @@
-import express from 'express';
-import path from 'path';
-import { WebSocketServer } from 'ws';
-import http from 'http';
-import fetch from 'node-fetch';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const express = require('express');
+const path = require('path');
+const { WebSocketServer } = require('ws');
+const http = require('http');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -32,7 +28,9 @@ app.use((req, res, next) => {
 // API Routes to replace Netlify Functions
 
 // AssemblyAI Transcription Helper Function
-async function transcribeWithAssemblyAI(audioBuffer, apiKey) {
+async function transcribeWithAssemblyAI(audioBuffer, apiKey, language_code = 'auto', speech_model = 'universal') {
+  console.log('Transcribing with language:', language_code, 'model:', speech_model);
+  
   // Upload to AssemblyAI
   const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
     method: 'POST',
@@ -44,10 +42,34 @@ async function transcribeWithAssemblyAI(audioBuffer, apiKey) {
   });
 
   if (!uploadResponse.ok) {
-    throw new Error('Failed to upload audio to AssemblyAI');
+    const errorText = await uploadResponse.text();
+    console.error('AssemblyAI Upload Error:', errorText);
+    throw new Error(`Failed to upload audio to AssemblyAI: ${uploadResponse.status} - ${errorText}`);
   }
 
   const { upload_url } = await uploadResponse.json();
+  console.log('Audio uploaded successfully to:', upload_url);
+
+  // Prepare transcription config
+  const transcriptionConfig = {
+    audio_url: upload_url,
+    punctuate: true,
+    format_text: true
+  };
+
+  // Handle language detection vs specific language
+  if (language_code === 'auto') {
+    transcriptionConfig.language_detection = true;
+  } else {
+    transcriptionConfig.language_code = language_code;
+  }
+
+  // Add speech model if supported
+  if (speech_model && ['universal', 'nano'].includes(speech_model)) {
+    transcriptionConfig.speech_model = speech_model;
+  }
+
+  console.log('Transcription config:', transcriptionConfig);
 
   // Start transcription
   const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
@@ -56,10 +78,7 @@ async function transcribeWithAssemblyAI(audioBuffer, apiKey) {
       'Authorization': apiKey,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      audio_url: upload_url,
-      language_code: 'en'
-    })
+    body: JSON.stringify(transcriptionConfig)
   });
 
   if (!transcriptResponse.ok) {
@@ -103,7 +122,13 @@ async function transcribeWithAssemblyAI(audioBuffer, apiKey) {
     throw new Error('Transcription timeout');
   }
   
-  return { text: transcript.text || '', id: transcript.id };
+  return { 
+    text: transcript.text || '', 
+    id: transcript.id,
+    language_code: transcript.language_code,
+    confidence: transcript.confidence,
+    audio_duration: transcript.audio_duration
+  };
 }
 
 // AssemblyAI Transcription - Netlify endpoint
@@ -138,13 +163,19 @@ app.post('/.netlify/functions/assemblyai-transcribe', async (req, res) => {
 app.post('/api/assemblyai-transcribe', async (req, res) => {
   try {
     console.log('🎤 AssemblyAI transcription request received via /api');
-    const { audio } = req.body;
+    const { audio, audioType, language_code, speech_model } = req.body;
     
     if (!audio) {
       return res.status(400).json({ error: 'No audio data provided' });
     }
 
-    const ASSEMBLYAI_API_KEY = process.env.VITE_ASSEMBLYAI_API_KEY || process.env.ASSEMBLYAI_API_KEY;
+    console.log('Audio type received:', audioType);
+    console.log('Language code:', language_code);
+    console.log('Speech model:', speech_model);
+
+    const ASSEMBLYAI_API_KEY = process.env.VITE_ASSEMBLYAI_API_KEY || 
+                               process.env.ASSEMBLYAI_API_KEY || 
+                               process.env.ASSEMBLY_API_KEY;
     
     if (!ASSEMBLYAI_API_KEY) {
       return res.status(500).json({ error: 'AssemblyAI API key not configured' });
@@ -152,8 +183,9 @@ app.post('/api/assemblyai-transcribe', async (req, res) => {
 
     // Convert base64 to buffer
     const audioBuffer = Buffer.from(audio, 'base64');
+    console.log('Audio buffer size:', audioBuffer.length);
     
-    const result = await transcribeWithAssemblyAI(audioBuffer, ASSEMBLYAI_API_KEY);
+    const result = await transcribeWithAssemblyAI(audioBuffer, ASSEMBLYAI_API_KEY, language_code, speech_model);
     res.json(result);
     
   } catch (error) {
@@ -534,10 +566,11 @@ app.post('/api/api', async (req, res) => {
     console.log('HF token exists:', !!HF_TOKEN);
     console.log('Together token length:', TOGETHER_TOKEN ? TOGETHER_TOKEN.length : 0);
 
-    // Handle different task types - RESTORE ORIGINAL LOGIC
+    // Handle different task types - Fixed for Express
     switch (task_type) {
       case 'test':
-        return await handleTestGeneration(TOGETHER_TOKEN);
+        const testResult = await handleTestGeneration(TOGETHER_TOKEN);
+        return res.status(testResult.statusCode).json(JSON.parse(testResult.body));
       case 'summarization':
       case 'text':
       case 'chat':
@@ -545,13 +578,16 @@ app.post('/api/api', async (req, res) => {
       case 'story':
       case 'report':
         console.log(`Processing ${task_type} request`);
-        return await handleTextGeneration(input_data, TOGETHER_TOKEN);
+        const textResult = await handleTextGeneration(input_data, TOGETHER_TOKEN);
+        return res.status(textResult.statusCode).json(JSON.parse(textResult.body));
       
       case 'image':
-        return await handleImageGeneration(input_data, TOGETHER_TOKEN);
+        const imageResult = await handleImageGeneration(input_data, TOGETHER_TOKEN);
+        return res.status(imageResult.statusCode).json(JSON.parse(imageResult.body));
       
       case 'voice':
-        return await handleVoiceGeneration(input_data, HF_TOKEN);
+        const voiceResult = await handleVoiceGeneration(input_data, HF_TOKEN);
+        return res.status(voiceResult.statusCode).json(JSON.parse(voiceResult.body));
       
       default:
         return res.status(400).json({ 
@@ -628,15 +664,29 @@ async function handleTextGeneration(input_data, token) {
 
     const assistantResponse = result.choices?.[0]?.message?.content || "I'm here to help with your learning journey!";
 
-    // Return the response in ORIGINAL format
-    return res.json([{ 
-      generated_text: assistantResponse
-    }]);
+    // Return the response in proper format for Express
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([{ 
+        generated_text: assistantResponse
+      }])
+    };
   } catch (error) {
     console.error('Text generation error:', error);
-    return res.json([{ 
-      generated_text: "I'm here to help with your learning journey! Please try again in a moment. 🌟" 
-    }]);
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([{ 
+        generated_text: "I'm here to help with your learning journey! Please try again in a moment. 🌟" 
+      }])
+    };
   }
 }
 
@@ -648,73 +698,175 @@ async function handleImageGeneration(input_data, token) {
   
   if (!token) {
     console.log('No token provided, returning placeholder');
-    return res.json({
-      data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-      contentType: 'image/png',
-      error: 'No API token configured'
-    });
-  }
-
-  try {
-    // Use ORIGINAL FLUX schnell model
-    console.log('Using model: black-forest-labs/FLUX.1-schnell-Free');
-    
-    const response = await fetch('https://api.together.xyz/v1/images/generations', {
-      method: 'POST',
+    return {
+      statusCode: 200,
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'black-forest-labs/FLUX.1-schnell-Free',
-        prompt: prompt,
-        n: 1,
-        width: 512,
-        height: 512,
-        steps: 4,
-        response_format: 'b64_json'
+        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        contentType: 'image/png',
+        error: 'No API token configured'
       })
-    });
+    };
+  }
 
-    console.log('FLUX response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('FLUX error:', errorText);
-      throw new Error(`FLUX failed: ${response.status} - ${errorText}`);
+  try {
+    // Enhance the prompt for better results
+    let enhancedPrompt = prompt;
+    if (enhancedPrompt && !enhancedPrompt.includes('high quality') && !enhancedPrompt.includes('detailed')) {
+      enhancedPrompt = `${enhancedPrompt}, high quality, detailed, 4k`;
     }
 
-    const result = await response.json();
-    console.log('FLUX response received');
+    console.log('Image generation prompt:', enhancedPrompt);
 
-    if (result.data && result.data[0] && result.data[0].b64_json) {
-      const base64 = result.data[0].b64_json;
-      console.log('Base64 image length:', base64.length);
+    // Try multiple models for better reliability, with faster models first
+    const models = [
+      'black-forest-labs/FLUX.1-schnell-Free',
+      'stability-ai/stable-diffusion-xl-base-1.0',
+      'runwayml/stable-diffusion-v1-5'
+    ];
 
-      return res.json({
-        data: base64,
-        contentType: 'image/png'
-      });
-    } else {
-      console.error('Unexpected FLUX response format:', result);
-      throw new Error('Unexpected response format');
+    let lastError = null;
+    
+    for (const model of models) {
+      try {
+        console.log(`Trying model: ${model}`);
+        
+        // Use different parameters for faster models
+        const isFastModel = model.includes('schnell') || model.includes('flux');
+        const steps = isFastModel ? 4 : 20;
+        
+        const response = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: model,
+            prompt: enhancedPrompt,
+            n: 1,
+            width: 512,
+            height: 512,
+            steps: steps,
+            response_format: 'b64_json'
+          })
+        });
+
+        console.log(`Model ${model} response status:`, response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Model ${model} error:`, errorText);
+          lastError = new Error(`Model ${model} failed: ${response.status} - ${errorText}`);
+          continue; // Try next model
+        }
+
+        const result = await response.json();
+        console.log(`Model ${model} response received`);
+
+        if (result.data && result.data[0] && result.data[0].b64_json) {
+          const base64 = result.data[0].b64_json;
+          console.log('Base64 image length:', base64.length);
+
+          return {
+            statusCode: 200,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: base64,
+              contentType: 'image/png'
+            })
+          };
+        } else {
+          console.error(`Model ${model} unexpected response format:`, result);
+          lastError = new Error(`Model ${model} unexpected response format`);
+          continue; // Try next model
+        }
+      } catch (error) {
+        console.error(`Model ${model} failed:`, error);
+        lastError = error;
+        continue; // Try next model
+      }
     }
+
+    // If all models failed, throw the last error
+    throw lastError || new Error('All image generation models failed');
   } catch (error) {
     console.error('Image generation error:', error);
-    return res.json({
-      data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-      contentType: 'image/png',
-      error: error.message,
-      fallback: true
-    });
+    
+    // Generate a simple fallback image
+    const fallbackImage = generateFallbackImage(prompt);
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        data: fallbackImage,
+        contentType: 'image/png',
+        error: error.message,
+        fallback: true
+      })
+    };
   }
+}
+
+// Generate a simple fallback image
+function generateFallbackImage(prompt) {
+  // Create a simple SVG that we'll convert to base64
+  const svg = `
+    <svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" fill="url(#grad)"/>
+      <circle cx="256" cy="256" r="150" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="4"/>
+      <text x="256" y="280" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle">${prompt.substring(0, 20)}</text>
+    </svg>
+  `;
+  
+  // Convert SVG to base64
+  const base64 = Buffer.from(svg).toString('base64');
+  return base64;
+}
+
+async function handleVoiceGeneration(input_data, token) {
+  console.log('Voice generation not implemented yet, returning placeholder');
+  return {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ 
+      audio_base64: '', // Placeholder
+      message: 'Voice generation not implemented yet'
+    })
+  };
 }
 
 async function handleTestGeneration(token) {
   if (!token) {
-    return res.json({ 
-      error: 'No Together AI token configured'
-    });
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        error: 'No Together AI token configured'
+      })
+    };
   }
 
   try {
@@ -738,16 +890,30 @@ async function handleTestGeneration(token) {
     }
 
     const result = await response.json();
-    return res.json({ 
-      success: true,
-      message: 'Together AI test successful',
-      response: result
-    });
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        success: true,
+        message: 'Together AI test successful',
+        response: result
+      })
+    };
   } catch (error) {
     console.error('Test error:', error);
-    return res.json({ 
-      error: `Test failed: ${error.message}`
-    });
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        error: `Test failed: ${error.message}`
+      })
+    };
   }
 }
 
@@ -897,7 +1063,7 @@ server.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${port}`);
   console.log(`🌐 Static files served from: ${path.join(__dirname, 'dist')}`);
   console.log(`🔗 WebSocket server ready on ws://0.0.0.0:${port}`);
-  console.log(`🔗 API endpoints available at http://0.0.0.0:${port}/.netlify/functions/`);
+  console.log(`🔗 API endpoints available at http://0.0.0.0:${port}/api/`);
   console.log(`🔗 Server bound to 0.0.0.0:${port} (Render requirement)`);
 });
 
