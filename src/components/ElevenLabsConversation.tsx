@@ -8,13 +8,15 @@ interface ElevenLabsConversationProps {
   onError?: (error: any) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  selectedLanguage?: string;
 }
 
 export const ElevenLabsConversation: React.FC<ElevenLabsConversationProps> = ({
   onMessage,
   onError,
   onConnect,
-  onDisconnect
+  onDisconnect,
+  selectedLanguage = 'english'
 }) => {
   const conversation = useConversation({
     onConnect: () => {
@@ -59,8 +61,15 @@ export const ElevenLabsConversation: React.FC<ElevenLabsConversationProps> = ({
       console.log('🎤 Microphone permission granted');
       
       // Start the conversation with your agent
+      // Note: Language configuration would typically be handled in the agent setup
+      // For now, we log the selected language for debugging
+      console.log('🌐 Selected language:', selectedLanguage);
+      
       await conversation.startSession({
-        agentId: agentId
+        agentId: agentId,
+        connectionType: 'websocket',
+        // Add any language-specific configuration here if supported by ElevenLabs
+        // This depends on your agent configuration in ElevenLabs  
       });
       
       console.log('✅ ElevenLabs conversation started successfully');

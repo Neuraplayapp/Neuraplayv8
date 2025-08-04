@@ -1,9 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Send, Mic, MicOff } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAIAgent } from '../contexts/AIAgentContext';
-import { useUser } from '../contexts/UserContext';
 import { ElevenLabsConversation } from './ElevenLabsConversation';
 import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
@@ -21,14 +17,10 @@ interface Conversation {
     timestamp: Date;
 }
 
-type AssistantMode = 'idle' | 'conversing' | 'single_recording';
-
 const AIAssistant: React.FC = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { theme } = useTheme();
-    const { agent } = useAIAgent();
-    const { user } = useUser();
+    // Modal state for the floating interface
+    const [isOpen, setIsOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Conversations state
     const [conversations, setConversations] = useState<Record<string, Conversation>>({
@@ -39,14 +31,88 @@ const AIAssistant: React.FC = () => {
             timestamp: new Date()
         }
     });
-    const [activeConversation, setActiveConversation] = useState('default');
+    const activeConversation = 'default';
     
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [mode, setMode] = useState<AssistantMode>('idle');
     
     // ElevenLabs conversation state (this is now our main conversation mode)
     const [useElevenLabs, setUseElevenLabs] = useState(false);
+
+    // Tab state for fullscreen mode
+    const [activeTab, setActiveTab] = useState<'chat' | 'voice' | 'tools' | 'settings'>('chat');
+
+    // Language state
+    const [selectedLanguage, setSelectedLanguage] = useState('english');
+
+    // Mute state for voice responses
+    const [isMuted, setIsMuted] = useState(false);
+    
+    // Complete language support (40+ languages as per AssemblyAI integration)
+    const languages = [
+        // Primary High-Accuracy Languages
+        { code: 'english', name: 'English', flag: '🇺🇸' },
+        { code: 'spanish', name: 'Español', flag: '🇪🇸' },
+        { code: 'french', name: 'Français', flag: '🇫🇷' },
+        { code: 'german', name: 'Deutsch', flag: '🇩🇪' },
+        { code: 'italian', name: 'Italiano', flag: '🇮🇹' },
+        { code: 'portuguese', name: 'Português', flag: '🇵🇹' },
+        { code: 'russian', name: 'Русский', flag: '🇷🇺' },
+        { code: 'japanese', name: '日本語', flag: '🇯🇵' },
+        { code: 'chinese', name: '中文', flag: '🇨🇳' },
+        { code: 'korean', name: '한국어', flag: '🇰🇷' },
+        
+        // European Languages
+        { code: 'dutch', name: 'Nederlands', flag: '🇳🇱' },
+        { code: 'polish', name: 'Polski', flag: '🇵🇱' },
+        { code: 'swedish', name: 'Svenska', flag: '🇸🇪' },
+        { code: 'norwegian', name: 'Norsk', flag: '🇳🇴' },
+        { code: 'danish', name: 'Dansk', flag: '🇩🇰' },
+        { code: 'finnish', name: 'Suomi', flag: '🇫🇮' },
+        { code: 'czech', name: 'Čeština', flag: '🇨🇿' },
+        { code: 'hungarian', name: 'Magyar', flag: '🇭🇺' },
+        { code: 'romanian', name: 'Română', flag: '🇷🇴' },
+        { code: 'bulgarian', name: 'Български', flag: '🇧🇬' },
+        { code: 'croatian', name: 'Hrvatski', flag: '🇭🇷' },
+        { code: 'slovak', name: 'Slovenčina', flag: '🇸🇰' },
+        { code: 'ukrainian', name: 'Українська', flag: '🇺🇦' },
+        { code: 'greek', name: 'Ελληνικά', flag: '🇬🇷' },
+        
+        // Middle East & Africa
+        { code: 'arabic', name: 'العربية', flag: '🇸🇦' },
+        { code: 'turkish', name: 'Türkçe', flag: '🇹🇷' },
+        { code: 'hebrew', name: 'עברית', flag: '🇮🇱' },
+        
+        // Central Asia
+        { code: 'kazakh', name: 'Қазақша', flag: '🇰🇿' },
+        { code: 'uzbek', name: 'Oʻzbekcha', flag: '🇺🇿' },
+        { code: 'tajik', name: 'Тоҷикӣ', flag: '🇹🇯' },
+        { code: 'azerbaijani', name: 'Azərbaycan', flag: '🇦🇿' },
+        
+        // South & Southeast Asia
+        { code: 'hindi', name: 'हिन्दी', flag: '🇮🇳' },
+        { code: 'urdu', name: 'اردو', flag: '🇵🇰' },
+        { code: 'thai', name: 'ไทย', flag: '🇹🇭' },
+        { code: 'vietnamese', name: 'Tiếng Việt', flag: '🇻🇳' },
+        { code: 'indonesian', name: 'Bahasa Indonesia', flag: '🇮🇩' },
+        { code: 'malay', name: 'Bahasa Melayu', flag: '🇲🇾' },
+        { code: 'filipino', name: 'Filipino', flag: '🇵🇭' },
+        
+        // Other Languages  
+        { code: 'catalan', name: 'Català', flag: '🇪🇸' },
+        { code: 'galician', name: 'Galego', flag: '🇪🇸' },
+        { code: 'basque', name: 'Euskera', flag: '🇪🇸' },
+        { code: 'estonian', name: 'Eesti', flag: '🇪🇪' },
+        { code: 'latvian', name: 'Latviešu', flag: '🇱🇻' },
+        { code: 'lithuanian', name: 'Lietuvių', flag: '🇱🇹' },
+        { code: 'slovenian', name: 'Slovenščina', flag: '🇸🇮' },
+        { code: 'macedonian', name: 'Македонски', flag: '🇲🇰' },
+        { code: 'bosnian', name: 'Bosanski', flag: '🇧🇦' },
+        { code: 'cantonese', name: '粵語', flag: '🇭🇰' },
+
+        // Auto-detection
+        { code: 'auto', name: '🌐 Auto-Detect', flag: '🌍' }
+    ];
     
     // Voice recording states
     const [isRecording, setIsRecording] = useState(false);
@@ -113,6 +179,43 @@ const AIAssistant: React.FC = () => {
         setUseElevenLabs(false);
     };
 
+    // Modal control functions
+    const toggleModal = () => {
+        setIsOpen(!isOpen);
+    };
+
+    const closeModal = () => {
+        setIsOpen(false);
+        setIsFullscreen(false);
+    };
+
+    const toggleFullscreen = () => {
+        setIsFullscreen(!isFullscreen);
+    };
+
+    // Mute/Unmute function for voice responses
+    const toggleMute = () => {
+        setIsMuted(!isMuted);
+        if (!isMuted) {
+            // If we're muting, stop any current ElevenLabs conversation
+            if (useElevenLabs) {
+                setUseElevenLabs(false);
+                addMessageToConversation(activeConversation, { 
+                    text: "🔇 Voice responses muted. ElevenLabs conversation ended.",
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
+            }
+        } else {
+            // If we're unmuting, we can trigger ElevenLabs if desired
+            addMessageToConversation(activeConversation, { 
+                text: "🔊 Voice responses unmuted. You can now use ElevenLabs voice chat!",
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        }
+    };
+
     // Voice recording functions (restored original functionality)
     const startVoiceRecording = async () => {
         try {
@@ -150,7 +253,10 @@ const AIAssistant: React.FC = () => {
                         const transcriptionResult = await fetch('/.netlify/functions/assemblyai-transcribe', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ audio: base64Audio })
+                            body: JSON.stringify({ 
+                                audio: base64Audio,
+                                language: selectedLanguage // Pass the selected language to transcription
+                            })
                         });
                         
                         if (transcriptionResult.ok) {
@@ -328,99 +434,369 @@ const AIAssistant: React.FC = () => {
     };
 
     return (
-        <div className="ai-assistant-container">
-            <div className="chat-area">
-                {/* ElevenLabs Conversation Mode Indicator */}
-                {useElevenLabs && (
-                    <div className="mx-4 mb-2 p-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-400/30 rounded-lg">
-                        <div className="flex items-center gap-2 text-purple-300 text-sm">
-                            <PlasmaBall size={24} className="animate-pulse" />
-                            <div className="flex flex-col">
-                                <span className="font-semibold">🎯 ElevenLabs Conversation Mode Active</span>
-                                <span className="text-xs opacity-80">Real-time voice conversation with official ElevenLabs AI</span>
+        <>
+            {/* Floating Plasma Ball Trigger Button */}
+            <div 
+                className="fixed bottom-6 right-6 z-50 cursor-pointer group"
+                onClick={toggleModal}
+                title="Open AI Assistant"
+            >
+                <div className="relative">
+                    <PlasmaBall 
+                        size={56}
+                        className="transition-transform group-hover:scale-110"
+                        intensity={useElevenLabs ? 1.5 : 0.8}
+                    />
+                    {useElevenLabs && <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>}
+                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-white/70 whitespace-nowrap">
+                        💬 AI Chat
+                    </div>
                 </div>
-                            <div className="flex gap-1">
-                                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+
+            {/* Glasomorphic Modal Interface */}
+            <div 
+                id="ai-teacher-menu" 
+                className={`${isOpen ? 'open' : ''} ${isFullscreen ? 'fullscreen' : ''}`}
+            >
+                <div className="inner">
+                    {/* Header - Different styles for fullscreen vs normal */}
+                    {isFullscreen ? (
+                        <div className="ai-fullscreen-header">
+                            <div className="ai-fullscreen-title">
+                                <PlasmaBall size={32} className="animate-pulse" />
+                                <span>AI Assistant</span>
                             </div>
+                            <div className="ai-plasma-central">
+                                <div className={`plasma-fullscreen-container ${useElevenLabs ? 'conversation-active' : ''}`}>
+                                    <PlasmaBall size={120} intensity={useElevenLabs ? 2.0 : 1.2} />
+                                    {/* Smoke-like pulsation effects around the ball */}
+                                    {useElevenLabs && (
+                                        <>
+                                            <div className="plasma-smoke smoke-ring-1"></div>
+                                            <div className="plasma-smoke smoke-ring-2"></div>
+                                            <div className="plasma-smoke smoke-ring-3"></div>
+                                            <div className="plasma-smoke smoke-ring-4"></div>
+                                            <div className="plasma-smoke smoke-ring-5"></div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="ai-fullscreen-controls">
+                                {/* Language Selector for Fullscreen */}
+                                <select
+                                    value={selectedLanguage}
+                                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                                    className="ai-fullscreen-button"
+                                    title="Select Language"
+                                    style={{ minWidth: '140px' }}
+                                >
+                                    {languages.map(lang => (
+                                        <option key={lang.code} value={lang.code}>
+                                            {lang.flag} {lang.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {/* Mute/Unmute Button for Fullscreen */}
+                                <button 
+                                    className={`ai-fullscreen-button ${isMuted ? 'muted' : ''}`}
+                                    onClick={toggleMute}
+                                    title={isMuted ? 'Unmute Voice Responses' : 'Mute Voice Responses'}
+                                    style={{ color: isMuted ? '#ef4444' : 'inherit' }}
+                                >
+                                    {isMuted ? '🔇 Muted' : '🔊 Voice'}
+                                </button>
+                                <button 
+                                    className="ai-fullscreen-button"
+                                    onClick={toggleFullscreen}
+                                    title="Exit Fullscreen"
+                                >
+                                    ⤡ Exit Fullscreen
+                                </button>
+                                <button 
+                                    className="ai-fullscreen-button"
+                                    onClick={closeModal}
+                                    title="Close"
+                                >
+                                    ✕ Close
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="ai-header">
+                            <div className="ai-header-title">
+                                <PlasmaBall size={28} className="animate-pulse" />
+                                <span>AI Assistant</span>
+                            </div>
+                            <div className="ai-header-controls">
+                                {/* Language Selector */}
+                                <select
+                                    value={selectedLanguage}
+                                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                                    className="ai-language-selector"
+                                    title="Select Language"
+                                >
+                                    {languages.map(lang => (
+                                        <option key={lang.code} value={lang.code}>
+                                            {lang.flag} {lang.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {/* Mute/Unmute Button for Small Mode */}
+                                <button 
+                                    className={`ai-control-btn ${isMuted ? 'muted' : ''}`}
+                                    onClick={toggleMute}
+                                    title={isMuted ? 'Unmute Voice Responses' : 'Mute Voice Responses'}
+                                    style={{ color: isMuted ? '#ef4444' : 'inherit' }}
+                                >
+                                    {isMuted ? '🔇' : '🔊'}
+                                </button>
+                                <button 
+                                    className="ai-control-btn"
+                                    onClick={toggleFullscreen}
+                                    title="Fullscreen"
+                                >
+                                    ⤢
+                                </button>
+                                <button 
+                                    className="ai-control-btn"
+                                    onClick={closeModal}
+                                    title="Close"
+                                >
+                                    ✕
+                                </button>
                             </div>
                         </div>
                     )}
 
-                {/* Messages */}
-                <div className="messages-container">
-                    {conversations[activeConversation]?.messages.map((message, index) => (
-                        <div key={index} className={`message ${message.isUser ? 'user' : 'assistant'}`}>
-                            <div className="message-content">
-                                {message.text}
-                                    </div>
-                            <div className="message-timestamp">
-                                {message.timestamp.toLocaleTimeString()}
-                                </div>
+                    {/* Tabs (only show in fullscreen mode) */}
+                    {isFullscreen && (
+                        <div className="ai-context-tabs">
+                            <button 
+                                className={`ai-context-tab ${activeTab === 'chat' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('chat')}
+                            >
+                                💬 Chat
+                            </button>
+                            <button 
+                                className={`ai-context-tab ${activeTab === 'voice' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('voice')}
+                            >
+                                🎤 Voice
+                            </button>
+                            <button 
+                                className={`ai-context-tab ${activeTab === 'tools' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('tools')}
+                            >
+                                🛠️ Tools
+                            </button>
+                            <button 
+                                className={`ai-context-tab ${activeTab === 'settings' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('settings')}
+                            >
+                                ⚙️ Settings
+                            </button>
                         </div>
-                    ))}
-                        {isLoading && (
-                        <div className="message assistant">
-                            <div className="message-content">
-                                <div className="typing-indicator">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
+                    )}
+
+                    {/* Chat Area - Show different content based on active tab */}
+                    <div className="ai-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        
+                        {/* Tab Content */}
+                        {isFullscreen && activeTab === 'voice' && (
+                            <div className="tab-content-voice p-6 text-center">
+                                <h3 className="text-xl font-bold mb-4">🎤 Voice Mode</h3>
+                                <p className="text-sm opacity-80 mb-6">Advanced voice controls and conversation settings</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-white/5 rounded-lg">
+                                        <h4 className="font-semibold mb-2">🗣️ ElevenLabs</h4>
+                                        <p className="text-xs opacity-70">Real-time AI conversation</p>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-lg">
+                                        <h4 className="font-semibold mb-2">🎧 Voice Recording</h4>
+                                        <p className="text-xs opacity-70">Traditional voice messages</p>
                                     </div>
                                 </div>
                             </div>
                         )}
-                    </div>
-
-                {/* Input */}
-                <div className="p-4">
-                    <div className="flex items-center gap-2">
-                            <input 
-                                type="text"
-                                value={inputMessage}
-                                onChange={(e) => setInputMessage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
-                            placeholder="Type your message..."
-                            className="flex-1 p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-purple-400"
-                            disabled={isLoading}
-                        />
                         
-                        {/* Send Button */}
-                            <button
-                                onClick={handleSendText}
-                            disabled={isLoading || !inputMessage.trim()}
-                            className="p-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg transition-all"
-                            >
-                                <Send size={16} />
-                            </button>
-                            
-                        {/* Enhanced Plasma Ball with ElevenLabs Conversation Mode */}
-                        <div className={`plasma-ball-conversation-container ${useElevenLabs ? 'active streaming' : ''}`}>
-                            <div className="relative">
-                                <ElevenLabsConversation
-                                    onMessage={handleElevenLabsMessage}
-                                    onError={handleElevenLabsError}
-                                    onConnect={handleElevenLabsConnect}
-                                    onDisconnect={handleElevenLabsDisconnect}
-                                />
+                        {isFullscreen && activeTab === 'tools' && (
+                            <div className="tab-content-tools p-6 text-center">
+                                <h3 className="text-xl font-bold mb-4">🛠️ Tools & Features</h3>
+                                <p className="text-sm opacity-80 mb-6">AI capabilities and utilities</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-white/5 rounded-lg">
+                                        <h4 className="font-semibold mb-2">🎨 Image Generation</h4>
+                                        <p className="text-xs opacity-70">Create images with AI</p>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-lg">
+                                        <h4 className="font-semibold mb-2">💬 Text Analysis</h4>
+                                        <p className="text-xs opacity-70">Advanced text processing</p>
+                                    </div>
+                                </div>
                             </div>
+                        )}
+                        
+                        {isFullscreen && activeTab === 'settings' && (
+                            <div className="tab-content-settings p-6">
+                                <h3 className="text-xl font-bold mb-4">⚙️ Settings</h3>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-white/5 rounded-lg">
+                                        <h4 className="font-semibold mb-2">🌐 Language Settings</h4>
+                                        <p className="text-sm opacity-80 mb-3">Current: {languages.find(lang => lang.code === selectedLanguage)?.flag} {languages.find(lang => lang.code === selectedLanguage)?.name}</p>
+                                        <select
+                                            value={selectedLanguage}
+                                            onChange={(e) => setSelectedLanguage(e.target.value)}
+                                            className="w-full p-2 bg-white/10 rounded-lg border border-white/20"
+                                        >
+                                            {languages.map(lang => (
+                                                <option key={lang.code} value={lang.code}>
+                                                    {lang.flag} {lang.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-lg">
+                                        <h4 className="font-semibold mb-2">🔊 Audio Settings</h4>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={!isMuted}
+                                                onChange={toggleMute}
+                                                className="rounded"
+                                            />
+                                            <span>Enable voice responses</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            {/* Voice Recording Button */}
-                            <button
-                            onClick={toggleVoiceRecording}
-                            className={`ai-mode-button flex-1 ${isRecording ? 'recording' : ''}`}
-                            title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
-                            disabled={isLoading}
-                        >
-                            {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
-                            <span>{isRecording ? 'Stop' : 'Record'}</span>
-                            </button>
+                        )}
+                        {/* Enhanced ElevenLabs Conversation Mode Indicator */}
+                        {useElevenLabs && !isFullscreen && (
+                            <div className="conversation-mode-indicator">
+                                <PlasmaBall size={24} className="animate-pulse" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold">🎯 ElevenLabs Conversation Mode Active</span>
+                                    <span className="text-xs opacity-80">Real-time voice conversation with official ElevenLabs AI</span>
+                                </div>
+                                {/* Animated Waveform for non-fullscreen */}
+                                <div className={`conversation-waveform ${useElevenLabs ? 'active' : ''}`}>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                    <div className="waveform-bar"></div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Fullscreen conversation status */}
+                        {useElevenLabs && isFullscreen && (
+                            <div className="fullscreen-conversation-status">
+                                <div className="status-text">
+                                    <h3 className="text-xl font-bold text-center mb-2">🎯 Live AI Conversation</h3>
+                                    <p className="text-center opacity-80">Speak naturally - the AI is listening and will respond with voice</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Messages */}
+                        <div className="messages-container" style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
+                            {conversations[activeConversation]?.messages.map((message, index) => (
+                                <div key={index} className={`message ${message.isUser ? 'user' : 'assistant'}`}>
+                                    <div className="message-content">
+                                        {message.text}
+                                    </div>
+                                    <div className="message-timestamp">
+                                        {message.timestamp.toLocaleTimeString()}
+                                    </div>
+                                </div>
+                            ))}
+                            {isLoading && (
+                                <div className="message assistant">
+                                    <div className="message-content">
+                                        <div className="typing-indicator">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
+
+                        {/* Input Area */}
+                        <div className="p-4 border-t border-white/10">
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="text"
+                                    value={inputMessage}
+                                    onChange={(e) => setInputMessage(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
+                                    placeholder="Type your message..."
+                                    className="flex-1 p-3 ai-input-field rounded-lg"
+                                    disabled={isLoading}
+                                />
+                                
+                                {/* Send Button */}
+                                <button
+                                    onClick={handleSendText}
+                                    disabled={isLoading || !inputMessage.trim()}
+                                    className="p-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg transition-all"
+                                >
+                                    <Send size={16} />
+                                </button>
+                                
+                                {/* ElevenLabs Conversation Button */}
+                                <div className={`plasma-ball-conversation-container ${useElevenLabs ? 'active streaming' : ''} ${isMuted ? 'muted' : ''}`}>
+                                    {!isMuted ? (
+                                        <ElevenLabsConversation
+                                            onMessage={handleElevenLabsMessage}
+                                            onError={handleElevenLabsError}
+                                            onConnect={handleElevenLabsConnect}
+                                            onDisconnect={handleElevenLabsDisconnect}
+                                            selectedLanguage={selectedLanguage}
+                                        />
+                                    ) : (
+                                        <div 
+                                            className="plasma-ball-muted"
+                                            onClick={() => {
+                                                addMessageToConversation(activeConversation, { 
+                                                    text: "🔇 Voice responses are muted. Click the mute button in the header to enable voice chat.",
+                                                    isUser: false, 
+                                                    timestamp: new Date() 
+                                                });
+                                            }}
+                                            title="Voice responses are muted"
+                                        >
+                                            <PlasmaBall 
+                                                size={36}
+                                                className="muted-plasma-ball"
+                                                intensity={0.2}
+                                            />
+                                            <span className="plasma-label text-red-400">🔇 Muted</span>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Voice Recording Button */}
+                                <button
+                                    onClick={toggleVoiceRecording}
+                                    className={`ai-mode-button ${isRecording ? 'recording' : ''}`}
+                                    title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
+                                    disabled={isLoading}
+                                >
+                                    {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+                                </button>
                             </div>
+                        </div>
                     </div>
                 </div>
+            </div>
+        </>
     );
 };
 
