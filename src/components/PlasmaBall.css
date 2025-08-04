@@ -1,25 +1,22 @@
 .plasma-ball-container {
   position: relative;
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   user-select: none;
   transition: all 0.3s ease;
   background: transparent;
-  border: 3px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 0 20px rgba(255, 255, 255, 0.6),
-    0 0 40px rgba(255, 255, 255, 0.3),
-    inset 0 0 10px rgba(255, 255, 255, 0.1);
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
+
+
 
 .plasma-ball-container:hover {
   transform: scale(1.05);
-  border: 3px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 
-    0 0 30px rgba(255, 255, 255, 0.8),
-    0 0 60px rgba(255, 255, 255, 0.4),
-    inset 0 0 15px rgba(255, 255, 255, 0.2);
+  border: none !important;
+  outline: none !important;
 }
 
 .plasma-ball-container canvas {
@@ -29,6 +26,8 @@
   border-radius: 50%;
   pointer-events: none;
   background: transparent;
+  border: none !important;
+  outline: none !important;
 }
 
 /* Bottom left positioning */
@@ -54,16 +53,22 @@
   }
 }
 
-/* Animation for the glow effect - removed box-shadow animation */
+
+
+/* Enhanced glow effect animation */
 @keyframes plasmaGlow {
   0%, 100% {
-    /* Removed box-shadow to eliminate outline */
+    box-shadow: 
+      0 0 20px rgba(139, 92, 246, 0.6),
+      0 0 40px rgba(139, 92, 246, 0.3),
+      0 0 60px rgba(88, 28, 135, 0.4),
+      0 0 80px rgba(88, 28, 135, 0.2);
   }
   50% {
-    /* Removed box-shadow to eliminate outline */
+    box-shadow: 
+      0 0 30px rgba(139, 92, 246, 0.8),
+      0 0 60px rgba(139, 92, 246, 0.5),
+      0 0 90px rgba(88, 28, 135, 0.6),
+      0 0 120px rgba(88, 28, 135, 0.3);
   }
-}
-
-.plasma-ball-container {
-  /* Removed animation to eliminate outline effect */
 } 

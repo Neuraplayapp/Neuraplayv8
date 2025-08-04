@@ -93,7 +93,7 @@ const AIAssistant: React.FC = () => {
             title: 'Current Chat',
             messages: [
                 { 
-                    text: "🌟 Hi there! I'm Synapse, your friendly AI teacher! 🚀 I can help you with learning, games, navigation, settings, AI agent control, and accessibility needs. What would you like to explore today? 🎮✨", 
+                    text: "🌟 Hi there! I'm AI Assistant, your friendly AI teacher! 🚀 I can help you with learning, games, navigation, settings, AI agent control, and accessibility needs. What would you like to explore today? 🎮✨", 
                     isUser: false, 
                     timestamp: new Date() 
                 }
@@ -382,7 +382,7 @@ const AIAssistant: React.FC = () => {
             title: `Chat ${Object.keys(conversations).length}`,
             messages: [
                 { 
-                    text: "🌟 Hi there! I'm Synapse, your friendly AI teacher! 🚀 What would you like to explore today? 🎮✨", 
+                    text: "🌟 Hi there! I'm AI Assistant, your friendly AI teacher! 🚀 What would you like to explore today? 🎮✨", 
                     isUser: false, 
                     timestamp: new Date() 
                 }
@@ -2187,7 +2187,7 @@ Need help with anything specific? Just ask! 🌟`;
 
     // NEW: Get system prompt with comprehensive agency
     const getSystemPrompt = () => {
-        const basePrompt = `You are NeuraPlay's AI assistant with FULL AGENCY to help users. You can:
+        const basePrompt = `You are Neural AI, NeuraPlay's AI assistant with FULL AGENCY to help users. You can:
 
 🔧 PROACTIVE ASSISTANCE:
 - Ask follow-up questions to understand user needs
@@ -2231,7 +2231,7 @@ After classifying the intent, generate your response adhering to the following l
 This two-step process is mandatory. Do not deviate.`;
         
         const personalityPrompts = {
-            'synapse-normal': "You are friendly, helpful, and encouraging. Explain concepts clearly and celebrate small wins.",
+            'synapse-normal': "You are Neural AI, friendly, helpful, and encouraging. Explain concepts clearly and celebrate small wins.",
             'coach': "You are motivational and goal-oriented. Focus on progress, set achievable targets, and provide energizing encouragement.",
             'mentor': "You are wise and guiding. Share insights, ask thoughtful questions, and help users discover solutions themselves.",
             'friend': "You are supportive and casual. Use a relaxed, conversational tone and show genuine interest in the user's experience.",
@@ -2667,9 +2667,15 @@ This two-step process is mandatory. Do not deviate.`;
             {!isOpen && (
                 <div
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 cursor-pointer z-50 hover:scale-110 transition-all duration-300 bg-purple-500 text-white rounded-full p-4 shadow-lg hover:shadow-purple-500/50"
+                    className="fixed bottom-6 right-6 cursor-pointer z-50 hover:scale-110 transition-all duration-300 focus:outline-none"
+                    style={{ 
+                        border: 'none', 
+                        outline: 'none', 
+                        boxShadow: 'none',
+                        background: 'transparent'
+                    }}
                 >
-                    <Bot size={32} />
+                    <PlasmaBall size={64} />
                 </div>
             )}
 
@@ -2690,7 +2696,7 @@ This two-step process is mandatory. Do not deviate.`;
                     {isFullscreen && (
                         <div className="ai-fullscreen-header">
                             <div className="ai-fullscreen-title flex items-center gap-2">
-                                <span>Synapse - Fullscreen Mode</span>
+                                <span>AI Assistant - Fullscreen Mode</span>
                             </div>
                             <div className="ai-fullscreen-controls">
                                 <button
@@ -2765,8 +2771,8 @@ This two-step process is mandatory. Do not deviate.`;
                     {/* Regular Header - Only show when not in fullscreen */}
                     {!isFullscreen && (
                         <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
-                            <h3 className="font-bold text-white flex items-center gap-2">
-                                Synapse
+                            <h3 className="font-bold text-black flex items-center gap-2" style={{ color: 'black !important', zIndex: 9999 }}>
+                                Neural AI
                             </h3>
                             <div className="flex items-center gap-2">
                                 {/* Fullscreen Toggle */}
@@ -2849,7 +2855,9 @@ This two-step process is mandatory. Do not deviate.`;
                                 <div className={`max-w-[80%] ${msg.isUser ? 'ai-message-user' : 'ai-message-assistant'}`}>
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1">
-                                            <p className="text-sm leading-relaxed">{msg.text}</p>
+                                            <p className={`text-sm leading-relaxed ${msg.isUser ? 'text-white' : theme.isDarkMode ? 'text-white' : 'text-black'}`} style={{ zIndex: 9999, position: 'relative' }}>
+                                                {msg.text.replace(/Synapse/gi, 'Neural AI').replace(/synapse/gi, 'Neural AI')}
+                                            </p>
                                             {msg.image && (
                                                 <div className="mt-2">
                                                     <img 
@@ -2860,7 +2868,7 @@ This two-step process is mandatory. Do not deviate.`;
                                                     />
                                                 </div>
                                             )}
-                                            <p className={`text-xs mt-1 ${msg.isUser ? 'text-white/70' : 'text-gray-500'}`}>
+                                            <p className={`text-xs mt-1 ${msg.isUser ? 'text-white/70' : theme.isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
@@ -2888,7 +2896,7 @@ This two-step process is mandatory. Do not deviate.`;
                         {/* Child-friendly prompt suggestions */}
                         {currentMessages.length === 1 && !isLoading && (
                             <div className="space-y-2">
-                                <p className="text-amber-300 font-bold text-center text-lg">💡 Try asking me:</p>
+                                <p className={`font-bold text-center text-lg ${theme.isDarkMode ? 'text-amber-300' : 'text-black'}`}>💡 Try asking me:</p>
                                 <div className="grid grid-cols-1 gap-2">
                                     {childPrompts.slice(0, 5).map((prompt, index) => (
                                         <button
@@ -2898,7 +2906,7 @@ This two-step process is mandatory. Do not deviate.`;
                                                 setInputMessage(prompt);
                                                 setTimeout(() => handleSendText(), 100);
                                             }}
-                                            className="text-left p-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/30 rounded-xl hover:from-amber-500/30 hover:to-yellow-500/30 transition-all duration-200 text-amber-200 font-semibold text-sm"
+                                            className={`text-left p-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/30 rounded-xl hover:from-amber-500/30 hover:to-yellow-500/30 transition-all duration-200 font-semibold text-sm ${theme.isDarkMode ? 'text-amber-200' : 'text-black'}`}
                                         >
                                             {prompt}
                                         </button>
@@ -2916,7 +2924,7 @@ This two-step process is mandatory. Do not deviate.`;
                                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                         </div>
-                                        <span className="text-xs text-gray-600">Thinking...</span>
+                                        <span className="text-xs text-purple-600">Thinking...</span>
                                     </div>
                                 </div>
                             </div>
@@ -2966,7 +2974,7 @@ This two-step process is mandatory. Do not deviate.`;
                                 type="text"
                                 placeholder={
                                     mode === 'conversing' 
-                                        ? "Talk to Synapse in conversation mode! 🗣️" 
+                                        ? "Talk to AI Assistant in conversation mode! 🗣️" 
                                         : (!isDemoUser && promptCount >= 10)
                                             ? "Daily limit reached! 🎯" 
                                             : "Ask me anything, little explorer! 🚀"
@@ -2999,11 +3007,10 @@ This two-step process is mandatory. Do not deviate.`;
                                 title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
                             >
                                 <PlasmaBall 
-                                    size={36}
+                                    size={isFullscreen ? 72 : 36}
                                     className={`conversation-plasma-ball ${mode === 'conversing' ? 'active' : ''}`}
                                     intensity={mode === 'conversing' ? 1.0 : 0.3}
                                 />
-                                <span className="plasma-label">Chat</span>
                             </div>
                             
                             {/* Voice Recording Button */}
@@ -3021,9 +3028,8 @@ This two-step process is mandatory. Do not deviate.`;
                             <div className="text-center text-amber-400 text-xs mt-2 font-bold">🎯 You've used all your daily questions! Come back tomorrow for more fun! 🌟</div>
                         )}
 
-                        {mode === 'conversing' && (
-                            <div className="text-center text-blue-400 text-xs mt-2 font-bold animate-pulse">🎤 Streaming Conversation Active - Speak to Synapse! 🔊</div>
-                        )}
+
+                        
 
                     </div>
                 </div>

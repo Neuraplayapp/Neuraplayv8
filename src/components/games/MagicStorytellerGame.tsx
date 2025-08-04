@@ -715,18 +715,8 @@ Your response MUST be in JSON format with this exact structure:
 
   if (!avatarCreated) {
     return (
-      <GameModal
-        isOpen={true}
-        onClose={onClose || (() => window.history.back())}
-        title="Magic Storyteller"
-        subtitle="Create Your Character"
-        gameIcon={<Sparkles className="w-5 h-5" />}
-        showProgress={false}
-        showMusicControl={false}
-        maxWidth="max-w-2xl"
-        maxHeight="max-h-[90vh]"
-      >
-        <div className="p-6">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 p-4 md:p-12">
+        <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8 md:p-12 mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
               Create Your Hero
@@ -735,59 +725,42 @@ Your response MUST be in JSON format with this exact structure:
               Design your character for an epic magical adventure
             </p>
           </div>
-
           <AvatarCreationForm onCreateAvatar={createAvatar} isLoading={isLoading} />
         </div>
-      </GameModal>
+      </div>
     );
   }
 
   return (
-    <GameModal
-      isOpen={true}
-      onClose={onClose || (() => window.history.back())}
-      title="Magic Storyteller"
-      subtitle="Interactive Adventure"
-      gameIcon={<Sparkles className="w-5 h-5" />}
-      showProgress={true}
-      progressValue={(history.length / 8) * 100}
-      progressLabel="Story Progress"
-      showMusicControl={true}
-      isMusicPlaying={isMusicPlaying}
-      onToggleMusic={toggleMusic}
-      maxWidth="max-w-6xl"
-      maxHeight="max-h-[95vh]"
-    >
-      {/* Audio element for background music */}
-      <audio ref={audioRef} preload="auto" />
-      
-      {/* Game content optimized for modal */}
-      <div className="p-6 h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto h-full">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold text-purple-800 mb-2">
-              ✨ Magic Storyteller ✨
-            </h1>
-            <p className="text-purple-600 text-lg font-medium">
-              {playerAvatar.name}'s Epic Adventure
-            </p>
-          </div>
-          
-          {/* Loading overlay */}
-          {isLoading && gameState && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
-              <LoadingSpinner message="Crafting your next chapter..." />
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 p-4 md:p-12">
+      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl p-8 md:p-12 mx-auto relative">
+        {/* Audio element for background music */}
+        <audio ref={audioRef} preload="auto" />
+        <div className="p-6 h-full overflow-y-auto">
+          <div className="max-w-4xl mx-auto h-full">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h1 className="text-3xl md:text-4xl font-bold text-purple-800 mb-2">
+                ✨ Magic Storyteller ✨
+              </h1>
+              <p className="text-purple-600 text-lg font-medium">
+                {playerAvatar.name}'s Epic Adventure
+              </p>
             </div>
-          )}
-          
-          {/* Main content */}
-          <div className="relative">
-            {renderContent()}
+            {/* Loading overlay */}
+            {isLoading && gameState && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+                <LoadingSpinner message="Crafting your next chapter..." />
+              </div>
+            )}
+            {/* Main content */}
+            <div className="relative">
+              {renderContent()}
+            </div>
           </div>
         </div>
       </div>
-    </GameModal>
+    </div>
   );
 };
 

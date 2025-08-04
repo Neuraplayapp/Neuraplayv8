@@ -315,10 +315,28 @@
 
 /* Fullscreen Message Styling */
 #ai-teacher-menu.fullscreen .ai-message-assistant {
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.95);
   color: #111827;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--ai-light-border);
+  border-radius: 1.25rem 1.25rem 1.25rem 0.5rem;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  animation: messageSlideIn 0.3s ease-out;
+  backdrop-filter: blur(10px);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.dark #ai-teacher-menu.fullscreen .ai-message-assistant {
+  background: rgba(15, 15, 35, 0.9);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+#ai-teacher-menu.fullscreen .ai-message-assistant p {
+  color: inherit !important;
 }
 
 @keyframes messageSlideIn {
@@ -676,42 +694,35 @@
   padding: 0.5rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
-  border: 2px solid var(--ai-light-border);
+  border: 1px solid var(--ai-light-border);
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.1);
 }
 
 .plasma-ball-conversation-container:hover {
   transform: scale(1.05);
   border-color: rgba(139, 92, 246, 0.5);
   background: rgba(139, 92, 246, 0.08);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
 }
 
 .plasma-ball-conversation-container.active {
-  animation: pulse-glow 2s ease-in-out infinite;
   border-color: rgba(139, 92, 246, 0.7);
   background: rgba(139, 92, 246, 0.12);
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.4), 0 0 8px rgba(139, 92, 246, 0.6);
 }
 
 /* Dark Mode Plasma Ball */
 .dark .plasma-ball-conversation-container {
   background: rgba(0, 0, 0, 0.2);
   border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.15);
 }
 
 .dark .plasma-ball-conversation-container:hover {
   background: rgba(139, 92, 246, 0.15);
   border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .dark .plasma-ball-conversation-container.active {
   background: rgba(139, 92, 246, 0.2);
   border-color: rgba(139, 92, 246, 0.8);
-  box-shadow: 0 0 28px rgba(139, 92, 246, 0.5), 0 0 12px rgba(139, 92, 246, 0.7);
 }
 
 .conversation-plasma-ball {
@@ -722,7 +733,6 @@
 .conversation-plasma-ball.active {
   filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.8)) 
           drop-shadow(0 0 30px rgba(218, 138, 235, 0.6));
-  animation: plasma-pulse 1.5s ease-in-out infinite;
 }
 
 .plasma-label {
@@ -739,29 +749,7 @@
   text-shadow: 0 0 8px rgba(218, 138, 235, 0.8);
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.02);
-  }
-}
 
-@keyframes plasma-pulse {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
-  }
-  25% {
-    transform: scale(1.05) rotate(1deg);
-  }
-  50% {
-    transform: scale(1.1) rotate(-1deg);
-  }
-  75% {
-    transform: scale(1.05) rotate(1deg);
-  }
-}
 
 /* Language Dropdown Fix */
 .ai-header-controls .relative {
@@ -771,4 +759,100 @@
 /* Ensure dropdown is above everything */
 .ai-header-controls .absolute {
   z-index: 2000;
+} 
+
+.ai-header-controls svg,
+.ai-control-btn svg,
+.ai-fullscreen-header svg,
+.ai-fullscreen-button svg {
+  color: #111827 !important;
+  fill: #111827 !important;
+}
+
+.dark .ai-header-controls svg,
+.dark .ai-control-btn svg,
+.dark .ai-fullscreen-header svg,
+.dark .ai-fullscreen-button svg {
+  color: #f8fafc !important;
+  fill: #f8fafc !important;
+}
+
+/* Yellow card (prompt suggestion) always black text in light mode */
+.ai-prompt-suggestion,
+#ai-teacher-menu.fullscreen .ai-prompt-suggestion {
+  color: #111827 !important;
+}
+
+.ai-prompt-suggestion:hover,
+#ai-teacher-menu.fullscreen .ai-prompt-suggestion:hover {
+  color: #111827 !important;
+} 
+
+/* Override focus indicators for PlasmaBall trigger */
+.focus-indicators .fixed.bottom-6.right-6:focus,
+.focus-indicators .fixed.bottom-6.right-6:focus-visible,
+.focus-indicators .fixed.bottom-6.right-6 *:focus,
+.focus-indicators .fixed.bottom-6.right-6 *:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* FORCE ALL TEXT AND ELEMENTS TO BLACK IN LIGHT MODE WITH MAXIMUM SPECIFICITY */
+html body #ai-teacher-menu:not(.dark) .ai-header-title,
+html body #ai-teacher-menu:not(.dark) .ai-header-title *,
+html body #ai-teacher-menu:not(.dark) .ai-header h3,
+html body #ai-teacher-menu:not(.dark) .ai-header span,
+html body #ai-teacher-menu:not(.dark) .ai-header-controls svg,
+html body #ai-teacher-menu:not(.dark) .ai-control-btn svg,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-header,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-header *,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-header svg,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-title,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-title *,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-title span,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-controls svg,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-button,
+html body #ai-teacher-menu:not(.dark) .ai-fullscreen-button svg,
+html body #ai-teacher-menu:not(.dark) .ai-language-selector,
+html body #ai-teacher-menu:not(.dark) .text-amber-300,
+html body #ai-teacher-menu:not(.dark) p.text-amber-300,
+html body #ai-teacher-menu:not(.dark) .ai-prompt-suggestion,
+html body #ai-teacher-menu:not(.dark) .ai-prompt-suggestion *,
+html body #ai-teacher-menu:not(.dark) button.ai-prompt-suggestion,
+html body #ai-teacher-menu:not(.dark) div.ai-prompt-suggestion,
+html body #ai-teacher-menu.fullscreen:not(.dark) .ai-prompt-suggestion,
+html body #ai-teacher-menu.fullscreen:not(.dark) .ai-prompt-suggestion *,
+html body .ai-header:not(.dark) h3,
+html body .ai-header:not(.dark) span,
+html body .ai-header:not(.dark) *,
+html body div:not(.dark) .text-amber-300,
+html body div:not(.dark) p.text-amber-300 {
+  color: #000 !important;
+}
+
+/* Globe icon uses stroke, not fill */
+.ai-language-selector svg {
+  stroke: #111 !important;
+  fill: none !important;
+}
+
+/* Force header button tooltips and text to black */
+button[title="Enter Fullscreen Mode"],
+button[title="Read Last Message Aloud"], 
+button[title="Close Chat"],
+button[title="Close"],
+button[title="Exit Fullscreen"] {
+  color: #111 !important;
+}
+
+/* Force header button icons to black */
+button[title="Enter Fullscreen Mode"] svg,
+button[title="Read Last Message Aloud"] svg,
+button[title="Close Chat"] svg,
+button[title="Close"] svg,
+button[title="Exit Fullscreen"] svg {
+  color: #111 !important;
+  fill: #111 !important;
 } 
