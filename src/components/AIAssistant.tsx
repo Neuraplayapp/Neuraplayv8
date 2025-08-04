@@ -255,32 +255,36 @@ const AIAssistant: React.FC = () => {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
                                 audio: base64Audio,
-                                language: selectedLanguage // Pass the selected language to transcription
+                                language_code: selectedLanguage === 'english' ? 'en' : selectedLanguage,
+                                language: selectedLanguage
                             })
                         });
                         
                         if (transcriptionResult.ok) {
-                            const { text: transcribedText } = await transcriptionResult.json();
+                            const data = await transcriptionResult.json();
+                            const transcribedText = data.text || data.transcript || data.transcription;
                             
                             if (transcribedText && transcribedText.trim()) {
                                 // Add transcribed text as user message
-            addMessageToConversation(activeConversation, { 
-                                    text: transcribedText,
+                                addMessageToConversation(activeConversation, { 
+                                    text: `🎤 "${transcribedText}"`,
                                     isUser: true,
-                timestamp: new Date() 
-            });
-            
-                                // Process the transcribed message
+                                    timestamp: new Date() 
+                                });
+                
+                                // Process the transcribed message with AI
                                 await handleSendMessage(transcribedText);
                             } else {
-            addMessageToConversation(activeConversation, { 
-                                    text: "🎤 I couldn't understand that. Please try speaking again! 🌟",
-                isUser: false, 
-                timestamp: new Date() 
-            });
+                                addMessageToConversation(activeConversation, { 
+                                    text: "🎤 I couldn't understand what you said. Please try speaking more clearly! 🗣️",
+                                    isUser: false, 
+                                    timestamp: new Date() 
+                                });
                             }
                         } else {
-                            throw new Error('Transcription failed');
+                            const errorData = await transcriptionResult.text();
+                            console.error('Transcription API Error:', errorData);
+                            throw new Error(`Transcription failed: ${transcriptionResult.status}`);
                         }
                     } catch (error) {
                         console.error('Voice processing error:', error);
@@ -523,21 +527,7 @@ const AIAssistant: React.FC = () => {
                                 <PlasmaBall size={32} className="animate-pulse" />
                                 <span>AI Assistant</span>
                             </div>
-                            <div className="ai-plasma-central">
-                                <div className={`plasma-fullscreen-container ${useElevenLabs ? 'conversation-active' : ''}`}>
-                                    <PlasmaBall size={120} intensity={useElevenLabs ? 2.0 : 1.2} />
-                                    {/* Smoke-like pulsation effects around the ball */}
-                                    {useElevenLabs && (
-                                        <>
-                                            <div className="plasma-smoke smoke-ring-1"></div>
-                                            <div className="plasma-smoke smoke-ring-2"></div>
-                                            <div className="plasma-smoke smoke-ring-3"></div>
-                                            <div className="plasma-smoke smoke-ring-4"></div>
-                                            <div className="plasma-smoke smoke-ring-5"></div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                            {/* Removed plasma ball from header - will be floating over main content */}
                             <div className="ai-fullscreen-controls">
                                 {/* Language Selector for Fullscreen */}
                                 <select
@@ -652,6 +642,26 @@ const AIAssistant: React.FC = () => {
                             >
                                 📚 Chat History
                             </button>
+                        </div>
+                    )}
+
+                    {/* Floating Big Plasma Ball - Only in fullscreen mode */}
+                    {isFullscreen && (
+                        <div className="floating-plasma-ball-container">
+                            <div className={`plasma-floating-orb ${useElevenLabs ? 'conversation-active' : ''}`}>
+                                <PlasmaBall size={160} intensity={useElevenLabs ? 2.5 : 1.5} />
+                                {/* Enhanced smoke effects for floating ball */}
+                                {useElevenLabs && (
+                                    <>
+                                        <div className="plasma-smoke smoke-ring-1"></div>
+                                        <div className="plasma-smoke smoke-ring-2"></div>
+                                        <div className="plasma-smoke smoke-ring-3"></div>
+                                        <div className="plasma-smoke smoke-ring-4"></div>
+                                        <div className="plasma-smoke smoke-ring-5"></div>
+                                        <div className="plasma-smoke smoke-ring-6"></div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -774,69 +784,71 @@ const AIAssistant: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Input Area */}
-                        <div className="p-4 border-t border-white/10">
-                            <div className="flex items-center gap-3">
-                                <input 
-                                    type="text"
-                                    value={inputMessage}
-                                    onChange={(e) => setInputMessage(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
-                                    placeholder="Type your message here..."
-                                    className="flex-1 p-4 text-base ai-input-field rounded-xl min-h-[56px]"
-                                    disabled={isLoading}
-                                    style={{ fontSize: '16px', lineHeight: '1.5' }}
-                                />
-                                
-                                {/* Send Button */}
+                        {/* Enhanced Input Area with New Layout */}
+                        <div className="ai-input-area-enhanced">
+                            <div className="ai-input-layout">
+                                {/* Left: Send Button */}
                                 <button
                                     onClick={handleSendText}
                                     disabled={isLoading || !inputMessage.trim()}
-                                    className="p-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-xl transition-all min-w-[56px] min-h-[56px] flex items-center justify-center"
+                                    className="ai-send-button"
+                                    title="Send Message"
                                 >
-                                    <Send size={20} />
+                                    <Send size={24} />
+                                    <span>Send</span>
                                 </button>
                                 
-                                {/* ElevenLabs Conversation Button */}
-                                <div className={`plasma-ball-conversation-container ${useElevenLabs ? 'active streaming' : ''} ${isMuted ? 'muted' : ''}`}>
-                                    {!isMuted ? (
-                                        <ElevenLabsConversation
-                                            onMessage={handleElevenLabsMessage}
-                                            onError={handleElevenLabsError}
-                                            onConnect={handleElevenLabsConnect}
-                                            onDisconnect={handleElevenLabsDisconnect}
-                                            selectedLanguage={selectedLanguage}
-                                        />
-                                    ) : (
-                                        <div 
-                                            className="plasma-ball-muted"
-                                            onClick={() => {
-                                                addMessageToConversation(activeConversation, { 
-                                                    text: "🔇 Voice responses are muted. Click the mute button in the header to enable voice chat.",
-                                                    isUser: false, 
-                                                    timestamp: new Date() 
-                                                });
-                                            }}
-                                            title="Voice responses are muted"
-                                        >
-                                            <PlasmaBall 
-                                                size={36}
-                                                className="muted-plasma-ball"
-                                                intensity={0.2}
+                                {/* Center: Message Input Box */}
+                                <div className="ai-input-container">
+                                    <input 
+                                        type="text"
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
+                                        placeholder="Type your message here..."
+                                        className="ai-input-field-enhanced"
+                                        disabled={isLoading}
+                                    />
+                                    
+                                    {/* Small ElevenLabs indicator inside input if not muted */}
+                                    {!isMuted && (
+                                        <div className="ai-input-elevenlabs-indicator">
+                                            <ElevenLabsConversation
+                                                onMessage={handleElevenLabsMessage}
+                                                onError={handleElevenLabsError}
+                                                onConnect={handleElevenLabsConnect}
+                                                onDisconnect={handleElevenLabsDisconnect}
+                                                selectedLanguage={selectedLanguage}
                                             />
-                                            <span className="plasma-label text-red-400">🔇 Muted</span>
                                         </div>
                                     )}
                                 </div>
                                 
-                                {/* Voice Recording Button */}
+                                {/* Right: Record Button */}
                                 <button
                                     onClick={toggleVoiceRecording}
-                                    className={`p-4 ${isRecording ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} disabled:opacity-50 rounded-xl transition-all min-w-[56px] min-h-[56px] flex items-center justify-center`}
+                                    className={`ai-record-button ${isRecording ? 'recording' : ''}`}
                                     title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
                                     disabled={isLoading}
                                 >
-                                    {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+                                    {isRecording ? <MicOff size={24} /> : <Mic size={24} />}
+                                    <span>{isRecording ? 'Stop' : 'Record'}</span>
+                                </button>
+                                
+                                {/* Right: Ideas Button */}
+                                <button
+                                    onClick={() => {
+                                        addMessageToConversation(activeConversation, { 
+                                            text: "💡 AI Ideas & Insights:\n\n🎯 Try asking me about:\n• Educational games for kids\n• Learning strategies\n• Creative storytelling\n• Problem-solving techniques\n• Fun facts about any topic\n\nWhat would you like to explore? 🚀",
+                                            isUser: false, 
+                                            timestamp: new Date() 
+                                        });
+                                    }}
+                                    className="ai-ideas-button"
+                                    title="Get AI Ideas & Insights"
+                                >
+                                    💡
+                                    <span>Ideas</span>
                                 </button>
                             </div>
                         </div>

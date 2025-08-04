@@ -1164,6 +1164,200 @@
   }
 }
 
+/* Floating Plasma Ball for Fullscreen Mode */
+.floating-plasma-ball-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 500;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.plasma-floating-orb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 240px;
+  height: 240px;
+  animation: float-gentle 6s ease-in-out infinite;
+}
+
+.plasma-floating-orb.conversation-active {
+  animation: float-active 4s ease-in-out infinite;
+}
+
+/* Add extra smoke ring for floating orb */
+.smoke-ring-6 {
+  width: 360px;
+  height: 360px;
+  animation-delay: 2.5s;
+  animation-duration: 5s;
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(-10px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(10px) rotate(180deg);
+  }
+}
+
+@keyframes float-active {
+  0%, 100% {
+    transform: translateY(-15px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(15px) rotate(360deg) scale(1.05);
+  }
+}
+
+/* Enhanced Input Area Layout */
+.ai-input-area-enhanced {
+  padding: 2rem;
+  border-top: 1px solid var(--ai-glass-border);
+  background: linear-gradient(135deg, 
+    var(--ai-glass-bg) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.ai-input-layout {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ai-input-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ai-input-field-enhanced {
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  min-height: 64px;
+  background: var(--ai-glass-bg);
+  border: 2px solid var(--ai-glass-border);
+  border-radius: 2rem;
+  color: var(--ai-text-primary);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.ai-input-field-enhanced:focus {
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  transform: translateY(-2px);
+}
+
+.ai-input-field-enhanced::placeholder {
+  color: var(--ai-text-secondary);
+  opacity: 0.7;
+}
+
+.ai-input-elevenlabs-indicator {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+/* Enhanced Button Styles */
+.ai-send-button,
+.ai-record-button,
+.ai-ideas-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  min-width: 100px;
+  min-height: 80px;
+  border-radius: 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.ai-send-button {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+}
+
+.ai-send-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(99, 102, 241, 0.4);
+}
+
+.ai-send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ai-record-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.ai-record-button.recording {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  animation: record-pulse 1.5s ease-in-out infinite;
+}
+
+.ai-record-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(59, 130, 246, 0.4);
+}
+
+.ai-ideas-button {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  font-size: 1.5rem;
+}
+
+.ai-ideas-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(245, 158, 11, 0.4);
+}
+
+@keyframes record-pulse {
+  0%, 100% {
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* Dark mode adjustments */
+.dark .ai-input-field-enhanced:focus {
+  border-color: var(--ai-accent);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
 /* Z-Index Hierarchy for Dropdowns and Menus */
 
 /* Language dropdown containers */
