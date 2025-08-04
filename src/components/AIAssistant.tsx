@@ -1783,10 +1783,7 @@ This two-step process is mandatory. Do not deviate.`;
         }
     };
 
-    // NEW: Get system prompt for Synapse
-    const getSystemPrompt = (): string => {
-        return 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.';
-    };
+
 
     // NEW: Check if text is an image request
     const isImageRequest = (text: string): boolean => {
