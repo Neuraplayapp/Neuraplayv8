@@ -621,6 +621,14 @@
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+.plasma-ball-conversation-container.active.streaming {
+  animation: streaming-glow 1.5s ease-in-out infinite;
+  box-shadow: 
+    0 0 20px rgba(168, 85, 247, 0.4),
+    0 0 40px rgba(59, 130, 246, 0.2),
+    inset 0 0 20px rgba(168, 85, 247, 0.1);
+}
+
 .conversation-plasma-ball {
   filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
   transition: all 0.3s ease;
@@ -630,6 +638,13 @@
   filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.8)) 
           drop-shadow(0 0 30px rgba(218, 138, 235, 0.6));
   animation: plasma-pulse 1.5s ease-in-out infinite;
+}
+
+.conversation-plasma-ball.streaming-pulse {
+  filter: drop-shadow(0 0 25px rgba(168, 85, 247, 1)) 
+          drop-shadow(0 0 40px rgba(59, 130, 246, 0.8))
+          drop-shadow(0 0 50px rgba(34, 197, 94, 0.6));
+  animation: streaming-plasma-pulse 1.2s ease-in-out infinite;
 }
 
 .plasma-label {
@@ -667,6 +682,52 @@
   }
   75% {
     transform: scale(1.05) rotate(1deg);
+  }
+}
+
+@keyframes streaming-glow {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 0 20px rgba(168, 85, 247, 0.4),
+      0 0 40px rgba(59, 130, 246, 0.2);
+  }
+  33% { 
+    transform: scale(1.03);
+    box-shadow: 
+      0 0 30px rgba(168, 85, 247, 0.6),
+      0 0 50px rgba(59, 130, 246, 0.4),
+      0 0 70px rgba(34, 197, 94, 0.2);
+  }
+  66% { 
+    transform: scale(1.06);
+    box-shadow: 
+      0 0 35px rgba(59, 130, 246, 0.8),
+      0 0 60px rgba(34, 197, 94, 0.4),
+      0 0 80px rgba(168, 85, 247, 0.3);
+  }
+}
+
+@keyframes streaming-plasma-pulse {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 1)) 
+            drop-shadow(0 0 40px rgba(59, 130, 246, 0.8));
+  }
+  25% { 
+    transform: scale(1.08) rotate(2deg);
+    filter: drop-shadow(0 0 30px rgba(59, 130, 246, 1)) 
+            drop-shadow(0 0 50px rgba(34, 197, 94, 0.8));
+  }
+  50% { 
+    transform: scale(1.15) rotate(-2deg);
+    filter: drop-shadow(0 0 35px rgba(34, 197, 94, 1)) 
+            drop-shadow(0 0 60px rgba(168, 85, 247, 0.8));
+  }
+  75% { 
+    transform: scale(1.08) rotate(2deg);
+    filter: drop-shadow(0 0 30px rgba(168, 85, 247, 1)) 
+            drop-shadow(0 0 50px rgba(59, 130, 246, 0.8));
   }
 }
 

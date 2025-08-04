@@ -1,4 +1,4 @@
-import { AIService } from './AIService';
+import { aiService } from './AIService';
 
 export interface StreamingConversationConfig {
   language: 'english' | 'russian' | 'arabic';
@@ -17,7 +17,6 @@ export interface ConversationEvent {
 
 export class StreamingConversationService {
   private static instance: StreamingConversationService;
-  private aiService: AIService;
   private config: StreamingConversationConfig;
   private isActive: boolean = false;
   private eventListeners: ((event: ConversationEvent) => void)[] = [];
@@ -30,7 +29,6 @@ export class StreamingConversationService {
   private stream: MediaStream | null = null;
 
   private constructor() {
-    this.aiService = AIService.getInstance();
     this.config = {
       language: 'english',
       voiceId: '8LVfoRdkh4zgjr8v5ObE', // English voice
@@ -201,29 +199,8 @@ export class StreamingConversationService {
       const arrayBuffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-      // Send to AssemblyAI for transcription
-      // Platform-aware API endpoint
-      const apiEndpoint = window.location.hostname.includes('netlify') || 
-                         window.location.hostname.includes('localhost') ||
-                         window.location.hostname.includes('127.0.0.1')
-          ? '/.netlify/functions/assemblyai-transcribe'
-          : '/api/assemblyai-transcribe';
-      
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audio_base64: base64Audio
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.status}`);
-      }
-
-      const result = await response.json();
+      // Send to AssemblyAI for transcription using AIService
+      const result = await aiService.transcribeAudio(base64Audio);
       const transcribedText = result.text;
 
       if (transcribedText && transcribedText.trim()) {
@@ -251,8 +228,8 @@ export class StreamingConversationService {
   // Process text with LLM and generate response
   private async processWithLLM(text: string): Promise<void> {
     try {
-      // Get LLM response
-      const response = await this.aiService.sendMessage(text);
+      // Get LLM response using OpenAI API
+      const response = await aiService.openAICall(text);
       
       // Emit LLM response event
       this.emitEvent({
@@ -281,25 +258,7 @@ export class StreamingConversationService {
     try {
       console.log('🎤 Generating streaming TTS for:', text.substring(0, 50) + '...');
 
-      const response = await fetch('/.netlify/functions/elevenlabs-streaming-tts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          voiceId: this.config.voiceId,
-          modelId: this.config.modelId
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Streaming TTS API error:', response.status, errorText);
-        throw new Error(`Failed to generate audio: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = await aiService.streamingTextToSpeech(text, this.config.voiceId);
       
       if (result.audio_base64) {
         // Convert base64 to audio and play
