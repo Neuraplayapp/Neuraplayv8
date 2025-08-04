@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AIAssessmentReport from '../components/AIAssessmentReport';
+import FriendsSystem from '../components/FriendsSystem';
 
 
 const ProfilePage: React.FC = () => {
@@ -27,9 +28,7 @@ const ProfilePage: React.FC = () => {
   const [bio, setBio] = useState(user?.profile.about || '');
   const [bioSaved, setBioSaved] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || '');
-  const [selectedChatFriend, setSelectedChatFriend] = useState<string | null>(null);
-  const [chatMessage, setChatMessage] = useState('');
-  const [showChat, setShowChat] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
 
 
@@ -126,52 +125,7 @@ const ProfilePage: React.FC = () => {
     setEditingUsername(false);
   };
 
-  const handleSendMessage = () => {
-    if (!chatMessage.trim() || !selectedChatFriend) return;
-    // In a real app, this would send to a backend
-    console.log(`Message to ${selectedChatFriend}: ${chatMessage}`);
-    setChatMessage('');
-  };
 
-  const getOnlineStatus = (friendId: string) => {
-    // Simulate online status based on friend ID
-    const onlineFriends = ['Alex', 'Sam'];
-    return onlineFriends.includes(friendId) ? 'online' : 'offline';
-  };
-
-
-
-  const handleRemoveFriend = (friendUsername: string) => {
-    if (!user) return;
-    const currentFriends = user.friends || [];
-    setUser({ ...user, friends: currentFriends.filter(fid => fid !== friendUsername) });
-  };
-
-  const handleAcceptFriendRequest = (friendUsername: string) => {
-    if (!user) return;
-    const currentFriends = user.friends || [];
-    const currentRequests = user.friendRequests?.received || [];
-    setUser({ 
-      ...user, 
-      friends: [...currentFriends, friendUsername],
-      friendRequests: {
-        ...user.friendRequests,
-        received: currentRequests.filter(fid => fid !== friendUsername)
-      }
-    });
-  };
-
-  const handleRejectFriendRequest = (friendUsername: string) => {
-    if (!user) return;
-    const currentRequests = user.friendRequests?.received || [];
-    setUser({ 
-      ...user, 
-      friendRequests: {
-        ...user.friendRequests,
-        received: currentRequests.filter(fid => fid !== friendUsername)
-      }
-    });
-  };
 
 
 
@@ -229,8 +183,7 @@ const ProfilePage: React.FC = () => {
     { id: 'games', label: 'Games', icon: Gamepad2 },
     { id: 'friends', label: 'Friends', icon: Users2 },
     { id: 'activity', label: 'Activity', icon: Activity },
-    { id: 'ai-insights', label: 'AI Insights', icon: Brain },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'ai-insights', label: 'AI Insights', icon: Brain }
   ];
 
 
@@ -633,123 +586,11 @@ const ProfilePage: React.FC = () => {
           )}
 
           {activeTab === 'friends' && (
-            <div className="space-y-8">
-              <h2 className="text-3xl font-bold text-purple-900 dark:text-white mb-6">Friends</h2>
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-purple-900 dark:text-white mb-6">Friends & Chat</h2>
               
-              {/* Friends List */}
-              <div>
-                <h3 className="text-xl font-bold text-purple-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Friends ({(user.friends || []).length})
-                </h3>
-                {!user.friends || user.friends.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">No friends yet. Find friends in the forum!</p>
-                    <button 
-                      onClick={() => navigate('/forum')}
-                      className="mt-4 px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:from-purple-600 hover:to-blue-700 transition-all"
-                    >
-                      Go to Forum
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                        {(user.friends || []).map(friendId => (
-                      <div key={friendId} className={`rounded-xl p-4 flex items-center justify-between transition-all duration-500 hover:transform hover:scale-105 ${
-                        isDarkMode 
-                          ? 'bg-black/40 backdrop-blur-xl border-2 border-white/30 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)] hover:shadow-[0_12px_24px_-12px_rgba(255,255,255,0.12)]' 
-                          : 'bg-white/90 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.35)]'
-                      }`}>
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-300 to-blue-200 flex items-center justify-center">
-                              <UserPlus className="w-6 h-6 text-white" />
-                            </div>
-                            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                              getOnlineStatus(friendId) === 'online' 
-                                ? 'bg-green-500' 
-                                : 'bg-gray-400'
-                            }`}></div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-purple-900 dark:text-white">{friendId}</h4>
-                            <p className={`text-sm ${
-                              getOnlineStatus(friendId) === 'online' 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-gray-600 dark:text-gray-400'
-                            }`}>
-                              {getOnlineStatus(friendId) === 'online' ? 'Online' : 'Offline'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => {
-                              setSelectedChatFriend(friendId);
-                              setShowChat(true);
-                            }}
-                            className="px-3 py-1 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-105 transition-all text-sm font-medium"
-                          >
-                            Chat
-                          </button>
-                          <button 
-                            onClick={() => handleRemoveFriend(friendId)}
-                            className="px-3 py-1 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 hover:scale-105 transition-all text-sm font-medium"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-            </div>
-          )}
-        </div>
-
-              {/* Friend Requests */}
-              <div>
-                <h3 className="text-xl font-bold text-purple-900 dark:text-white mb-4 flex items-center gap-2">
-                  <UserPlus className="w-5 h-5" />
-                  Friend Requests ({(user.friendRequests?.received || []).length})
-                </h3>
-                {!user.friendRequests?.received || user.friendRequests.received.length === 0 ? (
-                  <p className="text-gray-600 dark:text-gray-400">No pending requests.</p>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {(user.friendRequests.received || []).map(friendId => (
-                      <div key={friendId} className={`rounded-xl p-4 flex items-center justify-between transition-all duration-500 hover:transform hover:scale-105 ${
-                        isDarkMode 
-                          ? 'bg-black/40 backdrop-blur-xl border-2 border-white/30 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)] hover:shadow-[0_12px_24px_-12px_rgba(255,255,255,0.12)]' 
-                          : 'bg-white/90 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.35)]'
-                      }`}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-300 to-blue-200 flex items-center justify-center">
-                            <UserPlus className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-purple-900 dark:text-white">{friendId}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Wants to be friends</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleAcceptFriendRequest(friendId)}
-                            className="px-3 py-1 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 hover:scale-105 transition-all text-sm font-medium"
-                          >
-                            Accept
-                          </button>
-                          <button 
-                            onClick={() => handleRejectFriendRequest(friendId)}
-                            className="px-3 py-1 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 hover:scale-105 transition-all text-sm font-medium"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Enhanced Friends System */}
+              <FriendsSystem />
             </div>
           )}
 
@@ -866,164 +707,11 @@ const ProfilePage: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'settings' && (
-            <div className="space-y-8">
-              <h2 className="text-3xl font-bold text-purple-900 dark:text-white mb-6">Settings</h2>
-              
-              {/* Account Settings */}
-              <div>
-                <h3 className="text-xl font-bold text-purple-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Cog className="w-5 h-5" />
-                  Account Settings
-                </h3>
-                <div className="space-y-4">
-                  <div className={`rounded-xl p-4 transition-all duration-500 hover:transform hover:scale-105 ${
-                    isDarkMode 
-                      ? 'bg-black/40 backdrop-blur-xl border-2 border-white/30 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)] hover:shadow-[0_12px_24px_-12px_rgba(255,255,255,0.12)]' 
-                      : 'bg-white/90 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.35)]'
-                  }`}>
-                    <h4 className="font-semibold text-purple-900 dark:text-white mb-2">Profile Information</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Username:</span>
-                        <span className="font-semibold">{user.username}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Email:</span>
-                        <span className="font-semibold">{user.email}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Role:</span>
-                        <span className="font-semibold capitalize">{user.role}</span>
-                      </div>
-                      {user.age && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Age:</span>
-                          <span className="font-semibold">{user.age}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-        </div>
 
-              {/* Privacy Settings */}
-              <div>
-                <h3 className="text-xl font-bold text-purple-900 dark:text-white mb-4 flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5" />
-                  Privacy & Safety
-                </h3>
-                <div className="space-y-4">
-                  <button className={`w-full rounded-xl p-4 text-left transition-all duration-500 hover:transform hover:scale-[1.02] ${
-                    isDarkMode 
-                      ? 'bg-black/40 backdrop-blur-xl border-2 border-white/30 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)] hover:shadow-[0_12px_24px_-12px_rgba(255,255,255,0.12)] hover:bg-black/60' 
-                      : 'bg-white/90 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.35)] hover:bg-white/95'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-purple-900 dark:text-white">Privacy Settings</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Manage your privacy preferences</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </button>
-                  <button className={`w-full rounded-xl p-4 text-left transition-all duration-500 hover:transform hover:scale-[1.02] ${
-                    isDarkMode 
-                      ? 'bg-black/40 backdrop-blur-xl border-2 border-white/30 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)] hover:shadow-[0_12px_24px_-12px_rgba(255,255,255,0.12)] hover:bg-black/60' 
-                      : 'bg-white/90 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.35)] hover:bg-white/95'
-                  }`}>
-                    <div className="flex items-center justify-between">
-          <div>
-                        <h4 className="font-semibold text-purple-900 dark:text-white">Blocked Users</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Manage blocked users</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </button>
-                </div>
-              </div>
-          </div>
-          )}
         </div>
       </div>
 
-      {/* Chat Modal */}
-      {showChat && selectedChatFriend && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className={`w-full max-w-md mx-4 rounded-2xl p-6 transition-all duration-500 ${
-            isDarkMode 
-              ? 'bg-black/80 backdrop-blur-xl border-2 border-white/30 shadow-[0_8px_16px_-12px_rgba(255,255,255,0.08)]' 
-              : 'bg-white/95 backdrop-blur-xl border-2 border-black/10 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)]'
-          }`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-300 to-blue-200 flex items-center justify-center">
-                    <UserPlus className="w-5 h-5 text-white" />
-                  </div>
-                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                    getOnlineStatus(selectedChatFriend) === 'online' 
-                      ? 'bg-green-500' 
-                      : 'bg-gray-400'
-                  }`}></div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-purple-900 dark:text-white">{selectedChatFriend}</h3>
-                  <p className={`text-sm ${
-                    getOnlineStatus(selectedChatFriend) === 'online' 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`}>
-                    {getOnlineStatus(selectedChatFriend) === 'online' ? 'Online' : 'Offline'}
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowChat(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            {/* Chat Messages Area */}
-            <div className={`h-64 mb-4 rounded-xl p-4 overflow-y-auto ${
-              isDarkMode ? 'bg-black/40 border border-white/20' : 'bg-gray-50 border border-gray-200'
-            }`}>
-              <div className="text-center text-gray-500 dark:text-gray-400 text-sm">
-                Start a conversation with {selectedChatFriend}!
-              </div>
-            </div>
-            
-            {/* Message Input */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Type your message..."
-                className={`flex-1 px-4 py-2 rounded-xl border-2 ${
-                  isDarkMode 
-                    ? 'bg-black/40 border-white/30 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                } focus:border-purple-500 focus:outline-none`}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!chatMessage.trim()}
-                className={`px-4 py-2 rounded-xl font-semibold transition-all ${
-                  chatMessage.trim()
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 hover:scale-105'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

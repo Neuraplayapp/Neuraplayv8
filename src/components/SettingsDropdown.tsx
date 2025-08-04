@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Sun, Moon, Monitor, Palette, Eye, EyeOff, Volume2, VolumeX, Smartphone, Monitor as Desktop, Globe, User, Shield, HelpCircle, Zap, Cog, ShieldAlert, ChevronRight, Bot, Brain, Heart, Target, Crown } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, Palette, Eye, Smartphone, Globe, User, Shield, HelpCircle, Zap, Cog, ShieldAlert, ChevronRight, Bot, Brain, Heart, Target, Crown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 // FIXED: Add AIAgentContext import
@@ -14,7 +14,7 @@ const SettingsDropdown: React.FC = () => {
   const { user } = useUser();
   
   // FIXED: Connect to AIAgentContext instead of local state
-  const { triggerAgent, showAgent, hideAgent, currentContext, updateContext } = useAIAgent();
+  const { currentContext, updateContext } = useAIAgent();
   const currentPersonality = currentContext?.agentPersonality || 'synapse-normal';
 
   // FIXED: Update AI personality when changed
@@ -519,25 +519,143 @@ const SettingsDropdown: React.FC = () => {
 
               {activeTab === 'user' && (
                 <div className="space-y-4">
-                  {/* Account Settings */}
+                  {/* Account Information */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Settings</h4>
-                    <div className="space-y-2">
-                      <div className={`rounded-lg p-3 ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600' 
-                          : 'bg-gray-50 border-gray-300'
-                      } border`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-900 dark:text-white">Account</h5>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Manage your account settings</p>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Account Information</h4>
+                    <div className={`rounded-lg p-3 border ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600' 
+                        : 'bg-gray-50 border-gray-300'
+                    }`}>
+                      {user ? (
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Username:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{user.username}</span>
                           </div>
-                          <button className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300">
-                            <Settings className="w-4 h-4" />
-                          </button>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Email:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{user.email}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Role:</span>
+                            <span className="font-medium text-gray-900 dark:text-white capitalize">{user.role}</span>
+                          </div>
+                          {user.age && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500 dark:text-gray-400">Age:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{user.age}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-1 border-t border-gray-300 dark:border-gray-600">
+                            <span className="text-gray-500 dark:text-gray-400">XP:</span>
+                            <span className="font-medium text-purple-600 dark:text-purple-400">{user.profile.xp}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Stars:</span>
+                            <span className="font-medium text-yellow-600 dark:text-yellow-400">{user.profile.stars}</span>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Please sign in to view account details</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Privacy & Safety */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Privacy & Safety</h4>
+                    <div className="space-y-2">
+                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-purple-600" />
+                            <div>
+                              <h5 className="text-xs font-medium text-gray-900 dark:text-white">Privacy Settings</h5>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Manage data & privacy</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-gray-400" />
+                        </div>
+                      </button>
+                      
+                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ShieldAlert className="w-4 h-4 text-red-600" />
+                            <div>
+                              <h5 className="text-xs font-medium text-gray-900 dark:text-white">Blocked Users</h5>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Manage blocked users</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-gray-400" />
+                        </div>
+                      </button>
+
+                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-blue-600" />
+                            <div>
+                              <h5 className="text-xs font-medium text-gray-900 dark:text-white">Data Export</h5>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Download your data</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-gray-400" />
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Account Actions */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Account Actions</h4>
+                    <div className="space-y-2">
+                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-green-600" />
+                            <div>
+                              <h5 className="text-xs font-medium text-gray-900 dark:text-white">Edit Profile</h5>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Update your information</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-gray-400" />
+                        </div>
+                      </button>
+
+                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                        isDarkMode 
+                          ? 'bg-red-900/20 border-red-800 hover:bg-red-900/30' 
+                          : 'bg-red-50 border-red-200 hover:bg-red-100'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <HelpCircle className="w-4 h-4 text-red-600" />
+                            <div>
+                              <h5 className="text-xs font-medium text-red-700 dark:text-red-400">Delete Account</h5>
+                              <p className="text-xs text-red-600 dark:text-red-500">Permanently delete account</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-red-400" />
+                        </div>
+                      </button>
                     </div>
                   </div>
                 </div>
