@@ -22,9 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Problematic files with encoding issues
-*cription*
 .env
 
 # Local Netlify folder
