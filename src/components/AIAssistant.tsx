@@ -155,7 +155,7 @@ const AIAssistant: React.FC = () => {
     // Get current messages based on active conversation
     const currentMessages = conversations[activeConversation]?.messages || [];
 
-    // Available pages and their descriptions
+    // Available pages and their descriptions - ONLY ACTUAL ROUTES
     const availablePages = {
         '/': { name: 'Home', icon: Home, description: 'Main landing page' },
         '/playground': { name: 'Playground', icon: Gamepad2, description: 'Games and activities' },
@@ -169,9 +169,8 @@ const AIAssistant: React.FC = () => {
         '/counting-test': { name: 'Counting Test', icon: Gamepad2, description: 'Math practice' },
         '/test': { name: 'Test Page', icon: Gamepad2, description: 'Testing features' },
         '/text-reveal': { name: 'Text Reveal', icon: Sparkles, description: 'Text animations' },
-        '/old-home': { name: 'Old Home', icon: Home, description: 'Previous home page' },
         '/profile': { name: 'Profile', icon: User, description: 'Your user profile' },
-        '/user-profile': { name: 'User Profile', icon: User, description: 'Detailed user profile' }
+        '/streaming-demo': { name: 'Streaming Demo', icon: Activity, description: 'Voice streaming demo' }
     };
 
     // Available settings and their descriptions - COMPLETE LIST with agency
@@ -596,16 +595,62 @@ const AIAssistant: React.FC = () => {
             }};
         }
         
-        // === DEVELOPMENT & LEARNING ASSISTANCE ===
-        const developmentKeywords = ['help me learn', 'improve', 'get better at', 'develop', 'practice', 'struggle with', 'need help with', 'want to learn'];
+        // === DEVELOPMENT & LEARNING ASSISTANCE - EXPANDED NATURAL LANGUAGE ===
+        const developmentKeywords = [
+            // Direct learning requests
+            'help me learn', 'teach me', 'improve', 'get better at', 'develop', 'practice', 'training',
+            'struggle with', 'need help with', 'want to learn', 'want to improve', 'need practice',
+            
+            // Natural expressions
+            'i\'m bad at', 'i\'m not good at', 'i have trouble with', 'difficulty with', 'weak at',
+            'need to work on', 'want to master', 'want to understand', 'confused about',
+            'don\'t understand', 'hard for me', 'challenging for me', 'need improvement',
+            
+            // Question forms
+            'how can i get better at', 'what can help me with', 'how do i improve',
+            'any tips for', 'suggestions for', 'advice for', 'help with',
+            
+            // Skill development
+            'build skills', 'develop abilities', 'strengthen', 'enhance', 'boost',
+            'work on my', 'focus on', 'concentrate on', 'dedicate time to'
+        ];
+        
         const skillKeywords = {
-            'math': ['math', 'numbers', 'counting', 'addition', 'subtraction', 'arithmetic', 'calculation'],
-            'reading': ['reading', 'letters', 'words', 'spelling', 'phonics', 'literacy'],
-            'memory': ['memory', 'remember', 'forget', 'concentration', 'focus', 'attention'],
-            'coordination': ['coordination', 'motor skills', 'balance', 'dexterity', 'hand-eye'],
-            'problem_solving': ['problem solving', 'thinking', 'logic', 'puzzles', 'reasoning'],
-            'inhibition': ['self control', 'focus', 'attention', 'impulse control', 'concentration'],
-            'spatial': ['spatial', '3d', 'shapes', 'geometry', 'visual', 'patterns']
+            'math': [
+                'math', 'mathematics', 'numbers', 'counting', 'addition', 'subtraction', 'arithmetic', 'calculation',
+                'multiply', 'division', 'fractions', 'decimals', 'algebra', 'geometry', 'statistics',
+                'number sense', 'math facts', 'mental math', 'word problems', 'equations'
+            ],
+            'reading': [
+                'reading', 'read', 'letters', 'words', 'spelling', 'phonics', 'literacy', 'vocabulary',
+                'comprehension', 'fluency', 'decoding', 'sight words', 'phonemic awareness',
+                'reading comprehension', 'stories', 'books', 'text', 'writing', 'grammar'
+            ],
+            'memory': [
+                'memory', 'remember', 'forget', 'concentration', 'focus', 'attention', 'recall',
+                'working memory', 'short term memory', 'long term memory', 'memorization',
+                'retention', 'brain training', 'cognitive', 'mental', 'mindfulness'
+            ],
+            'coordination': [
+                'coordination', 'motor skills', 'balance', 'dexterity', 'hand-eye', 'fine motor',
+                'gross motor', 'movement', 'physical', 'agility', 'reflexes', 'body control',
+                'hand coordination', 'eye coordination', 'spatial awareness'
+            ],
+            'problem_solving': [
+                'problem solving', 'thinking', 'logic', 'puzzles', 'reasoning', 'critical thinking',
+                'analytical', 'strategy', 'planning', 'decision making', 'creativity',
+                'logical reasoning', 'deductive reasoning', 'inductive reasoning'
+            ],
+            'inhibition': [
+                'self control', 'focus', 'attention', 'impulse control', 'concentration', 'discipline',
+                'patience', 'waiting', 'stopping', 'restraint', 'regulation', 'calmness',
+                'executive function', 'behavioral control', 'emotional regulation'
+            ],
+            'spatial': [
+                'spatial', '3d', 'shapes', 'geometry', 'visual', 'patterns', 'visualization',
+                'spatial reasoning', 'mental rotation', 'perspective', 'directions',
+                'left and right', 'up and down', 'orientation', 'mapping'
+            ]
         };
         
         if (developmentKeywords.some(keyword => lowerText.includes(keyword))) {
@@ -675,21 +720,48 @@ const AIAssistant: React.FC = () => {
             }
         }
         
-        // ENHANCED AI Agent commands with better natural language processing
+        // ENHANCED AI Agent commands - COMPREHENSIVE NATURAL LANGUAGE
         const agentKeywords = [
+            // Direct AI terms
             'ai agent', 'agent', 'ai assistant', 'assistant', 'brain', 'synapse', 
-            'ai teacher', 'teacher', 'ai', 'bot', 'helper', 'guide', 'tutor'
+            'ai teacher', 'teacher', 'ai', 'bot', 'helper', 'guide', 'tutor',
+            
+            // Natural references
+            'smart assistant', 'virtual assistant', 'digital assistant', 'learning assistant',
+            'teaching assistant', 'study buddy', 'learning companion', 'ai buddy',
+            'virtual teacher', 'digital teacher', 'robot teacher', 'computer teacher',
+            
+            // Casual terms
+            'buddy', 'pal', 'friend', 'companion', 'coach', 'mentor', 'advisor'
         ];
         
         const agentActionKeywords = [
-            'show', 'open', 'display', 'bring', 'activate', 'hide', 'close', 'remove', 
-            'dismiss', 'stop', 'trigger', 'start', 'begin', 'launch', 'wake', 'call',
-            'summon', 'appear', 'disappear', 'go away', 'leave', 'come', 'help'
+            // Show/open actions
+            'show', 'open', 'display', 'bring', 'activate', 'wake', 'call', 'summon', 'appear', 'come',
+            'bring up', 'pull up', 'turn on', 'switch on', 'fire up', 'boot up',
+            
+            // Hide/close actions  
+            'hide', 'close', 'remove', 'dismiss', 'stop', 'disappear', 'go away', 'leave',
+            'turn off', 'switch off', 'shut down', 'put away',
+            
+            // Trigger/start actions
+            'trigger', 'start', 'begin', 'launch', 'initiate', 'activate', 'enable',
+            
+            // Help actions
+            'help', 'assist', 'support', 'guide', 'teach', 'explain'
         ];
         
         const agentIntentKeywords = [
-            'want', 'need', 'like', 'would like', 'can you', 'please', 'help me',
-            'i want', 'i need', 'i would like', 'make it', 'put it', 'set it'
+            // Polite requests
+            'want', 'need', 'like', 'would like', 'can you', 'could you', 'please', 'help me',
+            'i want', 'i need', 'i would like', 'i\'d like', 'may i', 'can i', 'could i',
+            
+            // Natural expressions
+            'make it', 'put it', 'set it', 'let me', 'show me', 'give me', 'bring me',
+            'i\'m looking for', 'looking for', 'where is', 'find me', 'get me',
+            
+            // Question forms
+            'how do i', 'where can i', 'is there a way to', 'can you help me'
         ];
         
         // Enhanced agent detection - MUCH MORE SPECIFIC
@@ -771,8 +843,20 @@ const AIAssistant: React.FC = () => {
         // ONLY block pure greetings that have no other intent
         const pureGreetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'yo', 'greetings', 'goodbye', 'bye'];
         
-        // *** PRIORITY 1: NAVIGATION COMMANDS ***
-        const navigationKeywords = ['go to', 'take me to', 'navigate to', 'open', 'show me', 'visit'];
+        // *** PRIORITY 1: NAVIGATION COMMANDS - EXPANDED NATURAL LANGUAGE ***
+        const navigationKeywords = [
+            // Direct commands
+            'go to', 'take me to', 'navigate to', 'open', 'show me', 'visit', 'bring me to', 'get me to',
+            // Polite requests
+            'can you take me to', 'could you show me', 'please go to', 'i want to go to', 'i need to go to',
+            'i would like to go to', 'can you open', 'could you open', 'please open', 'i want to see',
+            // Casual expressions
+            'let me see', 'show me the', 'i want the', 'bring up', 'pull up', 'load up', 'switch to',
+            // Question forms
+            'how do i get to', 'where is the', 'where can i find', 'how do i access',
+            // Natural expressions
+            'i need the', 'i want to check', 'i want to look at', 'let me check', 'can i see'
+        ];
         const hasNavigationKeyword = navigationKeywords.some(keyword => lowerText.includes(keyword));
         
         // Direct navigation phrases that should ALWAYS work
@@ -817,7 +901,7 @@ const AIAssistant: React.FC = () => {
             }
             
             // Enhanced special navigation cases - ALL PAGES
-            if (lowerText.includes('home') || lowerText.includes('main') || lowerText.includes('landing')) {
+            if (lowerText.includes('home') || lowerText.includes('main') || lowerText.includes('landing') || lowerText.includes('homepage')) {
                 return { type: 'navigation', action: { path: '/', page: availablePages['/'] } };
             }
             
@@ -834,7 +918,15 @@ const AIAssistant: React.FC = () => {
             }
             
             if (lowerText.includes('register') || lowerText.includes('sign up') || lowerText.includes('create account')) {
+                // Check if it's specifically forum registration
+                if (lowerText.includes('forum')) {
+                    return { type: 'navigation', action: { path: '/forum-registration', page: availablePages['/forum-registration'] } };
+                }
                 return { type: 'navigation', action: { path: '/registration', page: availablePages['/registration'] } };
+            }
+            
+            if (lowerText.includes('forum registration') || lowerText.includes('join forum') || lowerText.includes('forum signup')) {
+                return { type: 'navigation', action: { path: '/forum-registration', page: availablePages['/forum-registration'] } };
             }
             
             if (lowerText.includes('sign in') || lowerText.includes('login') || lowerText.includes('log in')) {
@@ -865,35 +957,88 @@ const AIAssistant: React.FC = () => {
                 return { type: 'navigation', action: { path: '/profile', page: availablePages['/profile'] } };
             }
             
-            if (lowerText.includes('old home') || lowerText.includes('previous home')) {
-                return { type: 'navigation', action: { path: '/old-home', page: availablePages['/old-home'] } };
+            if (lowerText.includes('streaming') || lowerText.includes('demo') || lowerText.includes('streaming demo')) {
+                return { type: 'navigation', action: { path: '/streaming-demo', page: availablePages['/streaming-demo'] } };
             }
         }
         
-        // Settings commands with expanded variations
-        const settingsKeywords = ['settings', 'preferences', 'options', 'config', 'setup'];
+        // Settings and Notifications commands - EXPANDED NATURAL LANGUAGE
+        const settingsKeywords = [
+            // Direct terms
+            'settings', 'preferences', 'options', 'config', 'setup', 'configuration',
+            // Natural requests
+            'i want to change', 'how do i change', 'can i adjust', 'i need to adjust',
+            'i want to customize', 'how do i customize', 'can you help me change',
+            // Specific settings phrases
+            'open settings', 'show settings', 'go to settings', 'settings menu',
+            'preference panel', 'options menu', 'configuration panel',
+            // Question forms
+            'where are the settings', 'how do i configure', 'where can i change'
+        ];
         if (settingsKeywords.some(keyword => lowerText.includes(keyword))) {
             return { type: 'settings', action: 'open' };
         }
         
-        // *** PRIORITY 2: THEME COMMANDS ***
-        // Detect theme changes with natural language
-        if ((lowerText.includes('turn on') || lowerText.includes('switch to') || lowerText.includes('enable')) && lowerText.includes('dark')) {
-            return { type: 'settings', action: { setting: 'theme', value: 'dark' } };
-        }
-        if ((lowerText.includes('turn on') || lowerText.includes('switch to') || lowerText.includes('enable')) && lowerText.includes('light')) {
-            return { type: 'settings', action: { setting: 'theme', value: 'light' } };
+        // Notifications commands - EXPANDED NATURAL LANGUAGE
+        const notificationKeywords = [
+            // Direct terms
+            'notifications', 'alerts', 'messages', 'notices', 'updates', 'reminders',
+            // Natural requests
+            'do i have any messages', 'any new alerts', 'what notifications do i have',
+            'check my notifications', 'show my alerts', 'any new messages',
+            'notification center', 'message center', 'alert panel',
+            // Question forms
+            'what did i miss', 'anything new', 'any updates for me',
+            'do i have mail', 'any new stuff', 'what\'s new',
+            // Action phrases
+            'check notifications', 'open notifications', 'show notifications',
+            'read my messages', 'view alerts', 'see my updates'
+        ];
+        if (notificationKeywords.some(keyword => lowerText.includes(keyword))) {
+            if (lowerText.includes('open') || lowerText.includes('show') || lowerText.includes('check') || 
+                lowerText.includes('view') || lowerText.includes('see') || lowerText.includes('access')) {
+                return { type: 'settings', action: 'notifications' };
+            } else {
+                return { type: 'read', action: { 
+                    type: 'notifications',
+                    message: '🔔 Let me check your notifications for you!'
+                }};
+            }
         }
         
-        // General theme keywords
-        const themeKeywords = ['theme', 'dark', 'light', 'mode', 'appearance'];
-        const themeActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'switch', 'turn', 'enable', 'use'];
+        // *** PRIORITY 2: THEME COMMANDS - EXPANDED NATURAL LANGUAGE ***
+        const themeKeywords = [
+            // Direct commands
+            'dark mode', 'light mode', 'dark theme', 'light theme', 'night mode', 'day mode',
+            // Natural requests
+            'make it dark', 'make it light', 'turn on dark mode', 'turn off dark mode',
+            'switch to dark', 'switch to light', 'change to dark', 'change to light',
+            'i want dark mode', 'i want light mode', 'i prefer dark', 'i prefer light',
+            // Casual expressions
+            'go dark', 'go light', 'darker please', 'lighter please', 'too bright', 'too dark',
+            'make it darker', 'make it brighter', 'it\'s too bright', 'it\'s too dark',
+            // Question forms
+            'can you make it dark', 'can you make it light', 'how do i change the theme',
+            'can i switch themes', 'is there a dark mode', 'is there a light mode',
+            // Natural expressions
+            'i like dark themes', 'i like light themes', 'dark is better', 'light is better',
+            'my eyes hurt', 'easier on the eyes', 'better for reading'
+        ];
         
-        if (themeKeywords.some(keyword => lowerText.includes(keyword)) || 
-            (themeActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('dark') || lowerText.includes('light')))) {
+        const themeActionKeywords = [
+            'make', 'put', 'bring', 'set', 'change', 'switch', 'turn', 'enable', 'use', 'activate',
+            'please', 'can you', 'could you', 'i want', 'i need', 'i would like'
+        ];
+        
+        // Enhanced theme detection
+        const hasThemeKeyword = themeKeywords.some(keyword => lowerText.includes(keyword));
+        const hasThemeAction = themeActionKeywords.some(action => lowerText.includes(action)) && 
+                              (lowerText.includes('dark') || lowerText.includes('light') || lowerText.includes('theme'));
+        
+        if (hasThemeKeyword || hasThemeAction) {
             let themeValue = 'auto';
-            if (lowerText.includes('dark')) themeValue = 'dark';
-            else if (lowerText.includes('light')) themeValue = 'light';
+            if (lowerText.includes('dark') || lowerText.includes('night')) themeValue = 'dark';
+            else if (lowerText.includes('light') || lowerText.includes('day') || lowerText.includes('bright')) themeValue = 'light';
             return { type: 'settings', action: { setting: 'theme', value: themeValue } };
         }
         
@@ -939,9 +1084,9 @@ const AIAssistant: React.FC = () => {
             return { type: 'settings', action: { setting: 'aiAgent', value: enabled ? 'enabled' : 'disabled' } };
         }
 
-        // Notifications settings
-        const notificationKeywords = ['notification', 'notify', 'alert', 'reminder'];
-        if (notificationKeywords.some(keyword => lowerText.includes(keyword))) {
+        // Notifications settings (using notificationKeywords from line 879)
+        if (notificationKeywords.some(keyword => lowerText.includes(keyword)) && 
+            (lowerText.includes('enable') || lowerText.includes('disable') || lowerText.includes('turn') || lowerText.includes('set'))) {
             const enabled = !lowerText.includes('disable') && !lowerText.includes('off') && !lowerText.includes('stop');
             return { type: 'settings', action: { setting: 'notifications', value: enabled ? 'enabled' : 'disabled' } };
         }
@@ -953,13 +1098,49 @@ const AIAssistant: React.FC = () => {
             return { type: 'settings', action: { setting: 'autoSave', value: enabled ? 'enabled' : 'disabled' } };
         }
 
-        // Enhanced Accessibility settings - ALL ACCESSIBILITY FEATURES
+        // Enhanced Accessibility settings - COMPREHENSIVE NATURAL LANGUAGE
         const accessibilityKeywords = [
-            'colorblind', 'color blind', 'protanopia', 'deuteranopia', 'tritanopia', 
-            'contrast', 'spacing', 'bold', 'text spacing', 'high contrast', 'accessibility',
-            'screen reader', 'keyboard navigation', 'focus indicators', 'reduced motion'
+            // Color vision support
+            'colorblind', 'color blind', 'colour blind', 'protanopia', 'deuteranopia', 'tritanopia', 
+            'can\'t see colors', 'trouble with colors', 'colors look the same', 'red green blind',
+            'blue yellow blind', 'colors are hard', 'difficulty with colors',
+            
+            // Vision support
+            'can\'t see well', 'hard to see', 'text is too small', 'need bigger text', 'vision problems',
+            'blurry text', 'eye strain', 'my eyes hurt', 'hard to read', 'need better contrast',
+            'text is faint', 'background is too bright', 'need darker background',
+            
+            // Contrast and readability
+            'contrast', 'high contrast', 'better contrast', 'make it clearer', 'easier to see',
+            'text is too light', 'background is too dark', 'hard to distinguish',
+            
+            // Text and spacing
+            'spacing', 'text spacing', 'letter spacing', 'need more space', 'letters too close',
+            'words too close', 'cramped text', 'spread out text', 'more breathing room',
+            'bold', 'bolder text', 'thicker text', 'heavier text', 'stronger text',
+            
+            // General accessibility
+            'accessibility', 'accessible', 'disability', 'special needs', 'assistance',
+            'help me see', 'help me read', 'make it accessible', 'accessibility features',
+            
+            // Screen reader support
+            'screen reader', 'voice over', 'narrator', 'speech', 'read aloud', 'audio',
+            'blind', 'can\'t see', 'vision impaired', 'visually impaired',
+            
+            // Motor/keyboard support
+            'keyboard navigation', 'keyboard only', 'can\'t use mouse', 'motor disability',
+            'focus indicators', 'focus', 'tab navigation', 'keyboard shortcuts',
+            
+            // Motion sensitivity
+            'reduced motion', 'motion sickness', 'animations hurt', 'too much movement',
+            'dizzy', 'motion sensitive', 'less animation', 'stop moving'
         ];
-        const accessibilityActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn', 'use', 'need', 'want', 'have'];
+        
+        const accessibilityActionKeywords = [
+            'make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn', 'use', 'need', 'want', 'have',
+            'help me', 'can you help', 'i need help', 'please help', 'assist me', 'i have trouble',
+            'i can\'t', 'it\'s hard to', 'difficult to', 'struggle with', 'problems with'
+        ];
         
         if (accessibilityKeywords.some(keyword => lowerText.includes(keyword)) || 
             (accessibilityActionKeywords.some(action => lowerText.includes(action)) && 
@@ -1025,8 +1206,32 @@ const AIAssistant: React.FC = () => {
             return { type: 'info', action: 'location' };
         }
         
-        // === ENHANCED GAME RECOMMENDATIONS ===
-        const gameKeywords = ['game', 'play', 'activity', 'exercise', 'fun'];
+        // === ENHANCED GAME RECOMMENDATIONS - COMPREHENSIVE NATURAL LANGUAGE ===
+        const gameKeywords = [
+            // Direct game terms
+            'game', 'games', 'play', 'playing', 'activity', 'activities', 'exercise', 'exercises', 'fun',
+            
+            // Learning activities
+            'learning game', 'educational game', 'brain game', 'puzzle', 'challenge', 'practice',
+            'training', 'drill', 'quiz', 'test', 'lesson', 'study game', 'skill game',
+            
+            // Natural requests
+            'something fun', 'something to do', 'want to play', 'need practice', 'want to learn',
+            'help me practice', 'help me learn', 'make learning fun', 'interactive learning',
+            
+            // Question forms
+            'what can i play', 'what games are there', 'any fun activities', 'what\'s available',
+            'show me games', 'recommend a game', 'suggest an activity', 'find me something fun',
+            
+            // Skill-specific requests
+            'math practice', 'reading practice', 'memory training', 'brain training', 'cognitive training',
+            'counting practice', 'number games', 'word games', 'logic games', 'pattern games',
+            
+            // Casual expressions
+            'let\'s play', 'i\'m bored', 'something engaging', 'keep me busy', 'entertain me',
+            'make me smarter', 'improve my skills', 'challenge my brain'
+        ];
+        
         if (gameKeywords.some(keyword => lowerText.includes(keyword))) {
             return { type: 'game', action: { 
                 request: 'recommend',
@@ -1229,6 +1434,10 @@ What would you like to post about? 🌟`;
                     return `⚙️ Settings panel is now available! You can customize your experience through the settings dropdown in the header! 🎛️`;
                 }
                 
+                if (command.action === 'notifications') {
+                    return `🔔 Notifications panel is now available! You can check your alerts and messages through the notifications dropdown in the header! 📬`;
+                }
+                
                 if (command.action?.setting) {
                     const { setting, value } = command.action;
                     try {
@@ -1299,6 +1508,8 @@ What would you like to post about? 🌟`;
 
 🎮 **Navigation**: I can take you to ANY page! Try:
 ${allPages}
+• "Settings" or "Open settings" - Access settings dropdown
+• "Notifications" or "Check notifications" - View notifications dropdown
 
 ⚙️ **Settings**: I can change ALL your preferences! Try:
 ${allSettings}
