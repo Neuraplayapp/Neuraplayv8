@@ -770,45 +770,52 @@ const AIAssistant: React.FC = () => {
         // Enhanced Navigation commands - MUCH MORE SPECIFIC
         const navigationKeywords = ['go to', 'take me to', 'navigate to', 'open', 'get', 'list', 'show', 'search', 'bring', 'go', 'take me', 'remove', 'edit', 'visit', 'access'];
         
-        // Common greetings and casual phrases that should NEVER be commands
-        const casualPhrases = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'how are you', 'how are you doing', 'what\'s up', 'sup', 'yo', 'greetings', 'goodbye', 'bye', 'see you', 'thanks', 'thank you', 'cool', 'awesome', 'nice', 'ok', 'okay', 'yes', 'no', 'maybe', 'sure', 'alright', 'fine', 'good', 'bad', 'great', 'wow', 'omg', 'lol', 'haha', 'lmao'];
+        // ONLY block pure greetings that have no other intent
+        const pureGreetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'yo', 'greetings', 'goodbye', 'bye'];
         
-        // If it's a casual phrase, treat as chat
-        if (casualPhrases.some(phrase => lowerText.includes(phrase))) {
-            return { type: 'chat' };
-        }
+        // *** PRIORITY 1: NAVIGATION COMMANDS ***
+        const navigationKeywords = ['go to', 'take me to', 'navigate to', 'open', 'show me', 'visit'];
+        const hasNavigationKeyword = navigationKeywords.some(keyword => lowerText.includes(keyword));
         
-        // Only detect navigation if there's a VERY clear intent with specific patterns
-        const hasNavigationIntent = (
-            // Must have explicit navigation action AND page name
-            (navigationKeywords.some(keyword => lowerText.includes(keyword)) && 
-             Object.keys(availablePages).some(path => {
-                const pageNameLower = availablePages[path as keyof typeof availablePages].name.toLowerCase();
-                const pathName = path.replace('/', '');
-                return lowerText.includes(pageNameLower) || lowerText.includes(pathName);
-             })) ||
-            // OR very specific command patterns
-            lowerText.includes('go to dashboard') ||
-            lowerText.includes('go to playground') ||
-            lowerText.includes('go to forum') ||
+        // Direct navigation phrases that should ALWAYS work
+        const directNavigation = 
             lowerText.includes('take me to dashboard') ||
+            lowerText.includes('take me to forum') ||
             lowerText.includes('take me to playground') ||
-            lowerText.includes('open dashboard') ||
-            lowerText.includes('open playground')
-        );
+            lowerText.includes('go to dashboard') ||
+            lowerText.includes('go to forum') ||
+            lowerText.includes('go to playground') ||
+            (hasNavigationKeyword && (
+                lowerText.includes('dashboard') ||
+                lowerText.includes('forum') ||
+                lowerText.includes('playground') ||
+                lowerText.includes('profile') ||
+                lowerText.includes('settings') ||
+                lowerText.includes('about')
+            ));
         
-        if (hasNavigationIntent) {
-            console.log('Navigation intent detected for:', lowerText);
+        // *** EXECUTE NAVIGATION COMMANDS IMMEDIATELY ***
+        if (directNavigation) {
+            console.log('🎯 DIRECT NAVIGATION DETECTED:', lowerText);
             
-            // Check for specific page matches - ALL PAGES
-            for (const [path, page] of Object.entries(availablePages)) {
-                const pageNameLower = page.name.toLowerCase();
-                const pathName = path.replace('/', '');
-                
-                if (lowerText.includes(pageNameLower) || lowerText.includes(pathName)) {
-                    console.log('Found page match:', path, page.name);
-                    return { type: 'navigation', action: { path, page } };
-                }
+            // Match specific pages with priority order
+            if (lowerText.includes('dashboard')) {
+                console.log('✅ Navigation to DASHBOARD');
+                return { type: 'navigation', action: { path: '/dashboard', page: availablePages['/dashboard'] } };
+            }
+            if (lowerText.includes('forum')) {
+                console.log('✅ Navigation to FORUM');  
+                return { type: 'navigation', action: { path: '/forum', page: availablePages['/forum'] } };
+            }
+            if (lowerText.includes('playground')) {
+                console.log('✅ Navigation to PLAYGROUND');
+                return { type: 'navigation', action: { path: '/playground', page: availablePages['/playground'] } };
+            }
+            if (lowerText.includes('profile')) {
+                return { type: 'navigation', action: { path: '/profile', page: availablePages['/profile'] } };
+            }
+            if (lowerText.includes('about')) {
+                return { type: 'navigation', action: { path: '/about', page: availablePages['/about'] } };
             }
             
             // Enhanced special navigation cases - ALL PAGES
@@ -871,7 +878,16 @@ const AIAssistant: React.FC = () => {
             return { type: 'settings', action: 'open' };
         }
         
-        // Theme settings with expanded variations
+        // *** PRIORITY 2: THEME COMMANDS ***
+        // Detect theme changes with natural language
+        if ((lowerText.includes('turn on') || lowerText.includes('switch to') || lowerText.includes('enable')) && lowerText.includes('dark')) {
+            return { type: 'settings', action: { setting: 'theme', value: 'dark' } };
+        }
+        if ((lowerText.includes('turn on') || lowerText.includes('switch to') || lowerText.includes('enable')) && lowerText.includes('light')) {
+            return { type: 'settings', action: { setting: 'theme', value: 'light' } };
+        }
+        
+        // General theme keywords
         const themeKeywords = ['theme', 'dark', 'light', 'mode', 'appearance'];
         const themeActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'switch', 'turn', 'enable', 'use'];
         
@@ -884,14 +900,17 @@ const AIAssistant: React.FC = () => {
         }
         
         // Font size settings with expanded variations
-        const fontKeywords = ['font', 'text size', 'text', 'size', 'bigger', 'smaller'];
+        const fontKeywords = ['font', 'text size', 'text', 'size', 'bigger', 'smaller', 'spacing'];
         const fontActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'increase', 'decrease'];
         
         if (fontKeywords.some(keyword => lowerText.includes(keyword)) || 
-            (fontActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('large') || lowerText.includes('small') || lowerText.includes('big') || lowerText.includes('tiny')))) {
+            (fontActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('large') || lowerText.includes('small') || lowerText.includes('big') || lowerText.includes('tiny') || lowerText.includes('wider') || lowerText.includes('spacing')))) {
             let size = 'medium';
-            if (lowerText.includes('large') || lowerText.includes('big')) size = 'large';
-            else if (lowerText.includes('small') || lowerText.includes('tiny')) size = 'small';
+            if (lowerText.includes('large') || lowerText.includes('big') || lowerText.includes('bigger') || lowerText.includes('wider')) {
+                size = 'large';
+            } else if (lowerText.includes('small') || lowerText.includes('tiny') || lowerText.includes('smaller')) {
+                size = 'small';
+            }
             return { type: 'settings', action: { setting: 'fontSize', value: size } };
         }
         
@@ -1040,6 +1059,16 @@ Based on your answers, I'll customize NeuraPlay's colors to work perfectly for y
                             timestamp: new Date()
                         });
                     }, 1000);
+                    return command.action.message;
+                }
+                
+                if (command.action?.type === 'color_blindness_analysis') {
+                    // Apply colorblind settings based on analysis
+                    if (command.action.result === 'red_green_deficiency') {
+                        // Enable colorblind mode
+                        console.log('🎨 Enabling colorblind-friendly mode');
+                        // Add actual colorblind mode implementation here
+                    }
                     return command.action.message;
                 }
                 break;
