@@ -3020,28 +3020,11 @@ This two-step process is mandatory. Do not deviate.`;
                         {!isDemoUser && promptCount >= 10 && (
                             <div className="text-center text-amber-400 text-xs mt-2 font-bold">🎯 You've used all your daily questions! Come back tomorrow for more fun! 🌟</div>
                         )}
-                        {isDemoUser && (
-                            <div className="text-center text-green-400 text-xs mt-2 font-bold">🌟 Demo User: Unlimited access! 🚀</div>
-                        )}
+
                         {mode === 'conversing' && (
                             <div className="text-center text-blue-400 text-xs mt-2 font-bold animate-pulse">🎤 Streaming Conversation Active - Speak to Synapse! 🔊</div>
                         )}
-                        
-                        {/* Test Image Generation Button (for debugging) */}
-                        {isDemoUser && (
-                            <div className="mt-2 text-center">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setInputMessage("Generate an image of a cute robot");
-                                        setTimeout(() => handleSendText(), 100);
-                                    }}
-                                    className="px-3 py-1 bg-purple-500/20 border border-purple-400/30 rounded-lg text-purple-300 text-xs hover:bg-purple-500/30 transition-all"
-                                >
-                                    🧪 Test Image Gen
-                                </button>
-                            </div>
-                        )}
+
                     </div>
                 </div>
             </aside>

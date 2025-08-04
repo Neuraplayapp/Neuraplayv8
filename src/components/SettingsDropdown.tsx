@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Sun, Moon, Monitor, Palette, Eye, Smartphone, Globe, User, Shield, HelpCircle, Zap, Cog, ShieldAlert, ChevronRight, Bot, Brain, Heart, Target, Crown } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, Palette, Eye, Smartphone, Globe, User, Shield, HelpCircle, Zap, Cog, ShieldAlert, ChevronRight, Bot, Brain, Heart, Target, Crown, Download, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
+import { useNavigate } from 'react-router-dom';
 // FIXED: Add AIAgentContext import
 import { useAIAgent } from '../contexts/AIAgentContext';
 
@@ -12,6 +13,7 @@ const SettingsDropdown: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('theme');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
+  const navigate = useNavigate();
   
   // FIXED: Connect to AIAgentContext instead of local state
   const { currentContext, updateContext } = useAIAgent();
@@ -20,6 +22,87 @@ const SettingsDropdown: React.FC = () => {
   // FIXED: Update AI personality when changed
   const handlePersonalityChange = (newPersonality: string) => {
     updateContext({ agentPersonality: newPersonality as any });
+  };
+
+  // Navigation and Action Handlers
+  const handleProfileRedirect = () => {
+    setIsOpen(false);
+    navigate('/profile');
+  };
+
+  const handlePrivacySettings = () => {
+    setIsOpen(false);
+    // For now, redirect to profile where privacy settings would be
+    navigate('/profile');
+    // TODO: Implement dedicated privacy settings modal
+  };
+
+  const handleLanguageSettings = () => {
+    setIsOpen(false);
+    // TODO: Implement language selection modal
+    alert('Language settings coming soon!');
+  };
+
+  const handleHelpSupport = () => {
+    setIsOpen(false);
+    // TODO: Implement help/support system
+    window.open('https://github.com/Neuraplayapp/Neuraplayv8/issues', '_blank');
+  };
+
+  const handleBlockedUsers = () => {
+    setIsOpen(false);
+    // TODO: Implement blocked users management modal
+    alert('Blocked users management coming soon!');
+  };
+
+  const handleDataExport = () => {
+    setIsOpen(false);
+    try {
+      const userData = {
+        profile: user?.profile,
+        username: user?.username,
+        exportDate: new Date().toISOString(),
+        // Add more data as needed
+      };
+      const dataStr = JSON.stringify(userData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `neuraplay-data-${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Error exporting data. Please try again.');
+    }
+  };
+
+  const handleEditProfile = () => {
+    setIsOpen(false);
+    navigate('/profile');
+  };
+
+  const handleDeleteAccount = () => {
+    setIsOpen(false);
+    const confirmed = window.confirm(
+      'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data, progress, and achievements.'
+    );
+    if (confirmed) {
+      const doubleConfirm = window.confirm(
+        'This is your final warning. Deleting your account will:\n\n• Remove all your game progress\n• Delete your achievements and stats\n• Remove your friends and social connections\n• Permanently delete your profile\n\nType "DELETE" in the next prompt to confirm.'
+      );
+      if (doubleConfirm) {
+        const finalConfirm = prompt('Type "DELETE" to permanently delete your account:');
+        if (finalConfirm === 'DELETE') {
+          // TODO: Implement actual account deletion API call
+          alert('Account deletion functionality is not yet implemented. Your account is safe.');
+        } else {
+          alert('Account deletion cancelled.');
+        }
+      }
+    }
   };
 
   const { 
@@ -481,35 +564,47 @@ const SettingsDropdown: React.FC = () => {
               {activeTab === 'quick-actions' && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-2">
-                    <button className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                    }`}>
+                    <button 
+                      onClick={handleProfileRedirect}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all hover:scale-[1.02] ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <User className="w-4 h-4" />
                       <span className="text-sm font-medium">Profile</span>
                     </button>
-                    <button className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                    }`}>
+                    <button 
+                      onClick={handlePrivacySettings}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all hover:scale-[1.02] ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <Shield className="w-4 h-4" />
                       <span className="text-sm font-medium">Privacy</span>
                     </button>
-                    <button className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                    }`}>
+                    <button 
+                      onClick={handleLanguageSettings}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all hover:scale-[1.02] ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <Globe className="w-4 h-4" />
                       <span className="text-sm font-medium">Language</span>
                     </button>
-                    <button className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                    }`}>
+                    <button 
+                      onClick={handleHelpSupport}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all hover:scale-[1.02] ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <HelpCircle className="w-4 h-4" />
                       <span className="text-sm font-medium">Help</span>
                     </button>
@@ -566,11 +661,14 @@ const SettingsDropdown: React.FC = () => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Privacy & Safety</h4>
                     <div className="space-y-2">
-                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
-                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
-                      }`}>
+                      <button 
+                        onClick={handlePrivacySettings}
+                        className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                          isDarkMode 
+                            ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                            : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Shield className="w-4 h-4 text-purple-600" />
@@ -583,11 +681,14 @@ const SettingsDropdown: React.FC = () => {
                         </div>
                       </button>
                       
-                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
-                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
-                      }`}>
+                      <button 
+                        onClick={handleBlockedUsers}
+                        className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                          isDarkMode 
+                            ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                            : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-red-600" />
@@ -600,14 +701,17 @@ const SettingsDropdown: React.FC = () => {
                         </div>
                       </button>
 
-                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
-                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
-                      }`}>
+                      <button 
+                        onClick={handleDataExport}
+                        className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                          isDarkMode 
+                            ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                            : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Globe className="w-4 h-4 text-blue-600" />
+                            <Download className="w-4 h-4 text-blue-600" />
                             <div>
                               <h5 className="text-xs font-medium text-gray-900 dark:text-white">Data Export</h5>
                               <p className="text-xs text-gray-500 dark:text-gray-400">Download your data</p>
@@ -623,11 +727,14 @@ const SettingsDropdown: React.FC = () => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Account Actions</h4>
                     <div className="space-y-2">
-                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
-                          : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
-                      }`}>
+                      <button 
+                        onClick={handleEditProfile}
+                        className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                          isDarkMode 
+                            ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                            : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-green-600" />
@@ -640,14 +747,17 @@ const SettingsDropdown: React.FC = () => {
                         </div>
                       </button>
 
-                      <button className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
-                        isDarkMode 
-                          ? 'bg-red-900/20 border-red-800 hover:bg-red-900/30' 
-                          : 'bg-red-50 border-red-200 hover:bg-red-100'
-                      }`}>
+                      <button 
+                        onClick={handleDeleteAccount}
+                        className={`w-full rounded-lg p-3 text-left border transition-all hover:scale-[1.02] ${
+                          isDarkMode 
+                            ? 'bg-red-900/20 border-red-800 hover:bg-red-900/30' 
+                            : 'bg-red-50 border-red-200 hover:bg-red-100'
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <HelpCircle className="w-4 h-4 text-red-600" />
+                            <Trash2 className="w-4 h-4 text-red-600" />
                             <div>
                               <h5 className="text-xs font-medium text-red-700 dark:text-red-400">Delete Account</h5>
                               <p className="text-xs text-red-600 dark:text-red-500">Permanently delete account</p>

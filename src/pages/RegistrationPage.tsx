@@ -223,7 +223,7 @@ const RegistrationPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Step 1: Basic Information */}
           {step === 1 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full mx-auto flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Check className="w-8 h-8 text-white" />
@@ -232,18 +232,18 @@ const RegistrationPage: React.FC = () => {
                 <p className="text-gray-300">Let's get to know you better</p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
                   <label className="block font-bold mb-4 text-white text-lg">I am a...</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-6">
                     {['learner', 'parent'].map(role => (
                       <button
                         key={role}
                         onClick={() => setFormData({ ...formData, role })}
-                        className={`p-6 rounded-xl font-semibold text-lg transition-all border-2 ${
+                        className={`min-w-[140px] min-h-[80px] p-6 rounded-xl font-semibold text-lg transition-all border-2 whitespace-pre-line break-words text-center flex flex-col items-center justify-center shadow-sm ${
                           formData.role === role
                             ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-600 shadow-lg'
-                            : 'bg-white/10 text-gray-300 border-white/20 hover:border-violet-400 hover:bg-white/20'
+                            : 'bg-white/10 text-gray-800 border-white/20 hover:border-violet-400 hover:bg-white/20'
                         }`}
                       >
                         {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -322,7 +322,7 @@ const RegistrationPage: React.FC = () => {
 
           {/* Step 2: Avatar Creation */}
           {step === 2 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full mx-auto flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Star className="w-8 h-8 text-white" />
@@ -331,7 +331,7 @@ const RegistrationPage: React.FC = () => {
                 <p className="text-gray-300">Design your unique hero character</p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
                   <h4 className="font-bold mb-4 text-white text-lg">Choose your hero avatar</h4>
                   <div className="flex gap-3 mb-4">

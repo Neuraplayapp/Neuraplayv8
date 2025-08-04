@@ -349,7 +349,11 @@ const ParentHomePage: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-8 justify-center items-center mb-16">
                 <button 
                   onClick={() => setShowSignUpModal(true)} 
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold px-16 py-8 rounded-full text-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 glow"
+                  className={`font-bold px-16 py-8 rounded-full text-xl transition-all duration-300 glow ${
+                    isDarkMode 
+                      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
+                      : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
+                  }`}
                 >
                   Start Free Trial
                 </button>

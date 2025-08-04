@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 import ModalReveal from './ModalReveal';
 import { LogIn, User, Lock, Eye, EyeOff } from 'lucide-react';
 
@@ -18,6 +19,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
   redirectTo = '/dashboard'
 }) => {
   const { setUser } = useUser();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -155,14 +157,24 @@ const LoginModal: React.FC<LoginModalProps> = ({
               className="w-20 h-20 object-contain"
             />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Sign In to Your Account</h2>
-          <p className="text-white/70">Continue your learning journey with NeuraPlay</p>
+          <h2 className={`text-2xl font-bold mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Sign In to Your Account</h2>
+          <p className={`${
+            isDarkMode ? 'text-white/70' : 'text-gray-600'
+          }`}>Continue your learning journey with NeuraPlay</p>
         </div>
 
         {/* Demo Login Button */}
-        <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl p-4 border border-violet-400/30">
+        <div className={`rounded-xl p-4 border ${
+          isDarkMode 
+            ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 border-violet-400/30'
+            : 'bg-gradient-to-r from-violet-100 to-purple-100 border-violet-300/50'
+        }`}>
           <div className="text-center">
-            <p className="text-white/80 text-sm mb-3">Try the demo experience</p>
+            <p className={`text-sm mb-3 ${
+              isDarkMode ? 'text-white/80' : 'text-gray-700'
+            }`}>Try the demo experience</p>
             <button
               onClick={handleDemoLogin}
               disabled={isLoading}
@@ -175,17 +187,25 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/20"></div>
+            <div className={`w-full border-t ${
+              isDarkMode ? 'border-white/20' : 'border-gray-300'
+            }`}></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white/60">Or sign in manually</span>
+            <span className={`px-2 ${
+              isDarkMode 
+                ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white/60'
+                : 'bg-white text-gray-600'
+            }`}>Or sign in manually</span>
           </div>
         </div>
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block font-bold mb-3 text-white text-lg flex items-center gap-2">
+            <label className={`block font-bold mb-3 text-lg flex items-center gap-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               <User className="w-5 h-5" />
               Email Address
             </label>
@@ -194,13 +214,19 @@ const LoginModal: React.FC<LoginModalProps> = ({
               placeholder="Enter your email address"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+              className={`w-full p-4 rounded-xl border focus:ring-2 focus:ring-violet-400/20 transition-all ${
+                isDarkMode 
+                  ? 'bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-violet-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-violet-500'
+              }`}
               required
             />
           </div>
 
           <div>
-            <label className="block font-bold mb-3 text-white text-lg flex items-center gap-2">
+            <label className={`block font-bold mb-3 text-lg flex items-center gap-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               <Lock className="w-5 h-5" />
               Password
             </label>
@@ -210,13 +236,21 @@ const LoginModal: React.FC<LoginModalProps> = ({
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full p-4 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                className={`w-full p-4 pr-12 rounded-xl border focus:ring-2 focus:ring-violet-400/20 transition-all ${
+                  isDarkMode 
+                    ? 'bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-violet-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-violet-500'
+                }`}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${
+                  isDarkMode 
+                    ? 'text-white/60 hover:text-white'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -250,7 +284,9 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* Additional Info */}
         <div className="text-center space-y-3">
-          <p className="text-white/60 text-sm">
+          <p className={`text-sm ${
+            isDarkMode ? 'text-white/60' : 'text-gray-600'
+          }`}>
             Don't have an account?{' '}
             <button
               onClick={() => {
@@ -263,9 +299,15 @@ const LoginModal: React.FC<LoginModalProps> = ({
             </button>
           </p>
           
-          <div className="bg-white/5 rounded-xl p-4">
-            <h4 className="font-semibold text-white mb-2">Demo Credentials</h4>
-            <div className="space-y-1 text-sm text-white/70">
+          <div className={`rounded-xl p-4 ${
+            isDarkMode ? 'bg-white/5' : 'bg-gray-50'
+          }`}>
+            <h4 className={`font-semibold mb-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>Demo Credentials</h4>
+            <div className={`space-y-1 text-sm ${
+              isDarkMode ? 'text-white/70' : 'text-gray-600'
+            }`}>
               <p><strong>Learner:</strong> demo@neuraplay.com / demo123</p>
               <p><strong>Parent:</strong> parent@neuraplay.com / parent123</p>
             </div>

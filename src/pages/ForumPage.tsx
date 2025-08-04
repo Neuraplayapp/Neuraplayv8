@@ -160,7 +160,11 @@ const ForumPage: React.FC = () => {
               </Link>
               <Link 
                 to="/login" 
-                className={`inline-block w-full bg-transparent border-2 ${isDarkMode ? 'border-white/20' : 'border-gray-300'} text-white font-bold px-8 py-4 rounded-full hover:bg-white/10 transition-all duration-300`}
+                                            className={`inline-block w-full bg-transparent border-2 font-bold px-8 py-4 rounded-full transition-all duration-300 ${
+                                isDarkMode 
+                                    ? 'border-white/20 text-white hover:bg-white/10' 
+                                    : 'border-gray-300 text-gray-900 hover:bg-gray-100/50'
+                            }`}
               >
                 Log In
               </Link>
@@ -407,8 +411,12 @@ const ForumPage: React.FC = () => {
 
                                     {/* Post Content */}
                                     <div className="mb-4">
-                                        <h4 className="font-bold text-xl text-white mb-3">{post.title}</h4>
-                                        <p className="text-slate-200 leading-relaxed">{post.content}</p>
+                                                                        <h4 className={`font-bold text-xl mb-3 ${
+                                    isDarkMode ? 'text-white' : 'text-gray-900'
+                                }`}>{post.title}</h4>
+                                <p className={`leading-relaxed ${
+                                    isDarkMode ? 'text-slate-200' : 'text-gray-800'
+                                }`}>{post.content}</p>
                                     </div>
 
                                     {/* Post Actions */}
@@ -422,7 +430,9 @@ const ForumPage: React.FC = () => {
                                                 >
                                                     <ThumbsUp size={16} className="group-hover:text-green-400" />
                                                 </button>
-                                                <span className="text-sm font-semibold text-white">{post.votes}</span>
+                                                <span className={`text-sm font-semibold ${
+                                                    isDarkMode ? 'text-white' : 'text-gray-900'
+                                                }`}>{post.votes}</span>
                                                 <button
                                                     onClick={() => votePost(post.id, -1)}
                                                     className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
@@ -449,7 +459,9 @@ const ForumPage: React.FC = () => {
                                             </button>
                                         </div>
 
-                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                        <div className={`flex items-center gap-2 text-sm ${
+                                            isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                                        }`}>
                                             <TrendingUp size={14} />
                                             <span>Trending</span>
                                         </div>
@@ -464,7 +476,11 @@ const ForumPage: React.FC = () => {
                                                     placeholder="Write a reply..."
                                                     value={replyContent[post.id] || ''}
                                                     onChange={(e) => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
-                                                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 resize-none"
+                                                    className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-yellow-400/20 resize-none ${
+                                                        isDarkMode 
+                                                            ? 'bg-white/10 border-white/20 text-white placeholder-slate-400 focus:border-yellow-400' 
+                                                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-yellow-500'
+                                                    }`}
                                                     rows={3}
                                                 />
                                                 <div className="flex justify-end mt-2">
@@ -493,12 +509,18 @@ const ForumPage: React.FC = () => {
                                                                     />
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="font-semibold text-white">{reply.author}</h4>
-                                                                    <p className="text-xs text-slate-400">{formatDate(reply.createdAt)}</p>
+                                                                    <h4 className={`font-semibold ${
+                                                                        isDarkMode ? 'text-white' : 'text-gray-900'
+                                                                    }`}>{reply.author}</h4>
+                                                                    <p className={`text-xs ${
+                                                                        isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                                                                    }`}>{formatDate(reply.createdAt)}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <p className="text-slate-200 mb-3">{reply.content}</p>
+                                                        <p className={`mb-3 ${
+                                                            isDarkMode ? 'text-slate-200' : 'text-gray-800'
+                                                        }`}>{reply.content}</p>
                                                         <div className="flex items-center gap-4">
                                                             <div className="flex items-center gap-2">
                                                                 <button
@@ -507,7 +529,9 @@ const ForumPage: React.FC = () => {
                                                                 >
                                                                     <ThumbsUp size={14} />
                                                                 </button>
-                                                                <span className="text-xs font-semibold text-white">{reply.votes}</span>
+                                                                <span className={`text-xs font-semibold ${
+                                                                    isDarkMode ? 'text-white' : 'text-gray-900'
+                                                                }`}>{reply.votes}</span>
                                                                 <button
                                                                     onClick={() => voteReply(post.id, reply.id, -1)}
                                                                     className="p-1 hover:bg-red-500/20 rounded transition-colors"
@@ -515,7 +539,11 @@ const ForumPage: React.FC = () => {
                                                                     <ThumbsDown size={14} />
                                                                 </button>
                                                             </div>
-                                                            <button className="text-xs text-slate-400 hover:text-white transition-colors">
+                                                            <button className={`text-xs transition-colors ${
+                                                            isDarkMode 
+                                                                ? 'text-slate-400 hover:text-white' 
+                                                                : 'text-gray-600 hover:text-gray-900'
+                                                        }`}>
                                                                 Reply
                                                             </button>
                                                         </div>
@@ -532,8 +560,12 @@ const ForumPage: React.FC = () => {
                                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center">
                                         <MessageCircle size={32} className="text-black" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">No posts yet</h3>
-                                    <p className="text-slate-400 mb-6">Be the first to share something in {selectedChannel}!</p>
+                                                                <h3 className={`text-xl font-bold mb-2 ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>No posts yet</h3>
+                            <p className={`mb-6 ${
+                                isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                            }`}>Be the first to share something in {selectedChannel}!</p>
                                     <button
                                         onClick={() => setShowNewPostForm(true)}
                                         className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-semibold rounded-lg hover:from-yellow-500 hover:to-amber-600 transition-all flex items-center gap-2 mx-auto"
