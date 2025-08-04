@@ -517,66 +517,239 @@ app.post('/.netlify/functions/api', async (req, res) => {
   }
 });
 
-// Also add the /api route for Render compatibility
+// Also add the /api route for Render compatibility - RESTORE ORIGINAL TOGETHER AI SETUP
 app.post('/api/api', async (req, res) => {
   try {
-    console.log('🌐 Generic API request received via /api');
-    const { message, model = 'gpt-3.5-turbo' } = req.body;
+    console.log('🌐 API request received via /api');
+    const { task_type, input_data } = req.body;
     
-    if (!message) {
-      return res.status(400).json({ error: 'No message provided' });
-    }
+    console.log('Task type:', task_type);
+    console.log('Input data:', input_data);
 
-    // Check if this is an image generation request
-    if (model === 'image-generation' || message.toLowerCase().includes('generate an image:')) {
-      console.log('🎨 Image generation request detected');
+    // Get environment variables - RESTORE ORIGINAL TOGETHER AI
+    const TOGETHER_TOKEN = process.env.together_token || process.env.TOGETHER_TOKEN;
+    const HF_TOKEN = process.env.hf_token;
+
+    console.log('Together token exists:', !!TOGETHER_TOKEN);
+    console.log('HF token exists:', !!HF_TOKEN);
+    console.log('Together token length:', TOGETHER_TOKEN ? TOGETHER_TOKEN.length : 0);
+
+    // Handle different task types - RESTORE ORIGINAL LOGIC
+    switch (task_type) {
+      case 'test':
+        return await handleTestGeneration(TOGETHER_TOKEN);
+      case 'summarization':
+      case 'text':
+      case 'chat':
+      case 'conversation':
+      case 'story':
+      case 'report':
+        console.log(`Processing ${task_type} request`);
+        return await handleTextGeneration(input_data, TOGETHER_TOKEN);
       
-      // Extract the image prompt
-      const imagePrompt = message.replace(/^generate an image:\s*/i, '');
+      case 'image':
+        return await handleImageGeneration(input_data, TOGETHER_TOKEN);
       
-      // For now, return a placeholder message since we'd need a proper image API
-      return res.json({ 
-        response: `I understand you want me to generate an image of "${imagePrompt}". Image generation is currently optimized for Netlify deployment. For now, you can use text-based interactions and I'll help you with descriptions, ideas, and creative writing! 🎨✨`,
-        image_url: null 
-      });
+      case 'voice':
+        return await handleVoiceGeneration(input_data, HF_TOKEN);
+      
+      default:
+        return res.status(400).json({ 
+          error: 'Invalid task_type. Supported types: summarization, text, chat, conversation, story, report, image, voice' 
+        });
+    }
+  } catch (error) {
+    console.error('❌ API error:', error);
+    res.status(500).json({ error: 'API failed: ' + error.message });
+  }
+});
+
+// RESTORE ORIGINAL TOGETHER AI FUNCTIONS
+async function handleTextGeneration(input_data, token) {
+  if (!token) {
+    console.log('No Together AI token provided, using fallback response');
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([{ 
+        generated_text: "Hello! I'm Synapse, your AI learning assistant! 🌟 I'm here to help you with your educational journey. What would you like to learn about today? We could explore numbers, science, or play some brain games together! ✨" 
+      }])
+    };
+  }
+
+  try {
+    // Prepare chat messages
+    let messages;
+    let userInput = '';
+    if (typeof input_data === 'object' && input_data.messages) {
+      messages = input_data.messages;
+      // Ensure the first message is always the Synapse system prompt
+      if (messages.length > 0 && messages[0].role !== 'system') {
+        messages.unshift({
+          role: 'system',
+          content: 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.'
+        });
+      }
+      userInput = input_data.messages[input_data.messages.length - 1]?.content || '';
+    } else {
+      userInput = input_data;
+      messages = [
+        { role: 'system', content: 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.' },
+        { role: 'user', content: input_data }
+      ];
     }
 
-    // This would need your actual OpenAI API key
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    
-    if (!OPENAI_API_KEY) {
-      return res.status(500).json({ 
-        error: 'OpenAI API key not configured',
-        message: 'API endpoint available but OpenAI key not set'
-      });
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Generate response with ORIGINAL Qwen model
+    console.log('Using model: Qwen/Qwen3-235B-A22B-Instruct-2507-tput');
+    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: message }],
-        max_tokens: 150
+        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
+        messages: messages,
+        max_tokens: 100,
+        temperature: 0.7,
+        top_p: 0.9
       })
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Together AI API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log('✅ API response generated');
-    res.json({ response: data.choices[0].message.content });
-    
+    const result = await response.json();
+    console.log('Together AI text result:', result);
+
+    const assistantResponse = result.choices?.[0]?.message?.content || "I'm here to help with your learning journey!";
+
+    // Return the response in ORIGINAL format
+    return res.json([{ 
+      generated_text: assistantResponse
+    }]);
   } catch (error) {
-    console.error('❌ Generic API error:', error);
-    res.status(500).json({ error: 'API failed: ' + error.message });
+    console.error('Text generation error:', error);
+    return res.json([{ 
+      generated_text: "I'm here to help with your learning journey! Please try again in a moment. 🌟" 
+    }]);
   }
-});
+}
+
+async function handleImageGeneration(input_data, token) {
+  const prompt = (typeof input_data === 'object' && input_data.prompt) ? input_data.prompt : String(input_data);
+
+  console.log('Starting image generation with token:', !!token);
+  console.log('Extracted prompt for image generation:', prompt);
+  
+  if (!token) {
+    console.log('No token provided, returning placeholder');
+    return res.json({
+      data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      contentType: 'image/png',
+      error: 'No API token configured'
+    });
+  }
+
+  try {
+    // Use ORIGINAL FLUX schnell model
+    console.log('Using model: black-forest-labs/FLUX.1-schnell-Free');
+    
+    const response = await fetch('https://api.together.xyz/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'black-forest-labs/FLUX.1-schnell-Free',
+        prompt: prompt,
+        n: 1,
+        width: 512,
+        height: 512,
+        steps: 4,
+        response_format: 'b64_json'
+      })
+    });
+
+    console.log('FLUX response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('FLUX error:', errorText);
+      throw new Error(`FLUX failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('FLUX response received');
+
+    if (result.data && result.data[0] && result.data[0].b64_json) {
+      const base64 = result.data[0].b64_json;
+      console.log('Base64 image length:', base64.length);
+
+      return res.json({
+        data: base64,
+        contentType: 'image/png'
+      });
+    } else {
+      console.error('Unexpected FLUX response format:', result);
+      throw new Error('Unexpected response format');
+    }
+  } catch (error) {
+    console.error('Image generation error:', error);
+    return res.json({
+      data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      contentType: 'image/png',
+      error: error.message,
+      fallback: true
+    });
+  }
+}
+
+async function handleTestGeneration(token) {
+  if (!token) {
+    return res.json({ 
+      error: 'No Together AI token configured'
+    });
+  }
+
+  try {
+    console.log('Testing Together AI...');
+    
+    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
+        messages: [{ role: 'user', content: 'Hello' }],
+        max_tokens: 10
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Test failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return res.json({ 
+      success: true,
+      message: 'Together AI test successful',
+      response: result
+    });
+  } catch (error) {
+    console.error('Test error:', error);
+    return res.json({ 
+      error: `Test failed: ${error.message}`
+    });
+  }
+}
 
 // Contact form
 app.post('/.netlify/functions/contact', async (req, res) => {
