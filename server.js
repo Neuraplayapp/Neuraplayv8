@@ -130,6 +130,10 @@ app.post('/api/api', async (req, res) => {
       return res.status(400).json({ error: 'No messages provided' });
     }
 
+    // Extract parameters with defaults
+    const maxTokens = input_data.max_tokens || 512;
+    const temperature = input_data.temperature || 0.7;
+
     // Use Together AI API for chat completion
     const response = await fetch('https://api.together.xyz/v1/chat/completions', {
       method: 'POST',
@@ -140,8 +144,8 @@ app.post('/api/api', async (req, res) => {
       body: JSON.stringify({
         model: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
         messages: input_data.messages,
-        max_tokens: 512,
-        temperature: 0.7,
+        max_tokens: maxTokens,
+        temperature: temperature,
         stream: false
       })
     });
@@ -303,24 +307,140 @@ async function handleAudioChunk(clientWs, clientId, audioBase64) {
     const elevenLabsWs = elevenLabsConnections.get(clientId);
     
     if (!elevenLabsWs || elevenLabsWs.readyState !== WebSocket.OPEN) {
-      console.log('⚠️ ElevenLabs connection not ready');
+      console.log('⚠️ ElevenLabs connection not ready, using fallback transcription');
+      
+      // Fallback: Use AssemblyAI + Together AI for conversation
+      await handleFallbackConversation(clientWs, audioBase64);
       return;
     }
     
     console.log('🎤 Forwarding audio chunk to ElevenLabs');
     
-    // Forward audio chunk to ElevenLabs
+    // Forward audio chunk to ElevenLabs with proper format
     elevenLabsWs.send(JSON.stringify({
+      type: 'user_audio_chunk',
       user_audio_chunk: audioBase64
+    }));
+    
+    // Send acknowledgment to client
+    clientWs.send(JSON.stringify({
+      type: 'audio_ack',
+      message: 'Audio chunk received'
     }));
     
   } catch (error) {
     console.error('❌ Error forwarding audio chunk:', error);
-    clientWs.send(JSON.stringify({
-      type: 'error',
-      message: 'Failed to process audio'
-    }));
+    // Use fallback instead of failing
+    await handleFallbackConversation(clientWs, audioBase64);
   }
+}
+
+// Fallback conversation using AssemblyAI + Together AI
+async function handleFallbackConversation(clientWs, audioBase64) {
+  try {
+    console.log('🔄 Using fallback conversation flow');
+    
+    // Step 1: Transcribe audio
+    const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+      method: 'POST',
+      headers: {
+        'Authorization': process.env.VITE_ASSEMBLYAI_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        audio_data: audioBase64,
+        speech_model: 'universal'
+      })
+    });
+
+    if (!transcriptResponse.ok) {
+      throw new Error('Transcription failed');
+    }
+
+    const transcriptResult = await transcriptResponse.json();
+    const transcriptId = transcriptResult.id;
+    
+    // Poll for completion
+    let finalResult;
+    do {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+        headers: { 'Authorization': process.env.VITE_ASSEMBLYAI_API_KEY }
+      });
+      finalResult = await pollResponse.json();
+    } while (finalResult.status === 'processing' || finalResult.status === 'queued');
+
+    if (!finalResult.text) return;
+
+    // Step 2: Generate AI response with conversation-appropriate length
+    const aiResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.together_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are Synapse, a friendly AI teacher in conversation mode. Keep responses conversational, natural, and appropriately brief (1-3 sentences for simple questions, longer for complex topics). Respond as if having an ongoing voice conversation.'
+          },
+          { role: 'user', content: finalResult.text }
+        ],
+        max_tokens: getResponseLength(finalResult.text),
+        temperature: 0.7,
+        stream: false
+      })
+    });
+
+    const aiResult = await aiResponse.json();
+    const responseText = aiResult.choices?.[0]?.message?.content || 'I apologize, but I could not generate a response.';
+    
+    // Step 3: Send text response
+    clientWs.send(JSON.stringify({
+      type: 'ai_response',
+      text: responseText
+    }));
+
+    // Step 4: Generate TTS
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/8LVfoRdkh4zgjr8v5ObE`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': process.env.VITE_ELEVENLABS_API_KEY,
+      },
+      body: JSON.stringify({
+        text: responseText,
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      })
+    });
+    
+    if (ttsResponse.ok) {
+      const audioBuffer = await ttsResponse.buffer();
+      const base64Audio = audioBuffer.toString('base64');
+      
+      clientWs.send(JSON.stringify({
+        type: 'audio_chunk',
+        audio: base64Audio
+      }));
+    }
+    
+  } catch (error) {
+    console.error('❌ Fallback conversation error:', error);
+  }
+}
+
+// Determine appropriate response length based on input
+function getResponseLength(inputText) {
+  const wordCount = inputText.split(' ').length;
+  
+  if (wordCount <= 5) return 50;      // Short questions: brief answers
+  if (wordCount <= 15) return 150;    // Medium questions: moderate answers  
+  if (wordCount <= 30) return 300;    // Longer questions: detailed answers
+  return 500;                         // Complex topics: comprehensive answers
 }
 
 // Handle direct TTS requests

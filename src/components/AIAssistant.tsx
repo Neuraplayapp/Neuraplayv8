@@ -1750,9 +1750,39 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
+    // Determine appropriate response length based on input and mode
+    const getResponseParams = (message: string, currentMode: string) => {
+        const wordCount = message.split(' ').length;
+        const isConversation = currentMode === 'conversing';
+        
+        let maxTokens = 150; // Default
+        let systemPrompt = getSystemPrompt();
+        
+        if (isConversation) {
+            // Conversation mode: more natural, brief responses
+            systemPrompt = "You are Synapse, a friendly AI teacher in conversation mode. Keep responses conversational, natural, and appropriately brief (1-3 sentences for simple questions, longer for complex topics). Respond as if having an ongoing voice conversation.";
+            
+            if (wordCount <= 5) maxTokens = 50;      // Very brief for short questions
+            else if (wordCount <= 15) maxTokens = 100; // Short for medium questions
+            else if (wordCount <= 30) maxTokens = 200; // Moderate for longer questions
+            else maxTokens = 350;                      // Detailed for complex topics
+        } else {
+            // Text mode: can be more detailed and comprehensive
+            if (wordCount <= 5) maxTokens = 100;      // Brief but complete
+            else if (wordCount <= 15) maxTokens = 250; // Detailed explanation
+            else if (wordCount <= 30) maxTokens = 400; // Comprehensive response
+            else maxTokens = 600;                      // Full explanation for complex topics
+        }
+        
+        return { maxTokens, systemPrompt };
+    };
+
     // NEW: Send message to Synapse API
     const sendMessageToSynapse = async (message: string): Promise<string> => {
         try {
+            const currentMode = modeRef.current;
+            const { maxTokens, systemPrompt } = getResponseParams(message, currentMode);
+            
             // Platform-aware API endpoint
             const apiEndpoint = isNetlify() 
                 ? '/.netlify/functions/api'
@@ -1765,9 +1795,11 @@ Need help with anything specific? Just ask! 🌟`;
                     task_type: 'chat',
                     input_data: {
                         messages: [
-                            { role: 'system', content: getSystemPrompt() },
+                            { role: 'system', content: systemPrompt },
                             { role: 'user', content: message }
-                        ]
+                        ],
+                        max_tokens: maxTokens,
+                        temperature: currentMode === 'conversing' ? 0.7 : 0.6
                     }
                 })
             });
