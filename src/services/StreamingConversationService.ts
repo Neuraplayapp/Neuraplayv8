@@ -202,7 +202,14 @@ export class StreamingConversationService {
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
       // Send to AssemblyAI for transcription
-      const response = await fetch('/.netlify/functions/assemblyai-transcribe', {
+      // Platform-aware API endpoint
+      const apiEndpoint = window.location.hostname.includes('netlify') || 
+                         window.location.hostname.includes('localhost') ||
+                         window.location.hostname.includes('127.0.0.1')
+          ? '/.netlify/functions/assemblyai-transcribe'
+          : '/api/assemblyai-transcribe';
+      
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

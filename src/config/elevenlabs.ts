@@ -43,10 +43,12 @@ if (import.meta.env.DEV) {
 
 const audioCache = new Map<string, Howl>();
 
-// Debug: Log available environment variables
-console.log('Available env vars:', Object.keys(import.meta.env));
-console.log('ElevenLabs API Key available:', isElevenLabsConfigured);
-console.log('⚠️ IMPORTANT: Frontend needs VITE_ELEVENLABS_API_KEY or VITE_ELVEN_LABS_API_KEY in Netlify environment variables');
+// Debug: Log available environment variables (development only)
+if (import.meta.env.DEV) {
+  console.log('Available env vars:', Object.keys(import.meta.env));
+  console.log('ElevenLabs API Key available:', isElevenLabsConfigured);
+  console.log('⚠️ IMPORTANT: Frontend needs VITE_ELEVENLABS_API_KEY or VITE_ELVEN_LABS_API_KEY in Netlify environment variables');
+}
 
 export const getVoiceId = (language: 'english' | 'russian' | 'arabic' = 'english'): string => {
     return elevenLabsConfig.voices[language];

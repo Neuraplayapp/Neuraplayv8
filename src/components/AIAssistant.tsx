@@ -1078,7 +1078,18 @@ Need help with anything specific? Just ask! 🌟`;
     const handleToggleConversationMode = async () => {
         if (mode === 'conversing') {
             // Stop the conversation
-            await conversationService.current.endConversation();
+            console.log('🔄 Ending conversation mode...');
+            
+            if (isNetlify()) {
+                console.log('🔄 ConversationService has active conversation:', conversationService.current.hasActiveConversation);
+                if (conversationService.current.hasActiveConversation) {
+                    await conversationService.current.endConversation();
+                    console.log('✅ Conversation ended successfully');
+                }
+            } else if (isRender()) {
+                // On Render, stop the MediaRecorder and clean up
+                console.log('🔄 Stopping voice recording on Render...');
+            }
             
             // Stop media recorder if it's running
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -1203,10 +1214,35 @@ Need help with anything specific? Just ask! 🌟`;
                     });
                     
                 } else if (isRender()) {
-                    // On Render, just enable voice recording without Ably
+                    // On Render, start voice recording with WebSocket support
                     console.log('🎤 Enabling voice recording on Render...');
+                    console.log('🔌 WebSocket available on Render platform');
+                    
+                    // Start local audio recording for Render
+                    console.log('🎤 Requesting microphone access...');
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('✅ Microphone access granted');
+                    streamRef.current = stream;
+                    
+                    const mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+                    mediaRecorderRef.current = mediaRecorder;
+                    
+                    // Set up continuous recording for Render
+                    mediaRecorder.ondataavailable = async (event) => {
+                        if (event.data.size > 0 && modeRef.current === 'conversing') {
+                            console.log(`🔊 Audio data available: ${event.data.size} bytes`);
+                            // Process the audio immediately on Render
+                            await processVoiceInput(event.data);
+                        }
+                    };
+                    
+                    mediaRecorder.start(1000); // Record in 1-second chunks
+                    console.log('🎙️ MediaRecorder started for Render');
+                    
                     addMessageToConversation(activeConversation, { 
-                        text: "Voice recording enabled! Use the microphone button to record messages. 🎤", 
+                        text: "Voice conversation active! Start speaking and I'll respond. 🎤✨", 
                         isUser: false, 
                         timestamp: new Date() 
                     });
@@ -1565,6 +1601,7 @@ Need help with anything specific? Just ask! 🌟`;
     const handleChatMode = async (inputMessage: string) => {
         try {
             console.log('Handling chat mode message:', inputMessage);
+            console.log('Current mode when handling chat:', mode);
             
             // Send to Synapse API for chat
             const response = await sendMessageToSynapse(inputMessage);
@@ -1576,6 +1613,14 @@ Need help with anything specific? Just ask! 🌟`;
             };
             
             addMessageToConversation(activeConversation, assistantMessage);
+            
+            // If this was triggered by voice recording, play the response back
+            if (mode === 'single_recording') {
+                console.log('Voice recording detected, playing TTS response');
+                setTimeout(async () => {
+                    await playVoice(response);
+                }, 500);
+            }
         } catch (error: any) {
             console.error('Error in chat mode:', error);
             const errorMessage: Message = {
@@ -1590,17 +1635,17 @@ Need help with anything specific? Just ask! 🌟`;
     // NEW: Send message to Synapse API
     const sendMessageToSynapse = async (message: string): Promise<string> => {
         try {
-            const response = await fetch('/.netlify/functions/api', {
+            // Platform-aware API endpoint
+            const apiEndpoint = isNetlify() 
+                ? '/.netlify/functions/api'
+                : '/api/api'; // For Render
+            
+            const response = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    task_type: 'chat',
-                    input_data: {
-                        messages: [
-                            { role: 'system', content: getSystemPrompt() },
-                            { role: 'user', content: message }
-                        ]
-                    }
+                    message: message,
+                    model: 'gpt-3.5-turbo'
                 })
             });
             
@@ -1609,7 +1654,7 @@ Need help with anything specific? Just ask! 🌟`;
             }
             
             const result = await response.json();
-            return parseAPIResponse(result);
+            return result.response || result.message || 'No response received';
         } catch (error) {
             console.error('Synapse API error:', error);
             return "I'm having trouble processing that right now. Could you try again?";
@@ -1789,16 +1834,29 @@ This two-step process is mandatory. Do not deviate.`;
         try {
             console.log('Generating image for prompt:', prompt);
             
-            const response = await fetch('/.netlify/functions/api', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            // Platform-aware API endpoint and payload
+            const apiEndpoint = isNetlify() 
+                ? '/.netlify/functions/api'
+                : '/api/api'; // For Render
+            
+            // Different payload formats for different platforms
+            const requestBody = isNetlify() 
+                ? JSON.stringify({
                     task_type: 'image',
                     input_data: {
                         prompt: prompt,
                         size: '512x512'
                     }
                 })
+                : JSON.stringify({
+                    message: `Generate an image: ${prompt}`,
+                    model: 'image-generation'
+                });
+            
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: requestBody
             });
             
             if (!response.ok) {
@@ -1864,8 +1922,12 @@ This two-step process is mandatory. Do not deviate.`;
             console.log('Requesting ElevenLabs TTS for text:', text.substring(0, 50) + '...');
             setIsPlayingVoice(true);
             
-            // Use the dedicated ElevenLabs TTS endpoint
-            const response = await fetch('/.netlify/functions/elevenlabs-tts', {
+            // Platform-aware ElevenLabs TTS endpoint
+            const ttsEndpoint = isNetlify() 
+                ? '/.netlify/functions/elevenlabs-tts'
+                : '/api/elevenlabs-tts';
+            
+            const response = await fetch(ttsEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

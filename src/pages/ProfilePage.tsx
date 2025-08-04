@@ -10,7 +10,7 @@ import {
   BarChart3, Sparkles, Crown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import AIAssistant from '../components/AIAssistant';
+
 
 const ProfilePage: React.FC = () => {
   const { user, setUser } = useUser();
@@ -864,13 +864,18 @@ const ProfilePage: React.FC = () => {
                 </button>
               </div>
 
-              {/* AI Assistant */}
+              {/* AI Assistant - Note: Global AI Assistant is available via the floating button */}
               <div>
                 <h3 className="text-xl font-bold text-purple-900 dark:text-white mb-4 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
                   AI Assistant
                 </h3>
-                <AIAssistant />
+                <div className="p-4 bg-purple-50 dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-gray-700">
+                  <p className="text-purple-700 dark:text-purple-300 text-sm">
+                    Your AI assistant is available via the floating button in the bottom-right corner of the screen. 
+                    Click the purple brain icon to start chatting! 🧠✨
+                  </p>
+                </div>
               </div>
             </div>
           )}

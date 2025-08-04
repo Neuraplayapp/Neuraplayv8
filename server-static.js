@@ -31,7 +31,82 @@ app.use((req, res, next) => {
 
 // API Routes to replace Netlify Functions
 
-// AssemblyAI Transcription
+// AssemblyAI Transcription Helper Function
+async function transcribeWithAssemblyAI(audioBuffer, apiKey) {
+  // Upload to AssemblyAI
+  const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': apiKey,
+      'Content-Type': 'application/octet-stream'
+    },
+    body: audioBuffer
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error('Failed to upload audio to AssemblyAI');
+  }
+
+  const { upload_url } = await uploadResponse.json();
+
+  // Start transcription
+  const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+    method: 'POST',
+    headers: {
+      'Authorization': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      audio_url: upload_url,
+      language_code: 'en'
+    })
+  });
+
+  if (!transcriptResponse.ok) {
+    throw new Error('Failed to start transcription');
+  }
+
+  const transcriptData = await transcriptResponse.json();
+  const transcriptId = transcriptData.id;
+  
+  // Poll for completion
+  let transcript;
+  let attempts = 0;
+  const maxAttempts = 30; // 30 seconds max
+  
+  while (attempts < maxAttempts) {
+    const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+      headers: {
+        'Authorization': apiKey
+      }
+    });
+    
+    if (!pollResponse.ok) {
+      throw new Error('Failed to poll transcription status');
+    }
+    
+    transcript = await pollResponse.json();
+    
+    if (transcript.status === 'completed') {
+      console.log('✅ Transcription completed:', transcript.text);
+      break;
+    } else if (transcript.status === 'error') {
+      throw new Error(`Transcription failed: ${transcript.error}`);
+    }
+    
+    console.log(`⏳ Transcription status: ${transcript.status}, attempt ${attempts + 1}/${maxAttempts}`);
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+    attempts++;
+  }
+  
+  if (transcript.status !== 'completed') {
+    throw new Error('Transcription timeout');
+  }
+  
+  return { text: transcript.text || '', id: transcript.id };
+}
+
+// AssemblyAI Transcription - Netlify endpoint
 app.post('/.netlify/functions/assemblyai-transcribe', async (req, res) => {
   try {
     console.log('🎤 AssemblyAI transcription request received');
@@ -50,43 +125,8 @@ app.post('/.netlify/functions/assemblyai-transcribe', async (req, res) => {
     // Convert base64 to buffer
     const audioBuffer = Buffer.from(audio, 'base64');
     
-    // Upload to AssemblyAI
-    const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': ASSEMBLYAI_API_KEY,
-        'Content-Type': 'application/octet-stream'
-      },
-      body: audioBuffer
-    });
-
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload audio to AssemblyAI');
-    }
-
-    const { upload_url } = await uploadResponse.json();
-
-    // Transcribe
-    const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
-      method: 'POST',
-      headers: {
-        'Authorization': ASSEMBLYAI_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        audio_url: upload_url,
-        language_code: 'en'
-      })
-    });
-
-    if (!transcriptResponse.ok) {
-      throw new Error('Failed to transcribe audio');
-    }
-
-    const transcript = await transcriptResponse.json();
-    
-    console.log('✅ Transcription completed:', transcript.text);
-    res.json({ text: transcript.text, id: transcript.id });
+    const result = await transcribeWithAssemblyAI(audioBuffer, ASSEMBLYAI_API_KEY);
+    res.json(result);
     
   } catch (error) {
     console.error('❌ AssemblyAI transcription error:', error);
@@ -113,43 +153,8 @@ app.post('/api/assemblyai-transcribe', async (req, res) => {
     // Convert base64 to buffer
     const audioBuffer = Buffer.from(audio, 'base64');
     
-    // Upload to AssemblyAI
-    const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': ASSEMBLYAI_API_KEY,
-        'Content-Type': 'application/octet-stream'
-      },
-      body: audioBuffer
-    });
-
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload audio to AssemblyAI');
-    }
-
-    const { upload_url } = await uploadResponse.json();
-
-    // Transcribe
-    const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
-      method: 'POST',
-      headers: {
-        'Authorization': ASSEMBLYAI_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        audio_url: upload_url,
-        language_code: 'en'
-      })
-    });
-
-    if (!transcriptResponse.ok) {
-      throw new Error('Failed to transcribe audio');
-    }
-
-    const transcript = await transcriptResponse.json();
-    
-    console.log('✅ Transcription completed:', transcript.text);
-    res.json({ text: transcript.text, id: transcript.id });
+    const result = await transcribeWithAssemblyAI(audioBuffer, ASSEMBLYAI_API_KEY);
+    res.json(result);
     
   } catch (error) {
     console.error('❌ AssemblyAI transcription error:', error);
@@ -522,6 +527,20 @@ app.post('/api/api', async (req, res) => {
       return res.status(400).json({ error: 'No message provided' });
     }
 
+    // Check if this is an image generation request
+    if (model === 'image-generation' || message.toLowerCase().includes('generate an image:')) {
+      console.log('🎨 Image generation request detected');
+      
+      // Extract the image prompt
+      const imagePrompt = message.replace(/^generate an image:\s*/i, '');
+      
+      // For now, return a placeholder message since we'd need a proper image API
+      return res.json({ 
+        response: `I understand you want me to generate an image of "${imagePrompt}". Image generation is currently optimized for Netlify deployment. For now, you can use text-based interactions and I'll help you with descriptions, ideas, and creative writing! 🎨✨`,
+        image_url: null 
+      });
+    }
+
     // This would need your actual OpenAI API key
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     
@@ -716,4 +735,4 @@ process.on('SIGTERM', () => {
     console.log('✅ Server closed');
     process.exit(0);
   });
-}); 
+});

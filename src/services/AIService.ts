@@ -11,15 +11,20 @@ class AIService {
                    (this.platform === 'netlify' ? '/.netlify/functions' : '/api');
     this.wsEnabled = import.meta.env.VITE_WS_ENABLED === 'true' || this.platform === 'render';
     
-    console.log(`🤖 AI Service initialized for platform: ${this.platform}`);
-    console.log(`🔗 API Base: ${this.apiBase}`);
-    console.log(`🔌 WebSocket Enabled: ${this.wsEnabled}`);
+    // Only log in development mode
+    if (import.meta.env.DEV) {
+      console.log(`🤖 AI Service initialized for platform: ${this.platform}`);
+      console.log(`🔗 API Base: ${this.apiBase}`);
+      console.log(`🔌 WebSocket Enabled: ${this.wsEnabled}`);
+    }
   }
 
   // Generic API call method
   private async apiCall(endpoint: string, options: RequestInit = {}) {
     const url = `${this.apiBase}${endpoint}`;
-    console.log(`🌐 Making API call to: ${url}`);
+    if (import.meta.env.DEV) {
+      console.log(`🌐 Making API call to: ${url}`);
+    }
     
     try {
       const response = await fetch(url, {
@@ -36,7 +41,9 @@ class AIService {
 
       return await response.json();
     } catch (error) {
-      console.error(`❌ API call error for ${endpoint}:`, error);
+      if (import.meta.env.DEV) {
+        console.error(`❌ API call error for ${endpoint}:`, error);
+      }
       throw error;
     }
   }
@@ -98,7 +105,9 @@ class AIService {
   // WebSocket connection (only available on Render)
   getWebSocketUrl(): string | null {
     if (!this.wsEnabled) {
-      console.log('⚠️ WebSocket not available on this platform');
+      if (import.meta.env.DEV) {
+        console.log('⚠️ WebSocket not available on this platform');
+      }
       return null;
     }
 
