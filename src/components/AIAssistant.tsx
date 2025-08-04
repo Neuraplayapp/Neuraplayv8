@@ -40,7 +40,7 @@ const AIAssistant: React.FC = () => {
     const [useElevenLabs, setUseElevenLabs] = useState(false);
 
     // Tab state for fullscreen mode
-    const [activeTab, setActiveTab] = useState<'chat' | 'voice' | 'tools' | 'settings'>('chat');
+    const [activeTab, setActiveTab] = useState<'chat' | 'voice' | 'tools' | 'history'>('chat');
 
     // Language state
     const [selectedLanguage, setSelectedLanguage] = useState('english');
@@ -350,15 +350,51 @@ const AIAssistant: React.FC = () => {
                     timestamp: new Date() 
                 });
 
-            // Simulate image generation (replace with actual API call)
-            setTimeout(() => {
-            addMessageToConversation(activeConversation, { 
-                    text: `🎨 I would generate an image for: "${text}". Image generation feature coming soon! 🖼️`,
-                isUser: false, 
-                timestamp: new Date() 
-            });
-                setIsLoading(false);
-            }, 2000);
+            // Send to actual image generation API
+            try {
+                const response = await fetch('/.netlify/functions/openai-compatible', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'user', content: text }
+                        ],
+                        image_generation: true,
+                        language: selectedLanguage
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const imageUrl = data.image_url || data.url;
+                    
+                    if (imageUrl) {
+                        addMessageToConversation(activeConversation, { 
+                            text: `🎨 I've created your image! Here it is: ![Generated Image](${imageUrl})`,
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                    } else {
+                        addMessageToConversation(activeConversation, { 
+                            text: `🎨 Image generated successfully! ${data.response || 'Image creation completed.'}`,
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                    }
+                } else {
+                    throw new Error(`Image API Error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Image Generation Error:', error);
+                addMessageToConversation(activeConversation, { 
+                    text: `🎨 I'm having trouble with image generation right now. Please try again! 🔄`,
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
+            }
+            setIsLoading(false);
         } catch (error) {
             console.error('Image generation error:', error);
             addMessageToConversation(activeConversation, { 
@@ -400,22 +436,42 @@ const AIAssistant: React.FC = () => {
                 return;
             }
 
-            // Regular text conversation - simulate AI response
-            setTimeout(() => {
-                const responses = [
-                    `🤖 I received: "${text}". Try the conversation modes below for more interactive chat! 🌊`,
-                    `💬 Thanks for your message: "${text}". Click the plasma ball for voice conversation! 🎤`,
-                    `✨ I understand: "${text}". For real-time chat, try the ElevenLabs conversation mode! 🚀`
-                ];
-                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                
+            // Send to TogetherAI/EverythingAI for real response
+            try {
+                const response = await fetch('/.netlify/functions/openai-compatible', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'user', content: text }
+                        ],
+                        language: selectedLanguage
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const aiResponse = data.choices?.[0]?.message?.content || data.response || 'Sorry, I could not process that request.';
+                    
+                    addMessageToConversation(activeConversation, {
+                        text: aiResponse,
+                        isUser: false,
+                        timestamp: new Date()
+                    });
+                } else {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('AI API Error:', error);
                 addMessageToConversation(activeConversation, {
-                    text: randomResponse,
+                    text: `🤖 I'm having trouble connecting to my AI brain right now. Please try again in a moment! 🔄`,
                     isUser: false,
                     timestamp: new Date()
                 });
-                setIsLoading(false);
-            }, 1000);
+            }
+            setIsLoading(false);
 
         } catch (error) {
             console.error('Error sending message:', error);
@@ -591,10 +647,10 @@ const AIAssistant: React.FC = () => {
                                 🛠️ Tools
                             </button>
                             <button 
-                                className={`ai-context-tab ${activeTab === 'settings' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('settings')}
+                                className={`ai-context-tab ${activeTab === 'history' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('history')}
                             >
-                                ⚙️ Settings
+                                📚 Chat History
                             </button>
                         </div>
                     )}
@@ -637,40 +693,30 @@ const AIAssistant: React.FC = () => {
                             </div>
                         )}
                         
-                        {isFullscreen && activeTab === 'settings' && (
-                            <div className="tab-content-settings p-6">
-                                <h3 className="text-xl font-bold mb-4">⚙️ Settings</h3>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-white/5 rounded-lg">
-                                        <h4 className="font-semibold mb-2">🌐 Language Settings</h4>
-                                        <p className="text-sm opacity-80 mb-3">Current: {languages.find(lang => lang.code === selectedLanguage)?.flag} {languages.find(lang => lang.code === selectedLanguage)?.name}</p>
-                                        <select
-                                            value={selectedLanguage}
-                                            onChange={(e) => setSelectedLanguage(e.target.value)}
-                                            className="w-full p-2 bg-white/10 rounded-lg border border-white/20"
-                                        >
-                                            {languages.map(lang => (
-                                                <option key={lang.code} value={lang.code}>
-                                                    {lang.flag} {lang.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="p-4 bg-white/5 rounded-lg">
-                                        <h4 className="font-semibold mb-2">🔊 Audio Settings</h4>
-                                        <label className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={!isMuted}
-                                                onChange={toggleMute}
-                                                className="rounded"
-                                            />
-                                            <span>Enable voice responses</span>
-                                        </label>
-                                    </div>
+                                {isFullscreen && activeTab === 'history' && (
+            <div className="tab-content-history p-6">
+                <h3 className="text-xl font-bold mb-4">📚 Chat History</h3>
+                <div className="space-y-4">
+                    <div className="p-4 bg-white/5 rounded-lg">
+                        <h4 className="font-semibold mb-2">💬 Recent Conversations</h4>
+                        <div className="space-y-2">
+                            {conversations[activeConversation]?.messages.slice(-5).map((message, index) => (
+                                <div key={index} className="p-2 bg-white/10 rounded text-sm">
+                                    <div className="font-semibold">{message.isUser ? '👤 You' : '🤖 AI'}:</div>
+                                    <div className="opacity-80">{message.text.substring(0, 100)}...</div>
+                                    <div className="text-xs opacity-60">{message.timestamp.toLocaleString()}</div>
                                 </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-lg">
+                        <h4 className="font-semibold mb-2">📊 Session Stats</h4>
+                        <p className="text-sm opacity-80">Messages: {conversations[activeConversation]?.messages.length || 0}</p>
+                        <p className="text-sm opacity-80">Language: {languages.find(lang => lang.code === selectedLanguage)?.flag} {languages.find(lang => lang.code === selectedLanguage)?.name}</p>
+                    </div>
+                </div>
+            </div>
+        )}
                         {/* Enhanced ElevenLabs Conversation Mode Indicator */}
                         {useElevenLabs && !isFullscreen && (
                             <div className="conversation-mode-indicator">
@@ -730,24 +776,25 @@ const AIAssistant: React.FC = () => {
 
                         {/* Input Area */}
                         <div className="p-4 border-t border-white/10">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <input 
                                     type="text"
                                     value={inputMessage}
                                     onChange={(e) => setInputMessage(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
-                                    placeholder="Type your message..."
-                                    className="flex-1 p-3 ai-input-field rounded-lg"
+                                    placeholder="Type your message here..."
+                                    className="flex-1 p-4 text-base ai-input-field rounded-xl min-h-[56px]"
                                     disabled={isLoading}
+                                    style={{ fontSize: '16px', lineHeight: '1.5' }}
                                 />
                                 
                                 {/* Send Button */}
                                 <button
                                     onClick={handleSendText}
                                     disabled={isLoading || !inputMessage.trim()}
-                                    className="p-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg transition-all"
+                                    className="p-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-xl transition-all min-w-[56px] min-h-[56px] flex items-center justify-center"
                                 >
-                                    <Send size={16} />
+                                    <Send size={20} />
                                 </button>
                                 
                                 {/* ElevenLabs Conversation Button */}
@@ -785,11 +832,11 @@ const AIAssistant: React.FC = () => {
                                 {/* Voice Recording Button */}
                                 <button
                                     onClick={toggleVoiceRecording}
-                                    className={`ai-mode-button ${isRecording ? 'recording' : ''}`}
+                                    className={`p-4 ${isRecording ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} disabled:opacity-50 rounded-xl transition-all min-w-[56px] min-h-[56px] flex items-center justify-center`}
                                     title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
                                     disabled={isLoading}
                                 >
-                                    {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+                                    {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                                 </button>
                             </div>
                         </div>
