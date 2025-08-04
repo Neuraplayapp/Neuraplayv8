@@ -60,6 +60,9 @@ const AIAssistantSimple: React.FC = () => {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     
+    // Streaming service ref
+    const streamingService = useRef<StreamingConversationService>(StreamingConversationService.getInstance());
+    
     // Helper function to add messages to conversation
     const addMessageToConversation = (conversationId: string, message: Message) => {
         setConversations(prev => ({
