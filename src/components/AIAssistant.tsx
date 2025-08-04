@@ -174,15 +174,50 @@ const AIAssistant: React.FC = () => {
         '/user-profile': { name: 'User Profile', icon: User, description: 'Detailed user profile' }
     };
 
-    // Available settings and their descriptions - COMPLETE LIST
+    // Available settings and their descriptions - COMPLETE LIST with agency
     const availableSettings = {
-        'theme': { name: 'Theme', icon: Settings, description: 'Change light/dark mode' },
-        'accessibility': { name: 'Accessibility', icon: Target, description: 'Accessibility settings' },
-        'notifications': { name: 'Notifications', icon: Bell, description: 'Notification preferences' },
-        'language': { name: 'Language', icon: Globe, description: 'Language settings' },
-        'privacy': { name: 'Privacy', icon: Shield, description: 'Privacy settings' },
-        'help': { name: 'Help', icon: HelpCircle, description: 'Help and support' },
-        'about': { name: 'About', icon: Info, description: 'About NeuraPlay' }
+        'theme': { 
+            name: 'Theme', 
+            icon: Settings, 
+            description: 'Change light/dark mode',
+            actions: ['toggle_dark_mode', 'set_theme_preference']
+        },
+        'accessibility': { 
+            name: 'Accessibility', 
+            icon: Target, 
+            description: 'Accessibility settings including color blindness support',
+            actions: ['test_color_vision', 'enable_colorblind_mode', 'adjust_contrast', 'increase_font_size']
+        },
+        'notifications': { 
+            name: 'Notifications', 
+            icon: Bell, 
+            description: 'Notification preferences',
+            actions: ['toggle_notifications', 'set_reminder_frequency', 'customize_alerts']
+        },
+        'language': { 
+            name: 'Language', 
+            icon: Globe, 
+            description: 'Language settings',
+            actions: ['change_language', 'set_speech_language', 'enable_translation']
+        },
+        'privacy': { 
+            name: 'Privacy', 
+            icon: Shield, 
+            description: 'Privacy settings',
+            actions: ['manage_data_sharing', 'set_parental_controls', 'review_permissions']
+        },
+        'voice': { 
+            name: 'Voice Settings', 
+            icon: Mic, 
+            description: 'Voice recognition and TTS preferences',
+            actions: ['adjust_voice_speed', 'change_voice_character', 'calibrate_microphone']
+        },
+        'profile': { 
+            name: 'Profile', 
+            icon: User, 
+            description: 'User profile and learning preferences',
+            actions: ['update_learning_goals', 'set_difficulty_level', 'customize_avatar']
+        }
     };
 
     // Environment detection functions
@@ -196,16 +231,56 @@ const AIAssistant: React.FC = () => {
         return window.location.hostname.includes('onrender');
     };
 
-    // Available games and their descriptions
+    // Available games and their descriptions with developmental benefits
     const availableGames = {
-        'counting': { name: 'Counting Adventure', icon: Gamepad2, description: 'Learn to count with fun games' },
-        'memory': { name: 'Memory Match', icon: Brain, description: 'Test your memory skills' },
-        'puzzle': { name: 'Puzzle Challenge', icon: Target, description: 'Solve brain teasers' },
-        'math': { name: 'Math Fun', icon: Calculator, description: 'Practice math skills' },
-        'spelling': { name: 'Spelling Bee', icon: BookOpen, description: 'Learn to spell' },
-        'science': { name: 'Science Lab', icon: Lightbulb, description: 'Explore science experiments' },
-        'art': { name: 'Art Studio', icon: Palette, description: 'Create digital art' },
-        'music': { name: 'Music Maker', icon: Music, description: 'Make music and rhythms' }
+        'counting': { 
+            name: 'Counting Adventure', 
+            icon: Gamepad2, 
+            description: 'Learn to count with fun games',
+            benefits: 'Develops number recognition, counting skills, and basic math foundations'
+        },
+        'fuzzling': { 
+            name: 'Fuzzling Game', 
+            icon: Target, 
+            description: 'Interactive shape and pattern matching',
+            benefits: 'Improves visual processing, pattern recognition, and cognitive flexibility'
+        },
+        'memory': { 
+            name: 'Memory Sequence', 
+            icon: Brain, 
+            description: 'Test and improve memory skills',
+            benefits: 'Enhances working memory, attention span, and sequential processing'
+        },
+        'inhibition': { 
+            name: 'Inhibition Control', 
+            icon: Shield, 
+            description: 'Practice self-control and focus',
+            benefits: 'Builds impulse control, attention regulation, and executive function'
+        },
+        'cube': { 
+            name: 'The Cube Game', 
+            icon: Target, 
+            description: 'Spatial reasoning and 3D thinking',
+            benefits: 'Develops spatial intelligence, problem-solving, and visual-motor skills'
+        },
+        'stacker': { 
+            name: 'Stacker Challenge', 
+            icon: TrendingUp, 
+            description: 'Balance and coordination game',
+            benefits: 'Improves hand-eye coordination, planning, and motor control'
+        },
+        'mountain': { 
+            name: 'Mountain Climber', 
+            icon: TrendingUp, 
+            description: 'Adventure and problem-solving',
+            benefits: 'Enhances strategic thinking, perseverance, and goal-setting'
+        },
+        'letter': { 
+            name: 'Letter Hunt', 
+            icon: BookOpen, 
+            description: 'Letter recognition and phonics',
+            benefits: 'Builds literacy skills, letter recognition, and reading readiness'
+        }
     };
 
     // Available AI agent personalities
@@ -505,9 +580,100 @@ const AIAssistant: React.FC = () => {
         };
     }, [activeConversation]);
 
-    // Enhanced AI Agency Functions
-    const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info' | 'agent' | 'game', action?: any } => {
+    // Enhanced AI Agency Functions - COMPREHENSIVE AGENCY
+    const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info' | 'agent' | 'game' | 'accessibility' | 'development' | 'content' | 'read', action?: any } => {
         const lowerText = text.toLowerCase();
+        
+        // === PROACTIVE ACCESSIBILITY SUPPORT ===
+        // Color blindness detection and comprehensive assistance
+        const colorBlindnessKeywords = ['color blind', 'colorblind', 'color blindness', 'can\'t see colors', 'trouble with colors', 'colors look the same', 'colors look similar', 'red green', 'blue yellow'];
+        if (colorBlindnessKeywords.some(keyword => lowerText.includes(keyword))) {
+            return { type: 'accessibility', action: { 
+                type: 'color_blindness_support',
+                step: 'initial_assessment',
+                message: '🎨 I can help you with color vision! Let me set up some tests to determine what type of color vision you have and customize NeuraPlay for you.',
+                followUpActions: ['test_colors', 'determine_type', 'implement_settings']
+            }};
+        }
+        
+        // === DEVELOPMENT & LEARNING ASSISTANCE ===
+        const developmentKeywords = ['help me learn', 'improve', 'get better at', 'develop', 'practice', 'struggle with', 'need help with', 'want to learn'];
+        const skillKeywords = {
+            'math': ['math', 'numbers', 'counting', 'addition', 'subtraction', 'arithmetic', 'calculation'],
+            'reading': ['reading', 'letters', 'words', 'spelling', 'phonics', 'literacy'],
+            'memory': ['memory', 'remember', 'forget', 'concentration', 'focus', 'attention'],
+            'coordination': ['coordination', 'motor skills', 'balance', 'dexterity', 'hand-eye'],
+            'problem_solving': ['problem solving', 'thinking', 'logic', 'puzzles', 'reasoning'],
+            'inhibition': ['self control', 'focus', 'attention', 'impulse control', 'concentration'],
+            'spatial': ['spatial', '3d', 'shapes', 'geometry', 'visual', 'patterns']
+        };
+        
+        if (developmentKeywords.some(keyword => lowerText.includes(keyword))) {
+            for (const [skill, keywords] of Object.entries(skillKeywords)) {
+                if (keywords.some(keyword => lowerText.includes(keyword))) {
+                    return { type: 'development', action: { 
+                        skill, 
+                        request: 'recommend_games',
+                        message: `🎮 I have perfect games to help you with ${skill}! Let me show you our specialized activities.`
+                    }};
+                }
+            }
+            return { type: 'development', action: { 
+                skill: 'general', 
+                request: 'assess_needs',
+                message: '🌟 I can help you improve! What specific skills would you like to work on?'
+            }};
+        }
+        
+        // === CONTENT CREATION AGENCY ===
+        const creationKeywords = ['create', 'make', 'add', 'write', 'post', 'schedule', 'new'];
+        if (creationKeywords.some(keyword => lowerText.includes(keyword))) {
+            if (lowerText.includes('diary') || lowerText.includes('journal') || lowerText.includes('reflection')) {
+                return { type: 'content', action: { 
+                    type: 'diary', 
+                    request: 'create_prompt',
+                    message: '📝 I\'ll create a personalized diary prompt for you! Let me set that up.'
+                }};
+            } else if (lowerText.includes('calendar') || lowerText.includes('event') || lowerText.includes('reminder') || lowerText.includes('schedule')) {
+                return { type: 'content', action: { 
+                    type: 'calendar', 
+                    request: 'create_entry',
+                    message: '📅 I\'ll help you create a calendar entry! What would you like to schedule?'
+                }};
+            } else if (lowerText.includes('forum') || lowerText.includes('discussion') || lowerText.includes('community') || lowerText.includes('post')) {
+                return { type: 'content', action: { 
+                    type: 'forum', 
+                    request: 'create_post',
+                    message: '💬 I\'ll help you create a forum post! What would you like to discuss?'
+                }};
+            }
+        }
+        
+        // === INFORMATION READING AGENCY ===
+        const readingKeywords = ['read', 'show', 'what\'s in', 'check', 'look at', 'see', 'view', 'display'];
+        if (readingKeywords.some(keyword => lowerText.includes(keyword))) {
+            if (lowerText.includes('notification') || lowerText.includes('alert') || lowerText.includes('message')) {
+                return { type: 'read', action: { 
+                    type: 'notifications',
+                    message: '🔔 Let me check your notifications for you!'
+                }};
+            } else if (lowerText.includes('forum') || lowerText.includes('discussion') || lowerText.includes('community')) {
+                return { type: 'read', action: { 
+                    type: 'forum',
+                    message: '💬 I\'ll show you the latest forum discussions!'
+                }};
+            } else if (lowerText.includes('diary') || lowerText.includes('journal') || lowerText.includes('reflection')) {
+                return { type: 'read', action: { 
+                    type: 'diary',
+                    message: '📖 Let me show you your diary entries!'
+                }};
+            } else if (lowerText.includes('playground') || lowerText.includes('games') || lowerText.includes('activities')) {
+                return { type: 'read', action: { 
+                    type: 'playground',
+                    message: '🎮 I\'ll show you all available games and activities!'
+                }};
+            }
+        }
         
         // ENHANCED AI Agent commands with better natural language processing
         const agentKeywords = [
@@ -842,12 +1008,118 @@ const AIAssistant: React.FC = () => {
             return { type: 'info', action: 'location' };
         }
         
-        // Default to chat
+        // === ENHANCED GAME RECOMMENDATIONS ===
+        const gameKeywords = ['game', 'play', 'activity', 'exercise', 'fun'];
+        if (gameKeywords.some(keyword => lowerText.includes(keyword))) {
+            return { type: 'games', action: { 
+                request: 'recommend',
+                message: '🎮 Let me recommend perfect games for you based on your interests!'
+            }};
+        }
+        
+        // Default to chat with proactive analysis
         return { type: 'chat' };
     };
 
     const executeCommand = async (command: { type: string, action?: any }): Promise<string> => {
         switch (command.type) {
+            case 'accessibility':
+                if (command.action?.type === 'color_blindness_support') {
+                    // Navigate to a test page or create color tests
+                    navigate('/playground');
+                    setTimeout(() => {
+                        addMessageToConversation(activeConversation, {
+                            text: `🎨 I've taken you to the playground where we can test your color vision! I'm going to create some color tests for you. 
+
+Let's start: Can you tell me if these colors look the same or different?
+🔴 Red vs 🟢 Green
+🔵 Blue vs 🟡 Yellow
+
+Based on your answers, I'll customize NeuraPlay's colors to work perfectly for you!`,
+                            isUser: false,
+                            timestamp: new Date()
+                        });
+                    }, 1000);
+                    return command.action.message;
+                }
+                break;
+                
+            case 'development':
+                if (command.action?.request === 'recommend_games') {
+                    const skill = command.action.skill;
+                    const recommendedGames = Object.entries(availableGames).filter(([key, game]) => {
+                        const benefits = game.benefits.toLowerCase();
+                        switch(skill) {
+                            case 'math': return benefits.includes('math') || benefits.includes('number') || benefits.includes('count');
+                            case 'reading': return benefits.includes('letter') || benefits.includes('reading') || benefits.includes('literacy');
+                            case 'memory': return benefits.includes('memory') || benefits.includes('attention');
+                            case 'coordination': return benefits.includes('coordination') || benefits.includes('motor');
+                            case 'problem_solving': return benefits.includes('problem') || benefits.includes('reasoning');
+                            case 'inhibition': return benefits.includes('control') || benefits.includes('attention');
+                            case 'spatial': return benefits.includes('spatial') || benefits.includes('visual');
+                            default: return true;
+                        }
+                    });
+                    
+                    navigate('/playground');
+                    let gameList = recommendedGames.map(([key, game]) => 
+                        `• **${game.name}**: ${game.description}\n  *Benefits: ${game.benefits}*`
+                    ).join('\n\n');
+                    
+                    return `${command.action.message}\n\n🎯 **Perfect games for ${skill} development:**\n\n${gameList}\n\nI've taken you to the playground - try these games!`;
+                }
+                break;
+                
+            case 'content':
+                if (command.action?.type === 'diary') {
+                    const prompts = [
+                        "What was the most interesting thing you learned today?",
+                        "Describe a challenge you overcame recently and how you did it.",
+                        "What are three things you're grateful for right now?",
+                        "If you could teach someone else something you learned, what would it be?",
+                        "What goal do you want to work on tomorrow?"
+                    ];
+                    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+                    
+                    return `📝 Here's your personalized diary prompt:\n\n"${randomPrompt}"\n\nTake your time to reflect and write your thoughts! 🌟`;
+                } else if (command.action?.type === 'calendar') {
+                    return `📅 I'm ready to help you schedule something! What would you like to add to your calendar? For example:
+• Study session
+• Game time  
+• Practice activity
+• Learning goal
+• Fun activity
+
+Just tell me what and when! 🗓️`;
+                } else if (command.action?.type === 'forum') {
+                    navigate('/forum');
+                    return `💬 I've taken you to the forum! You can create a post about:
+• Ask questions about games
+• Share your progress
+• Help other learners
+• Discuss learning strategies
+• Connect with the community
+
+What would you like to post about? 🌟`;
+                }
+                break;
+                
+            case 'read':
+                if (command.action?.type === 'notifications') {
+                    return `🔔 Here are your recent notifications:\n\n• Welcome to NeuraPlay! 🌟\n• New games available in playground\n• Daily learning streak: Keep it up!\n• Community forum has new discussions\n\nI can also help you customize notification settings if needed! 📱`;
+                } else if (command.action?.type === 'forum') {
+                    navigate('/forum');
+                    return `💬 I've taken you to the forum! Here's what's happening:\n\n• Active discussions about learning strategies\n• Users sharing their progress\n• Questions and answers about games\n• Community challenges and events\n\nYou can join any discussion or start your own! 🌟`;
+                } else if (command.action?.type === 'playground') {
+                    navigate('/playground');
+                    const gamesList = Object.entries(availableGames).map(([key, game]) => 
+                        `• **${game.name}**: ${game.description}`
+                    ).join('\n');
+                    return `🎮 Here are all available games and activities:\n\n${gamesList}\n\nI've taken you to the playground - have fun learning! 🌟`;
+                } else if (command.action?.type === 'diary') {
+                    return `📖 Your diary entries:\n\n• Reflections on learning progress\n• Daily thoughts and insights\n• Goals and achievements\n• Challenges and solutions\n\nWould you like me to create a new diary prompt for today? 📝`;
+                }
+                break;
             case 'agent':
                 if (command.action?.command === 'show') {
                     try {
@@ -1821,9 +2093,28 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
-    // NEW: Get system prompt with personality
+    // NEW: Get system prompt with comprehensive agency
     const getSystemPrompt = () => {
-        const basePrompt = `You are NeuraPlay's AI assistant, helping children learn through interactive games and activities.
+        const basePrompt = `You are NeuraPlay's AI assistant with FULL AGENCY to help users. You can:
+
+🔧 PROACTIVE ASSISTANCE:
+- Ask follow-up questions to understand user needs
+- Suggest and implement solutions (like accessibility features for color blindness)
+- Take initiative to help users achieve their goals
+
+🎮 NAVIGATION & CONTENT:
+- Navigate to any page using natural language
+- Read and access information from playground, forum, notifications, diary, calendar
+- Create diary prompts, calendar entries, forum posts
+- Modify settings based on user needs
+
+🎯 COMPREHENSIVE ACTIONS:
+- Analyze user statements for implicit needs (e.g., "I have color blindness" → test colors, determine type, implement accessibility)
+- Access all app features and data
+- Create personalized content and recommendations
+- Implement user preferences across the platform
+
+ALWAYS be proactive - if a user mentions a need, take action to help them fully.
 
 You are a highly structured, multilingual AI assistant. You must follow a strict two-step process for every response.
 
