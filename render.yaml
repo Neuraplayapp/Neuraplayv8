@@ -19,5 +19,13 @@ services:
         sync: false
       - key: ELEVENLABS_API_KEY
         sync: false
+      - key: together_token
+        sync: false
+      - key: TOGETHER_TOKEN
+        sync: false
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: ASSEMBLY_API_KEY
+        sync: false
     healthCheckPath: /
     autoDeploy: true 
