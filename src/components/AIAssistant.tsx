@@ -1159,9 +1159,26 @@ Need help with anything specific? Just ask! 🌟`;
                     console.log('🎙️ Stream active:', stream.active);
                     console.log('🎙️ Stream tracks:', stream.getTracks().length);
                     
-                    const mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'audio/webm;codecs=opus'
-                    });
+                    // Use the same MIME type detection as regular voice recording
+                    const supportedMimeTypes = [
+                        'audio/webm;codecs=opus',
+                        'audio/webm',
+                        'audio/mp4',
+                        'audio/wav'
+                    ];
+                    
+                    let selectedMimeType = null;
+                    for (const mimeType of supportedMimeTypes) {
+                        if (MediaRecorder.isTypeSupported(mimeType)) {
+                            selectedMimeType = mimeType;
+                            console.log(`🎤 Selected MIME type for conversation (Netlify): ${mimeType}`);
+                            break;
+                        }
+                    }
+                    
+                    const mediaRecorder = selectedMimeType ? 
+                        new MediaRecorder(stream, { mimeType: selectedMimeType }) :
+                        new MediaRecorder(stream);
                     console.log('🎙️ MediaRecorder created successfully');
                     console.log('🎙️ MediaRecorder state:', mediaRecorder.state);
                     
@@ -1224,9 +1241,26 @@ Need help with anything specific? Just ask! 🌟`;
                     console.log('✅ Microphone access granted');
                     streamRef.current = stream;
                     
-                    const mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'audio/webm;codecs=opus'
-                    });
+                    // Use the same MIME type detection as regular voice recording
+                    const supportedMimeTypes = [
+                        'audio/webm;codecs=opus',
+                        'audio/webm',
+                        'audio/mp4',
+                        'audio/wav'
+                    ];
+                    
+                    let selectedMimeType = null;
+                    for (const mimeType of supportedMimeTypes) {
+                        if (MediaRecorder.isTypeSupported(mimeType)) {
+                            selectedMimeType = mimeType;
+                            console.log(`🎤 Selected MIME type for conversation: ${mimeType}`);
+                            break;
+                        }
+                    }
+                    
+                    const mediaRecorder = selectedMimeType ? 
+                        new MediaRecorder(stream, { mimeType: selectedMimeType }) :
+                        new MediaRecorder(stream);
                     mediaRecorderRef.current = mediaRecorder;
                     
                     // Set up continuous recording for Render
