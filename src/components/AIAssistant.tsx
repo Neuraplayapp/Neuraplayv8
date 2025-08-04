@@ -1644,8 +1644,13 @@ Need help with anything specific? Just ask! 🌟`;
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    message: message,
-                    model: 'gpt-3.5-turbo'
+                    task_type: 'chat',
+                    input_data: {
+                        messages: [
+                            { role: 'system', content: getSystemPrompt() },
+                            { role: 'user', content: message }
+                        ]
+                    }
                 })
             });
             
@@ -1654,7 +1659,12 @@ Need help with anything specific? Just ask! 🌟`;
             }
             
             const result = await response.json();
-            return result.response || result.message || 'No response received';
+            // Handle original format: [{ generated_text: "..." }]
+            if (Array.isArray(result) && result[0] && result[0].generated_text) {
+                return result[0].generated_text;
+            }
+            // Fallback for other formats
+            return result.response || result.message || result.generated_text || 'No response received';
         } catch (error) {
             console.error('Synapse API error:', error);
             return "I'm having trouble processing that right now. Could you try again?";
@@ -1773,6 +1783,11 @@ This two-step process is mandatory. Do not deviate.`;
         }
     };
 
+    // NEW: Get system prompt for Synapse
+    const getSystemPrompt = (): string => {
+        return 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.';
+    };
+
     // NEW: Check if text is an image request
     const isImageRequest = (text: string): boolean => {
         const imageKeywords = [
@@ -1839,19 +1854,14 @@ This two-step process is mandatory. Do not deviate.`;
                 ? '/.netlify/functions/api'
                 : '/api/api'; // For Render
             
-            // Different payload formats for different platforms
-            const requestBody = isNetlify() 
-                ? JSON.stringify({
-                    task_type: 'image',
-                    input_data: {
-                        prompt: prompt,
-                        size: '512x512'
-                    }
-                })
-                : JSON.stringify({
-                    message: `Generate an image: ${prompt}`,
-                    model: 'image-generation'
-                });
+            // Use ORIGINAL format for both platforms - Together AI works on both
+            const requestBody = JSON.stringify({
+                task_type: 'image',
+                input_data: {
+                    prompt: prompt,
+                    size: '512x512'
+                }
+            });
             
             const response = await fetch(apiEndpoint, {
                 method: 'POST',
