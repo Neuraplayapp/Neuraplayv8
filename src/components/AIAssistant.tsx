@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Zap, Target, TrendingUp, Lightbulb, RotateCcw, Play, Pause, HelpCircle, Award, Clock, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff, Bell, Globe, Shield, Calculator, BookOpen, Palette, Music, Heart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useConversation } from '@elevenlabs/react';
 import { AblyConversationService } from '../services/AblyConversationService';
 import { getAgentId, getVoiceId } from '../config/elevenlabs';
 import { useAIAgent } from '../contexts/AIAgentContext';
@@ -111,6 +112,51 @@ const AIAssistant: React.FC = () => {
     // Platform-specific conversation services
     const conversationService = useRef<AblyConversationService>(AblyConversationService.getInstance());
     const webSocketService = useRef<WebSocketService>(WebSocketService.getInstance());
+    
+    // Official ElevenLabs Conversation Hook - ONLY for conversation mode
+    const elevenLabsConversation = useConversation({
+        onConnect: () => {
+            console.log('✅ ElevenLabs Conversation Connected');
+            addMessageToConversation(activeConversation, { 
+                text: "🎤 Voice conversation ready! Start speaking anytime! ✨", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        },
+        onDisconnect: () => {
+            console.log('❌ ElevenLabs Conversation Disconnected');
+            addMessageToConversation(activeConversation, { 
+                text: "🔌 Voice conversation ended. You can still chat with text or single recordings! 💬", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        },
+        onMessage: (message) => {
+            console.log('📥 ElevenLabs Message:', message);
+            // Handle different message sources based on ElevenLabs API
+            if (message.source === 'ai' && message.message) {
+                addMessageToConversation(activeConversation, { 
+                    text: message.message, 
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
+            } else if (message.source === 'user' && message.message) {
+                addMessageToConversation(activeConversation, { 
+                    text: message.message, 
+                    isUser: true, 
+                    timestamp: new Date() 
+                });
+            }
+        },
+        onError: (error) => {
+            console.error('❌ ElevenLabs Conversation Error:', error);
+            addMessageToConversation(activeConversation, { 
+                text: "⚠️ Connection error. Please try again or use text chat! 🔄", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        }
+    });
     
     // NEW: Single mode state instead of multiple booleans
     const [mode, setMode] = useState<AssistantMode>('idle');
@@ -1627,35 +1673,18 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
-    // NEW: Cleaner mode toggle functions
+    // NEW: Official ElevenLabs Conversation Mode - Following ElevenLabs Documentation
     const handleToggleConversationMode = async () => {
         if (mode === 'conversing') {
-            // Stop the conversation
+            // Stop the conversation using official ElevenLabs API
             console.log('🔄 Ending conversation mode...');
             
-            if (isNetlify()) {
-                console.log('🔄 ConversationService has active conversation:', conversationService.current.hasActiveConversation);
-                if (conversationService.current.hasActiveConversation) {
-                    await conversationService.current.endConversation();
-                    console.log('✅ Conversation ended successfully');
-                }
-            } else if (isRender()) {
-                // On Render, disconnect WebSocket and clean up
-                console.log('🔄 Stopping WebSocket conversation on Render...');
-                webSocketService.current.disconnect();
-                console.log('✅ WebSocket disconnected');
-            }
-            
-            // Stop media recorder if it's running
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                mediaRecorderRef.current.stop();
-                mediaRecorderRef.current = null;
-            }
-            
-            // Stop audio stream
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-                streamRef.current = null;
+            try {
+                // End ElevenLabs conversation session
+                await elevenLabsConversation.endSession();
+                console.log('✅ ElevenLabs conversation ended successfully');
+            } catch (error) {
+                console.error('❌ Error ending ElevenLabs conversation:', error);
             }
             
             setMode('idle');
@@ -1665,7 +1694,7 @@ Need help with anything specific? Just ask! 🌟`;
                 timestamp: new Date() 
             });
         } else {
-            // Start the conversation
+            // Start the conversation using official ElevenLabs API
             console.log('🔄 Setting mode to conversing...');
             setMode('conversing');
             modeRef.current = 'conversing'; // Set ref immediately
@@ -1677,185 +1706,26 @@ Need help with anything specific? Just ask! 🌟`;
             });
             
             try {
-                if (isNetlify()) {
-                    // Initialize Ably connection only on Netlify
-                    console.log('🔗 Initializing Ably connection...');
-                    console.log('🔧 Conversation service exists:', !!conversationService.current);
-                    
-                    try {
-                        await conversationService.current.initialize();
-                        console.log('✅ Ably initialized successfully');
-                        
-                        // Start conversation with ElevenLabs
-                        console.log('🎯 Starting conversation with ElevenLabs...');
-                        console.log('🎯 Agent ID:', getAgentId());
-                        console.log('🎯 Voice ID:', getVoiceId());
-                        
-                        await conversationService.current.startConversation({
-                            agentId: getAgentId(),
-                            voiceId: getVoiceId()
-                        });
-                        console.log('✅ ElevenLabs conversation started successfully');
-                    } catch (netlifyError) {
-                        console.error('❌ Netlify setup failed:', netlifyError);
-                        throw netlifyError; // Re-throw to trigger main catch block
-                    }
-                    
-                    // Ensure mode is set to conversing before proceeding
-                    setMode('conversing');
-                    modeRef.current = 'conversing';
-                    
-                    // Small delay to ensure mode transition is complete
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    
-                    console.log('✅ Mode confirmed as conversing:', modeRef.current);
-                    
-                    // Start local audio recording for streaming
-                    console.log('🎤 Requesting microphone access...');
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    console.log('✅ Microphone access granted');
-                    console.log('✅ Audio stream created:', stream);
-                    streamRef.current = stream;
-                    
-                    console.log('🎙️ Creating MediaRecorder with stream...');
-                    console.log('🎙️ Stream active:', stream.active);
-                    console.log('🎙️ Stream tracks:', stream.getTracks().length);
-                    
-                    // Use the same MIME type detection as regular voice recording
-                    const supportedMimeTypes = [
-                        'audio/webm;codecs=opus',
-                        'audio/webm',
-                        'audio/mp4',
-                        'audio/wav'
-                    ];
-                    
-                    let selectedMimeType = null;
-                    for (const mimeType of supportedMimeTypes) {
-                        if (MediaRecorder.isTypeSupported(mimeType)) {
-                            selectedMimeType = mimeType;
-                            console.log(`🎤 Selected MIME type for conversation (Netlify): ${mimeType}`);
-                            break;
-                        }
-                    }
-                    
-                    const mediaRecorder = selectedMimeType ? 
-                        new MediaRecorder(stream, { mimeType: selectedMimeType }) :
-                        new MediaRecorder(stream);
-                    console.log('🎙️ MediaRecorder created successfully');
-                    console.log('🎙️ MediaRecorder state:', mediaRecorder.state);
-                    
-                    // Store reference for cleanup
-                    mediaRecorderRef.current = mediaRecorder;
-                    console.log('🎙️ MediaRecorder reference stored');
-                    
-                    mediaRecorder.ondataavailable = async (event) => {
-                        console.log(`🔊 Audio data available: ${event.data.size} bytes`);
-                        
-                        // Check if we're still in conversation mode and have an active conversation
-                        const hasData = event.data.size > 0;
-                        const isConnected = conversationService.current.connected;
-                        const hasActiveConversation = conversationService.current.hasActiveConversation;
-                        const currentMode = modeRef.current; // Use ref instead of state
-                        
-                        console.log(`🔍 Condition check:`, {
-                            hasData,
-                            isConnected,
-                            currentMode,
-                            hasActiveConversation,
-                            mediaRecorderState: mediaRecorder.state,
-                            conversationServiceStatus: conversationService.current ? 'exists' : 'null'
-                        });
-                        
-                        // Only process audio if we're in conversing mode and have an active conversation
-                        if (hasData && isConnected && currentMode === 'conversing' && hasActiveConversation) {
-                            console.log('🎯 Processing audio data for ElevenLabs...');
-                            const arrayBuffer = await event.data.arrayBuffer();
-                            await conversationService.current.sendAudio(arrayBuffer);
-                        }
-                    };
-                    
-                    mediaRecorder.onstop = () => {
-                        console.log('🎙️ MediaRecorder stopped');
-                    };
-                    
-                    mediaRecorder.onerror = (event) => {
-                        console.error('🎙️ MediaRecorder error:', event);
-                    };
-                    
-                    // Start recording
-                    mediaRecorder.start(100); // Collect data every 100ms
-                    console.log('🎙️ MediaRecorder started');
-                    
-                    addMessageToConversation(activeConversation, { 
-                        text: "Conversation mode active! Speak anytime to chat with me. 🎤", 
-                        isUser: false, 
-                        timestamp: new Date() 
-                    });
-                    
-                } else if (isRender()) {
-                    // On Render, use WebSocket for real-time conversation
-                    console.log('🎤 Enabling WebSocket conversation on Render...');
-                    console.log('🔧 WebSocket service exists:', !!webSocketService.current);
-                    
-                    try {
-                        // Connect to WebSocket server
-                        await webSocketService.current.connect();
-                        console.log('✅ WebSocket connected');
-                        
-                        // Connect to ElevenLabs via WebSocket
-                        await webSocketService.current.connectToElevenLabs();
-                        console.log('✅ ElevenLabs connected via WebSocket');
-                    } catch (renderError) {
-                        console.error('❌ Render WebSocket setup failed:', renderError);
-                        throw renderError; // Re-throw to trigger main catch block
-                    }
-                    
-                    // Start local audio recording for streaming
-                    console.log('🎤 Requesting microphone access...');
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    console.log('✅ Microphone access granted');
-                    streamRef.current = stream;
-                    
-                    // Use the same MIME type detection as regular voice recording
-                    const supportedMimeTypes = [
-                        'audio/webm;codecs=opus',
-                        'audio/webm',
-                        'audio/mp4',
-                        'audio/wav'
-                    ];
-                    
-                    let selectedMimeType = null;
-                    for (const mimeType of supportedMimeTypes) {
-                        if (MediaRecorder.isTypeSupported(mimeType)) {
-                            selectedMimeType = mimeType;
-                            console.log(`🎤 Selected MIME type for conversation: ${mimeType}`);
-                            break;
-                        }
-                    }
-                    
-                    const mediaRecorder = selectedMimeType ? 
-                        new MediaRecorder(stream, { mimeType: selectedMimeType }) :
-                        new MediaRecorder(stream);
-                    mediaRecorderRef.current = mediaRecorder;
-                    
-                    // Handle audio data for continuous streaming to WebSocket
-                    mediaRecorder.ondataavailable = async (event) => {
-                        if (event.data.size > 0 && modeRef.current === 'conversing') {
-                            console.log(`🔊 Streaming audio chunk: ${event.data.size} bytes`);
-                            const arrayBuffer = await event.data.arrayBuffer();
-                            await webSocketService.current.sendAudioChunk(arrayBuffer);
-                        }
-                    };
-                    
-                    mediaRecorder.start(1000); // Record in 1-second chunks
-                    console.log('🎙️ MediaRecorder started for WebSocket streaming');
-                    
-                    addMessageToConversation(activeConversation, { 
-                        text: "Voice conversation active! Start speaking and I'll respond. 🎤✨", 
-                        isUser: false, 
-                        timestamp: new Date() 
-                    });
-                }
+                // Request microphone permission (required by ElevenLabs)
+                console.log('🎤 Requesting microphone access...');
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('✅ Microphone access granted');
+
+                // Start ElevenLabs conversation session with agent ID
+                console.log('🎯 Starting ElevenLabs conversation...');
+                console.log('🎯 Agent ID:', getAgentId());
+                
+                await elevenLabsConversation.startSession({
+                    agentId: getAgentId(),
+                    connectionType: 'websocket', // Required by ElevenLabs API
+                    // Optional: add user_id for tracking if needed
+                    // user_id: user?.username || 'anonymous'
+                });
+                
+                console.log('✅ ElevenLabs conversation started successfully');
+                
+                // Note: The official ElevenLabs hook handles all audio streaming automatically
+                // No need for manual MediaRecorder setup - it's all handled internally
                 
             } catch (error) {
                 console.error('❌ CONVERSATION SETUP FAILED:', error);
@@ -1864,58 +1734,37 @@ Need help with anything specific? Just ask! 🌟`;
                 console.error('❌ Error stack:', (error as Error)?.stack);
                 console.error('❌ Full error object:', error);
                 console.log('🔄 Resetting mode to idle due to error...');
-                console.log('🌍 Current environment - isNetlify():', isNetlify(), 'isRender():', isRender());
-                console.log('🔧 WebSocket service status:', webSocketService.current ? 'exists' : 'null');
-                console.log('🔧 Conversation service status:', conversationService.current ? 'exists' : 'null');
-                
-                // Clean up any started resources
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                    mediaRecorderRef.current.stop();
-                    mediaRecorderRef.current = null;
-                }
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach(track => track.stop());
-                    streamRef.current = null;
-                }
                 
                 setMode('idle');
                 console.log('✅ Mode reset to idle');
                 
-                // Check if it's a WebSocket/connection error and try fallback mode
+                // Check if it's a connection error and provide helpful messaging
                 const errorMsg = (error as Error)?.message || '';
-                const isConnectionError = errorMsg.includes('WebSocket') || 
-                                        errorMsg.includes('Bridge service') || 
-                                        errorMsg.includes('ECONNREFUSED') ||
+                const isConnectionError = errorMsg.includes('agent') || 
+                                        errorMsg.includes('connection') || 
                                         errorMsg.includes('network') ||
-                                        errorMsg.includes('timeout');
+                                        errorMsg.includes('timeout') ||
+                                        errorMsg.includes('permission');
                 
-                if (isConnectionError) {
-                    console.log('🔄 Connection error detected, trying fallback conversation mode...');
-                    
-                    // Set up basic conversation mode without streaming
-                    setMode('conversing');
-                    modeRef.current = 'conversing';
-                    
+                if (isConnectionError || errorMsg.includes('getUserMedia')) {
+                    // Microphone or connection error
+                    const errorMessage = errorMsg.includes('getUserMedia') || errorMsg.includes('permission')
+                        ? "🎤 Microphone access is required for conversation mode. Please allow microphone access and try again! You can still use:\n\n✅ Voice recording (microphone button)\n✅ Chat with text\n✅ All other features! 🌟"
+                        : "🔧 Conversation mode is temporarily unavailable. But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟";
+                        
                     addMessageToConversation(activeConversation, { 
-                        text: "🎤 Starting basic conversation mode! I'll respond to your voice messages one at a time. The streaming features aren't available right now, but we can still have a great conversation! Just speak and I'll respond! 🌟", 
+                        text: errorMessage, 
                         isUser: false, 
                         timestamp: new Date() 
                     });
-                    
-                    console.log('✅ Fallback conversation mode activated');
-                    return; // Exit without further error handling
+                } else {
+                    // Generic error
+                    addMessageToConversation(activeConversation, { 
+                        text: "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟", 
+                        isUser: false, 
+                        timestamp: new Date() 
+                    });
                 }
-                
-                // Show more helpful error message for other errors
-                const errorMessage = errorMsg.includes('Bridge service not available') 
-                    ? "🔧 Conversation mode is temporarily unavailable (bridge service needs deployment). But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟"
-                    : "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟";
-                
-                addMessageToConversation(activeConversation, { 
-                    text: errorMessage, 
-                    isUser: false, 
-                    timestamp: new Date() 
-                });
             }
         }
     };
