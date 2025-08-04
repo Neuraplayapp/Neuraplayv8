@@ -1356,6 +1356,7 @@ Need help with anything specific? Just ask! 🌟`;
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     audio: base64Audio,
+                    audioType: audioBlob.type || 'audio/webm', // Pass the actual MIME type
                     language_code: selectedLanguage, // Will use auto-detect if set to 'auto'
                     speech_model: 'universal' // Best model for multilingual support
                 })
@@ -1407,7 +1408,28 @@ Need help with anything specific? Just ask! 🌟`;
     const startVoiceRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
+            
+            // Use the same MIME type detection as conversation mode
+            const supportedMimeTypes = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/mp4',
+                'audio/wav'
+            ];
+            
+            let selectedMimeType = null;
+            for (const mimeType of supportedMimeTypes) {
+                if (MediaRecorder.isTypeSupported(mimeType)) {
+                    selectedMimeType = mimeType;
+                    console.log(`🎤 Selected MIME type for recording: ${mimeType}`);
+                    break;
+                }
+            }
+            
+            const mediaRecorder = selectedMimeType ? 
+                new MediaRecorder(stream, { mimeType: selectedMimeType }) :
+                new MediaRecorder(stream);
+                
             const audioChunks: Blob[] = [];
             
             mediaRecorder.ondataavailable = (event) => {
@@ -1415,7 +1437,10 @@ Need help with anything specific? Just ask! 🌟`;
             };
             
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                // Use the actual MIME type from MediaRecorder, not hardcoded 'audio/wav'
+                const actualMimeType = selectedMimeType || mediaRecorder.mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+                console.log(`🎵 Created audio blob with type: ${actualMimeType}, size: ${audioBlob.size} bytes`);
                 await processVoiceInput(audioBlob);
             };
             
