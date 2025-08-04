@@ -69,47 +69,47 @@ const AIAssistant: React.FC = () => {
     const handleElevenLabsMessage = (message: any) => {
         console.log('🎯 ElevenLabs message received:', message);
         if (message.type === 'agent_response' && message.agent_response_event?.agent_response) {
-            addMessageToConversation(activeConversation, {
+            addMessageToConversation(activeConversation, { 
                 text: message.agent_response_event.agent_response,
-                isUser: false,
-                timestamp: new Date()
+                isUser: false, 
+                timestamp: new Date() 
             });
         } else if (message.type === 'user_transcript' && message.user_transcription_event?.user_transcript) {
-            addMessageToConversation(activeConversation, {
+                addMessageToConversation(activeConversation, { 
                 text: message.user_transcription_event.user_transcript,
                 isUser: true,
-                timestamp: new Date()
-            });
-        }
+                    timestamp: new Date() 
+                });
+            }
     };
-
+        
     const handleElevenLabsError = (error: any) => {
         console.error('❌ ElevenLabs error:', error);
-        addMessageToConversation(activeConversation, {
+                addMessageToConversation(activeConversation, { 
             text: `⚠️ ElevenLabs error: ${error.message || 'Connection failed'}. Please try again.`,
-            isUser: false,
-            timestamp: new Date()
-        });
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
         setUseElevenLabs(false);
     };
 
     const handleElevenLabsConnect = () => {
         console.log('🎯 ElevenLabs connected');
-        addMessageToConversation(activeConversation, {
+            addMessageToConversation(activeConversation, { 
             text: "🌊 ElevenLabs voice conversation started! Speak naturally with me! ✨",
-            isUser: false,
-            timestamp: new Date()
-        });
+                isUser: false, 
+                timestamp: new Date() 
+            });
         setUseElevenLabs(true);
     };
 
     const handleElevenLabsDisconnect = () => {
         console.log('🔌 ElevenLabs disconnected');
-        addMessageToConversation(activeConversation, {
+                        addMessageToConversation(activeConversation, {
             text: "🎤 ElevenLabs voice conversation ended! You can still chat via text. ✨",
-            isUser: false,
-            timestamp: new Date()
-        });
+                            isUser: false,
+                            timestamp: new Date()
+                        });
         setUseElevenLabs(false);
     };
 
@@ -138,12 +138,12 @@ const AIAssistant: React.FC = () => {
                     const arrayBuffer = await audioBlob.arrayBuffer();
                     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
                     
-                    setIsLoading(true);
-                    addMessageToConversation(activeConversation, {
+        setIsLoading(true);
+                    addMessageToConversation(activeConversation, { 
                         text: "🎤 Processing your voice...",
-                        isUser: false,
-                        timestamp: new Date()
-                    });
+                isUser: false, 
+                timestamp: new Date() 
+            });
                     
                     try {
                         // Use AssemblyAI for transcription
@@ -158,31 +158,31 @@ const AIAssistant: React.FC = () => {
                             
                             if (transcribedText && transcribedText.trim()) {
                                 // Add transcribed text as user message
-                                addMessageToConversation(activeConversation, {
+            addMessageToConversation(activeConversation, { 
                                     text: transcribedText,
                                     isUser: true,
-                                    timestamp: new Date()
-                                });
-                                
+                timestamp: new Date() 
+            });
+            
                                 // Process the transcribed message
                                 await handleSendMessage(transcribedText);
                             } else {
-                                addMessageToConversation(activeConversation, {
+            addMessageToConversation(activeConversation, { 
                                     text: "🎤 I couldn't understand that. Please try speaking again! 🌟",
-                                    isUser: false,
-                                    timestamp: new Date()
-                                });
+                isUser: false, 
+                timestamp: new Date() 
+            });
                             }
                         } else {
                             throw new Error('Transcription failed');
                         }
                     } catch (error) {
                         console.error('Voice processing error:', error);
-                        addMessageToConversation(activeConversation, {
+                    addMessageToConversation(activeConversation, { 
                             text: "🎤 Sorry, I couldn't process that voice message. Please try again! 🌟",
-                            isUser: false,
-                            timestamp: new Date()
-                        });
+                        isUser: false, 
+                        timestamp: new Date() 
+                    });
                     } finally {
                         setIsLoading(false);
                     }
@@ -195,24 +195,24 @@ const AIAssistant: React.FC = () => {
             
         } catch (error) {
             console.error('❌ Failed to start voice recording:', error);
-            addMessageToConversation(activeConversation, {
+                    addMessageToConversation(activeConversation, { 
                 text: "🎤 Couldn't access microphone. Please check permissions! 🌟",
-                isUser: false,
-                timestamp: new Date()
-            });
-        }
+                        isUser: false, 
+                        timestamp: new Date() 
+                    });
+                }
     };
 
     const stopVoiceRecording = () => {
         if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
+                    mediaRecorderRef.current.stop();
             setIsRecording(false);
             
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-                streamRef.current = null;
-            }
-            
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                    streamRef.current = null;
+                }
+                
             console.log('🛑 Voice recording stopped');
         }
     };
@@ -238,27 +238,27 @@ const AIAssistant: React.FC = () => {
     const handleImageRequest = async (text: string) => {
         try {
             // Add a thinking message
-            addMessageToConversation(activeConversation, {
+                addMessageToConversation(activeConversation, { 
                 text: "🎨 Creating your image... This might take a moment! ✨",
-                isUser: false,
-                timestamp: new Date()
-            });
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
 
             // Simulate image generation (replace with actual API call)
             setTimeout(() => {
-                addMessageToConversation(activeConversation, {
+            addMessageToConversation(activeConversation, { 
                     text: `🎨 I would generate an image for: "${text}". Image generation feature coming soon! 🖼️`,
-                    isUser: false,
-                    timestamp: new Date()
-                });
+                isUser: false, 
+                timestamp: new Date() 
+            });
                 setIsLoading(false);
             }, 2000);
         } catch (error) {
             console.error('Image generation error:', error);
-            addMessageToConversation(activeConversation, {
+            addMessageToConversation(activeConversation, { 
                 text: "🎨 Sorry, I couldn't create that image right now. Please try again later! 🌟",
-                isUser: false,
-                timestamp: new Date()
+                isUser: false, 
+                timestamp: new Date() 
             });
             setIsLoading(false);
         }
@@ -280,14 +280,14 @@ const AIAssistant: React.FC = () => {
                 await handleImageRequest(text);
                 return;
             }
-
+            
             // If ElevenLabs is active, acknowledge text but encourage voice
             if (useElevenLabs) {
                 setTimeout(() => {
                     addMessageToConversation(activeConversation, {
                         text: `🎯 I see your text message! For the best experience, try speaking directly - I'm listening through ElevenLabs voice chat! 🗣️`,
-                        isUser: false,
-                        timestamp: new Date()
+                isUser: false,
+                timestamp: new Date()
                     });
                     setIsLoading(false);
                 }, 500);
@@ -313,11 +313,11 @@ const AIAssistant: React.FC = () => {
 
         } catch (error) {
             console.error('Error sending message:', error);
-            addMessageToConversation(activeConversation, { 
+                addMessageToConversation(activeConversation, {
                 text: `Oops! Something went wrong. Let's try again! 🌟`, 
-                isUser: false, 
-                timestamp: new Date() 
-            });
+                    isUser: false,
+                    timestamp: new Date()
+                });
             setIsLoading(false);
         }
     };
@@ -338,15 +338,15 @@ const AIAssistant: React.FC = () => {
                             <div className="flex flex-col">
                                 <span className="font-semibold">🎯 ElevenLabs Conversation Mode Active</span>
                                 <span className="text-xs opacity-80">Real-time voice conversation with official ElevenLabs AI</span>
-                            </div>
+                </div>
                             <div className="flex gap-1">
                                 <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
                                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                 <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                             </div>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
                 {/* Messages */}
                 <div className="messages-container">
@@ -354,32 +354,32 @@ const AIAssistant: React.FC = () => {
                         <div key={index} className={`message ${message.isUser ? 'user' : 'assistant'}`}>
                             <div className="message-content">
                                 {message.text}
-                            </div>
+                                    </div>
                             <div className="message-timestamp">
                                 {message.timestamp.toLocaleTimeString()}
-                            </div>
+                                </div>
                         </div>
                     ))}
-                    {isLoading && (
+                        {isLoading && (
                         <div className="message assistant">
                             <div className="message-content">
                                 <div className="typing-indicator">
                                     <span></span>
                                     <span></span>
                                     <span></span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
 
                 {/* Input */}
                 <div className="p-4">
                     <div className="flex items-center gap-2">
-                        <input 
-                            type="text"
-                            value={inputMessage}
-                            onChange={(e) => setInputMessage(e.target.value)}
+                            <input 
+                                type="text"
+                                value={inputMessage}
+                                onChange={(e) => setInputMessage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
                             placeholder="Type your message..."
                             className="flex-1 p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-purple-400"
@@ -387,14 +387,14 @@ const AIAssistant: React.FC = () => {
                         />
                         
                         {/* Send Button */}
-                        <button
-                            onClick={handleSendText}
+                            <button
+                                onClick={handleSendText}
                             disabled={isLoading || !inputMessage.trim()}
                             className="p-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg transition-all"
-                        >
-                            <Send size={16} />
-                        </button>
-                        
+                            >
+                                <Send size={16} />
+                            </button>
+                            
                         {/* Enhanced Plasma Ball with ElevenLabs Conversation Mode */}
                         <div className={`plasma-ball-conversation-container ${useElevenLabs ? 'active streaming' : ''}`}>
                             <div className="relative">
@@ -405,10 +405,10 @@ const AIAssistant: React.FC = () => {
                                     onDisconnect={handleElevenLabsDisconnect}
                                 />
                             </div>
-                        </div>
-                        
-                        {/* Voice Recording Button */}
-                        <button
+                            </div>
+                            
+                            {/* Voice Recording Button */}
+                            <button
                             onClick={toggleVoiceRecording}
                             className={`ai-mode-button flex-1 ${isRecording ? 'recording' : ''}`}
                             title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
@@ -416,11 +416,11 @@ const AIAssistant: React.FC = () => {
                         >
                             {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
                             <span>{isRecording ? 'Stop' : 'Record'}</span>
-                        </button>
+                            </button>
+                        </div>
+                            </div>
                     </div>
                 </div>
-            </div>
-        </div>
     );
 };
 
