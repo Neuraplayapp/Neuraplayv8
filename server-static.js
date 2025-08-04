@@ -1,9 +1,14 @@
-const express = require('express');
-const path = require('path');
-const { WebSocketServer } = require('ws');
-const http = require('http');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-const fs = require('fs');
+import express from 'express';
+import path from 'path';
+import { WebSocketServer } from 'ws';
+import http from 'http';
+import fetch from 'node-fetch';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
