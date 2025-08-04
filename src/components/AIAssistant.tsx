@@ -1442,19 +1442,26 @@ Need help with anything specific? Just ask! 🌟`;
                 if (isNetlify()) {
                     // Initialize Ably connection only on Netlify
                     console.log('🔗 Initializing Ably connection...');
-                    await conversationService.current.initialize();
-                    console.log('✅ Ably initialized successfully');
+                    console.log('🔧 Conversation service exists:', !!conversationService.current);
                     
-                    // Start conversation with ElevenLabs
-                    console.log('🎯 Starting conversation with ElevenLabs...');
-                    console.log('🎯 Agent ID:', getAgentId());
-                    console.log('🎯 Voice ID:', getVoiceId());
-                    
-                    await conversationService.current.startConversation({
-                        agentId: getAgentId(),
-                        voiceId: getVoiceId()
-                    });
-                    console.log('✅ ElevenLabs conversation started successfully');
+                    try {
+                        await conversationService.current.initialize();
+                        console.log('✅ Ably initialized successfully');
+                        
+                        // Start conversation with ElevenLabs
+                        console.log('🎯 Starting conversation with ElevenLabs...');
+                        console.log('🎯 Agent ID:', getAgentId());
+                        console.log('🎯 Voice ID:', getVoiceId());
+                        
+                        await conversationService.current.startConversation({
+                            agentId: getAgentId(),
+                            voiceId: getVoiceId()
+                        });
+                        console.log('✅ ElevenLabs conversation started successfully');
+                    } catch (netlifyError) {
+                        console.error('❌ Netlify setup failed:', netlifyError);
+                        throw netlifyError; // Re-throw to trigger main catch block
+                    }
                     
                     // Ensure mode is set to conversing before proceeding
                     setMode('conversing');
@@ -1550,14 +1557,20 @@ Need help with anything specific? Just ask! 🌟`;
                 } else if (isRender()) {
                     // On Render, use WebSocket for real-time conversation
                     console.log('🎤 Enabling WebSocket conversation on Render...');
+                    console.log('🔧 WebSocket service exists:', !!webSocketService.current);
                     
-                    // Connect to WebSocket server
-                    await webSocketService.current.connect();
-                    console.log('✅ WebSocket connected');
-                    
-                    // Connect to ElevenLabs via WebSocket
-                    await webSocketService.current.connectToElevenLabs();
-                    console.log('✅ ElevenLabs connected via WebSocket');
+                    try {
+                        // Connect to WebSocket server
+                        await webSocketService.current.connect();
+                        console.log('✅ WebSocket connected');
+                        
+                        // Connect to ElevenLabs via WebSocket
+                        await webSocketService.current.connectToElevenLabs();
+                        console.log('✅ ElevenLabs connected via WebSocket');
+                    } catch (renderError) {
+                        console.error('❌ Render WebSocket setup failed:', renderError);
+                        throw renderError; // Re-throw to trigger main catch block
+                    }
                     
                     // Start local audio recording for streaming
                     console.log('🎤 Requesting microphone access...');
@@ -1610,8 +1623,12 @@ Need help with anything specific? Just ask! 🌟`;
                 console.error('❌ CONVERSATION SETUP FAILED:', error);
                 console.error('❌ Error type:', typeof error);
                 console.error('❌ Error message:', (error as Error)?.message);
+                console.error('❌ Error stack:', (error as Error)?.stack);
                 console.error('❌ Full error object:', error);
                 console.log('🔄 Resetting mode to idle due to error...');
+                console.log('🌍 Current environment - isNetlify():', isNetlify(), 'isRender():', isRender());
+                console.log('🔧 WebSocket service status:', webSocketService.current ? 'exists' : 'null');
+                console.log('🔧 Conversation service status:', conversationService.current ? 'exists' : 'null');
                 
                 // Clean up any started resources
                 if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -1626,8 +1643,33 @@ Need help with anything specific? Just ask! 🌟`;
                 setMode('idle');
                 console.log('✅ Mode reset to idle');
                 
-                // Show more helpful error message
-                const errorMessage = (error as Error).message?.includes('Bridge service not available') 
+                // Check if it's a WebSocket/connection error and try fallback mode
+                const errorMsg = (error as Error)?.message || '';
+                const isConnectionError = errorMsg.includes('WebSocket') || 
+                                        errorMsg.includes('Bridge service') || 
+                                        errorMsg.includes('ECONNREFUSED') ||
+                                        errorMsg.includes('network') ||
+                                        errorMsg.includes('timeout');
+                
+                if (isConnectionError) {
+                    console.log('🔄 Connection error detected, trying fallback conversation mode...');
+                    
+                    // Set up basic conversation mode without streaming
+                    setMode('conversing');
+                    modeRef.current = 'conversing';
+                    
+                    addMessageToConversation(activeConversation, { 
+                        text: "🎤 Starting basic conversation mode! I'll respond to your voice messages one at a time. The streaming features aren't available right now, but we can still have a great conversation! Just speak and I'll respond! 🌟", 
+                        isUser: false, 
+                        timestamp: new Date() 
+                    });
+                    
+                    console.log('✅ Fallback conversation mode activated');
+                    return; // Exit without further error handling
+                }
+                
+                // Show more helpful error message for other errors
+                const errorMessage = errorMsg.includes('Bridge service not available') 
                     ? "🔧 Conversation mode is temporarily unavailable (bridge service needs deployment). But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟"
                     : "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟";
                 
@@ -1891,44 +1933,7 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
-    // Updated handleConversationModeToggle to use new mode system
-    const handleConversationModeToggle = async () => {
-        if (mode !== 'conversing') {
-            // Enter conversation mode
-            activateConversationMode();
-            
-            // Add a greeting message
-            const greetings = [
-                "Hello there! I'm Synapse, your AI learning assistant. I'm now in conversation mode with voice capabilities. How are you doing today?",
-                "Hi! I'm Synapse, your friendly AI teacher. I'm ready for a conversation with voice! What would you like to talk about?",
-                "Hey there! I'm Synapse, your learning companion. I'm now in conversation mode with voice. How can I help you today?",
-                "Hello! I'm Synapse, your AI assistant. I'm excited to chat with you in conversation mode with voice! What's on your mind?",
-                "Hi there! I'm Synapse, your AI teacher. I'm now ready for voice conversations! How are you feeling today?"
-            ];
-            
-            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-            
-            const greetingMessage: Message = {
-                text: randomGreeting,
-                isUser: false,
-                timestamp: new Date()
-            };
-            
-            addMessageToConversation(activeConversation, greetingMessage);
-            
-            // Play the greeting voice
-            setTimeout(() => {
-                playVoice(randomGreeting);
-            }, 500);
-        } else {
-            // Exit conversation mode
-            elevenLabsService.disconnect();
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-                streamRef.current = null;
-            }
-        }
-    };
+
 
     // Updated processTextMessage to use unified handler
     const processTextMessage = async (inputText: string) => {
