@@ -10,10 +10,10 @@
     "build:render": "cross-env VITE_PLATFORM=render tsc && cross-env VITE_PLATFORM=render vite build && cross-env VITE_PLATFORM=render node scripts/post-build.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node server-static.js",
-    "start:render": "node server-static.js",
+    "start": "node server.js",
+    "start:render": "node server.js",
     "serve": "npx serve -s dist -l $PORT",
-    "render": "node server-static.js",
+    "render": "node server.js",
     "dev:netlify": "netlify dev",
     "clean": "rm -rf .bolt .netlify dist node_modules",
     "postbuild": "node scripts/post-build.js"

@@ -7,6 +7,8 @@ import { getAgentId, getVoiceId } from '../config/elevenlabs';
 import { useAIAgent } from '../contexts/AIAgentContext';
 import { useUser } from '../contexts/UserContext';
 import { base64ToBinary } from '../utils/videoUtils';
+import { elevenLabsService } from '../services/elevenLabsService';
+import { WebSocketService } from '../services/WebSocketService';
 
 import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
@@ -106,8 +108,9 @@ const AIAssistant: React.FC = () => {
     const [promptCount, setPromptCount] = useState(0);
     const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
     
-    // WebSocket service instance
+    // Platform-specific conversation services
     const conversationService = useRef<AblyConversationService>(AblyConversationService.getInstance());
+    const webSocketService = useRef<WebSocketService>(WebSocketService.getInstance());
     
     // NEW: Single mode state instead of multiple booleans
     const [mode, setMode] = useState<AssistantMode>('idle');
@@ -312,11 +315,12 @@ const AIAssistant: React.FC = () => {
         modeRef.current = mode;
     }, [mode]);
 
-    // Conversation service event handlers
+    // Platform-specific conversation service event handlers
     useEffect(() => {
         const service = conversationService.current;
+        const wsService = webSocketService.current;
         
-        // Handle conversation ready
+        // Ably (Netlify) event handlers
         service.on('conversation_ready', (data) => {
             console.log('Conversation ready with ElevenLabs');
             addMessageToConversation(activeConversation, { 
@@ -325,6 +329,47 @@ const AIAssistant: React.FC = () => {
                 timestamp: new Date() 
             });
         });
+        
+        // WebSocket (Render) event handlers
+        wsService.on('connected', () => {
+            console.log('✅ WebSocket connected for conversation');
+            if (modeRef.current === 'conversing') {
+                addMessageToConversation(activeConversation, { 
+                    text: "Voice conversation ready! Start speaking! 🎤", 
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
+            }
+        });
+        
+        wsService.on('message', (data) => {
+            console.log('📥 WebSocket message received:', data);
+            if (data.type === 'ai_response' && data.text) {
+                addMessageToConversation(activeConversation, { 
+                    text: data.text, 
+                    isUser: false, 
+                    timestamp: new Date() 
+                });
+            }
+            if (data.type === 'audio_chunk' && data.audio) {
+                // Play TTS audio response
+                playBase64Audio(data.audio);
+            }
+        });
+        
+        wsService.on('error', (error) => {
+            console.error('❌ WebSocket error:', error);
+            addMessageToConversation(activeConversation, { 
+                text: "Connection error. Please try again. 🔄", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+        });
+        
+        // Cleanup function
+        return () => {
+            // No explicit cleanup needed as services are singletons
+        };
 
         // Handle AI responses
         service.on('ai_response', (data) => {
@@ -948,9 +993,6 @@ const AIAssistant: React.FC = () => {
                     ).join('\n');
                     
                     const allSettings = Object.entries(availableSettings).map(([key, setting]) => {
-                        if (setting.options) {
-                            return `• "${setting.name}" - ${setting.description} (${setting.options.join(', ')})`;
-                        }
                         return `• "${setting.name}" - ${setting.description}`;
                     }).join('\n');
                     
@@ -1014,7 +1056,8 @@ Need help with anything specific? Just ask! 🌟`;
     // NEW: Unified message handling function
     const handleSendMessage = async (text: string) => {
         if (!text.trim() || isLoading) return;
-        console.log(`Sending message in mode: ${mode}`);
+        const currentMode = modeRef.current; // Use ref for more accurate mode
+        console.log(`Sending message in mode: ${currentMode}`);
 
         // Add user message to UI
         const userMessage: Message = { text, isUser: true, timestamp: new Date() };
@@ -1029,7 +1072,7 @@ Need help with anything specific? Just ask! 🌟`;
 
         try {
             // In full conversation mode, always treat input as a chat message
-            if (mode === 'conversing') {
+            if (currentMode === 'conversing') {
                 await handleConversationMode(text);
                 // Auto-play the response
                 setTimeout(async () => {
@@ -1087,8 +1130,10 @@ Need help with anything specific? Just ask! 🌟`;
                     console.log('✅ Conversation ended successfully');
                 }
             } else if (isRender()) {
-                // On Render, stop the MediaRecorder and clean up
-                console.log('🔄 Stopping voice recording on Render...');
+                // On Render, disconnect WebSocket and clean up
+                console.log('🔄 Stopping WebSocket conversation on Render...');
+                webSocketService.current.disconnect();
+                console.log('✅ WebSocket disconnected');
             }
             
             // Stop media recorder if it's running
@@ -1231,11 +1276,18 @@ Need help with anything specific? Just ask! 🌟`;
                     });
                     
                 } else if (isRender()) {
-                    // On Render, start voice recording with WebSocket support
-                    console.log('🎤 Enabling voice recording on Render...');
-                    console.log('🔌 WebSocket available on Render platform');
+                    // On Render, use WebSocket for real-time conversation
+                    console.log('🎤 Enabling WebSocket conversation on Render...');
                     
-                    // Start local audio recording for Render
+                    // Connect to WebSocket server
+                    await webSocketService.current.connect();
+                    console.log('✅ WebSocket connected');
+                    
+                    // Connect to ElevenLabs via WebSocket
+                    await webSocketService.current.connectToElevenLabs();
+                    console.log('✅ ElevenLabs connected via WebSocket');
+                    
+                    // Start local audio recording for streaming
                     console.log('🎤 Requesting microphone access...');
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     console.log('✅ Microphone access granted');
@@ -1263,17 +1315,17 @@ Need help with anything specific? Just ask! 🌟`;
                         new MediaRecorder(stream);
                     mediaRecorderRef.current = mediaRecorder;
                     
-                    // Set up continuous recording for Render
+                    // Handle audio data for continuous streaming to WebSocket
                     mediaRecorder.ondataavailable = async (event) => {
                         if (event.data.size > 0 && modeRef.current === 'conversing') {
-                            console.log(`🔊 Audio data available: ${event.data.size} bytes`);
-                            // Process the audio immediately on Render
-                            await processVoiceInput(event.data);
+                            console.log(`🔊 Streaming audio chunk: ${event.data.size} bytes`);
+                            const arrayBuffer = await event.data.arrayBuffer();
+                            await webSocketService.current.sendAudioChunk(arrayBuffer);
                         }
                     };
                     
                     mediaRecorder.start(1000); // Record in 1-second chunks
-                    console.log('🎙️ MediaRecorder started for Render');
+                    console.log('🎙️ MediaRecorder started for WebSocket streaming');
                     
                     addMessageToConversation(activeConversation, { 
                         text: "Voice conversation active! Start speaking and I'll respond. 🎤✨", 
@@ -1341,9 +1393,16 @@ Need help with anything specific? Just ask! 🌟`;
         try {
             console.log('Processing voice input with language:', selectedLanguage);
             
-            // Convert audio to base64 for AssemblyAI
+            // Convert audio to base64 for AssemblyAI using proper binary encoding
             const arrayBuffer = await audioBlob.arrayBuffer();
-            const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            const bytes = new Uint8Array(arrayBuffer);
+            let binaryString = '';
+            const chunkSize = 8192; // Process in chunks to avoid call stack issues
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.slice(i, i + chunkSize);
+                binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+            }
+            const base64Audio = btoa(binaryString);
             
             // Environment-specific API endpoint
             const apiEndpoint = isNetlify() 
@@ -1378,7 +1437,7 @@ Need help with anything specific? Just ask! 🌟`;
                 
                 // Show language detection info if auto-detect was used
                 if (selectedLanguage === 'auto' && detectedLanguage) {
-                    const languageName = SUPPORTED_LANGUAGES[detectedLanguage] || detectedLanguage;
+                    const languageName = SUPPORTED_LANGUAGES[detectedLanguage as LanguageCode] || detectedLanguage;
                     console.log(`🌍 Detected language: ${languageName}`);
                 }
                 
@@ -1978,6 +2037,31 @@ This two-step process is mandatory. Do not deviate.`;
         console.log('getUserMedia supported:', !!navigator.mediaDevices?.getUserMedia);
     };
 
+    // Helper function to play base64 audio from WebSocket
+    const playBase64Audio = async (base64Audio: string) => {
+        try {
+            console.log('🎵 Playing base64 audio from WebSocket');
+            const audioBlob = new Blob([base64ToBinary(base64Audio)], { type: 'audio/mpeg' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            
+            audio.onended = () => {
+                console.log('🎵 WebSocket audio playback ended');
+                URL.revokeObjectURL(audioUrl);
+            };
+            
+            audio.onerror = (e) => {
+                console.error('🎵 WebSocket audio playback error:', e);
+                URL.revokeObjectURL(audioUrl);
+            };
+            
+            await audio.play();
+            console.log('🎵 WebSocket audio playback started');
+        } catch (error) {
+            console.error('Error playing WebSocket audio:', error);
+        }
+    };
+
     const playVoice = async (text: string) => {
         if (isPlayingVoice) {
             setIsPlayingVoice(false);
@@ -2014,10 +2098,15 @@ This two-step process is mandatory. Do not deviate.`;
             const result = await response.json();
             console.log('ElevenLabs TTS response received:', result);
             
-            if (result.audio_base64) {
+            // Check for audio data in multiple possible response formats
+            const audioData = result.audio_base64 || result.audio || result.data?.audio;
+            console.log('🔍 Audio data found:', !!audioData, 'Type:', typeof audioData);
+            console.log('🔍 Available fields:', Object.keys(result));
+            
+            if (audioData) {
                 // Use ElevenLabs TTS
                 console.log('Creating audio blob from ElevenLabs data');
-                const audioBlob = new Blob([base64ToBinary(result.audio_base64)], { type: 'audio/mpeg' });
+                const audioBlob = new Blob([base64ToBinary(audioData)], { type: 'audio/mpeg' });
                 const audioUrl = URL.createObjectURL(audioBlob);
                 const audio = new Audio(audioUrl);
                 
@@ -2040,7 +2129,8 @@ This two-step process is mandatory. Do not deviate.`;
                 // Clean up the URL after a delay
                 setTimeout(() => URL.revokeObjectURL(audioUrl), 10000);
             } else {
-                console.error('No ElevenLabs audio data received');
+                console.error('No ElevenLabs audio data received in response:', Object.keys(result));
+                console.error('Full response structure:', result);
                 setIsPlayingVoice(false);
             }
         } catch (error) {
@@ -2119,10 +2209,13 @@ This two-step process is mandatory. Do not deviate.`;
 
             const result = await response.json();
             
-            if (result.audio_base64) {
+            // Check for audio data in multiple possible response formats
+            const audioData = result.audio_base64 || result.audio || result.data?.audio;
+            
+            if (audioData) {
                 try {
                     const audioBlob = new Blob(
-                        [Uint8Array.from(atob(result.audio_base64), c => c.charCodeAt(0))], 
+                        [Uint8Array.from(atob(audioData), c => c.charCodeAt(0))], 
                         { type: 'audio/mpeg' }
                     );
                     console.log('🔊 TTS audio blob created, size:', audioBlob.size);
@@ -2143,6 +2236,9 @@ This two-step process is mandatory. Do not deviate.`;
                 } catch (error) {
                     console.error('❌ Error playing TTS audio:', error);
                 }
+            } else {
+                console.error('No TTS audio data received in response:', Object.keys(result));
+                console.error('Full TTS response structure:', result);
             }
 
         } catch (error) {
