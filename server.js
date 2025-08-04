@@ -251,6 +251,21 @@ async function handleElevenLabsConnection(clientWs, clientId) {
       console.log('✅ Connected to ElevenLabs');
       elevenLabsConnections.set(clientId, elevenLabsWs);
       
+      // CRITICAL: Send conversation initiation message to start the conversation
+      console.log('🎯 Sending conversation initiation to ElevenLabs...');
+      elevenLabsWs.send(JSON.stringify({
+        type: 'conversation_initiation_client_data',
+        conversation_config_override: {
+          agent: {
+            prompt: {
+              prompt: "You are a helpful, friendly AI assistant for NeuraPlay, an educational platform for children. Keep responses concise and engaging."
+            },
+            first_message: "Hi! I'm your AI assistant. How can I help you today?",
+            language: "en"
+          }
+        }
+      }));
+      
       clientWs.send(JSON.stringify({
         type: 'elevenlabs_connected',
         message: 'Connected to ElevenLabs Conversational AI'
@@ -260,19 +275,40 @@ async function handleElevenLabsConnection(clientWs, clientId) {
     elevenLabsWs.on('message', (data) => {
       try {
         const response = JSON.parse(data);
-        console.log('📥 ElevenLabs response:', response.type);
+        console.log('📥 ElevenLabs response:', response.type || 'unknown', JSON.stringify(response).substring(0, 200));
         
-        // Forward response to client
-        if (response.type === 'audio') {
+        // Handle different ElevenLabs message types
+        if (response.type === 'conversation_initiation_metadata') {
+          console.log('✅ ElevenLabs conversation initiated successfully');
+          console.log('🎯 Conversation ID:', response.conversation_initiation_metadata_event?.conversation_id);
+          
+        } else if (response.type === 'audio') {
+          console.log('🔊 Received audio from ElevenLabs');
           clientWs.send(JSON.stringify({
             type: 'audio_chunk',
             audio: response.audio_event?.audio_base_64
           }));
+          
         } else if (response.type === 'agent_response') {
+          console.log('💬 Received text response from ElevenLabs:', response.agent_response_event?.agent_response?.substring(0, 100));
           clientWs.send(JSON.stringify({
             type: 'ai_response',
-            text: response.agent_response?.message
+            text: response.agent_response_event?.agent_response
           }));
+          
+        } else if (response.type === 'user_transcript') {
+          console.log('👤 User transcript:', response.user_transcription_event?.user_transcript);
+          
+        } else if (response.type === 'ping') {
+          // Respond to ping with pong
+          console.log('🏓 Received ping, sending pong');
+          elevenLabsWs.send(JSON.stringify({
+            type: 'pong',
+            event_id: response.ping_event?.event_id
+          }));
+          
+        } else {
+          console.log('📥 Other ElevenLabs message:', response.type);
         }
       } catch (error) {
         console.error('❌ Error processing ElevenLabs response:', error);
@@ -316,11 +352,12 @@ async function handleAudioChunk(clientWs, clientId, audioBase64) {
     
     console.log('🎤 Forwarding audio chunk to ElevenLabs');
     
-    // Forward audio chunk to ElevenLabs with proper format
+    // Forward audio chunk to ElevenLabs in the correct format (no "type" field)
     elevenLabsWs.send(JSON.stringify({
-      type: 'user_audio_chunk',
       user_audio_chunk: audioBase64
     }));
+    
+    console.log('📤 Sent audio chunk to ElevenLabs, size:', audioBase64.length);
     
     // Send acknowledgment to client
     clientWs.send(JSON.stringify({
