@@ -83,6 +83,12 @@ const SUPPORTED_LANGUAGES: Record<LanguageCode, string> = {
 };
 
 const AIAssistant: React.FC = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const theme = useTheme();
+    const { user, isDemoUser } = useUser();
+    const { showAgent, hideAgent, updateContext, currentContext } = useAIAgent();
+    
     const [isOpen, setIsOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [activeConversation, setActiveConversation] = useState<string>('current');
@@ -798,25 +804,31 @@ const AIAssistant: React.FC = () => {
         if (directNavigation) {
             console.log('🎯 DIRECT NAVIGATION DETECTED:', lowerText);
             
-            // Match specific pages with priority order
-            if (lowerText.includes('dashboard')) {
+            // Match specific pages with priority order - CHECK AVAILABILITY FIRST
+            if (lowerText.includes('dashboard') && availablePages['/dashboard']) {
                 console.log('✅ Navigation to DASHBOARD');
                 return { type: 'navigation', action: { path: '/dashboard', page: availablePages['/dashboard'] } };
             }
-            if (lowerText.includes('forum')) {
+            if (lowerText.includes('forum') && availablePages['/forum']) {
                 console.log('✅ Navigation to FORUM');  
                 return { type: 'navigation', action: { path: '/forum', page: availablePages['/forum'] } };
             }
-            if (lowerText.includes('playground')) {
+            if (lowerText.includes('playground') && availablePages['/playground']) {
                 console.log('✅ Navigation to PLAYGROUND');
                 return { type: 'navigation', action: { path: '/playground', page: availablePages['/playground'] } };
             }
-            if (lowerText.includes('profile')) {
+            if (lowerText.includes('profile') && availablePages['/profile']) {
+                console.log('✅ Navigation to PROFILE');
                 return { type: 'navigation', action: { path: '/profile', page: availablePages['/profile'] } };
             }
-            if (lowerText.includes('about')) {
+            if (lowerText.includes('about') && availablePages['/about']) {
+                console.log('✅ Navigation to ABOUT');
                 return { type: 'navigation', action: { path: '/about', page: availablePages['/about'] } };
             }
+            
+            // Log what pages are actually available for debugging
+            console.log('🔍 Available pages:', Object.keys(availablePages));
+            console.log('❌ No matching page found for navigation:', lowerText);
             
             // Enhanced special navigation cases - ALL PAGES
             if (lowerText.includes('home') || lowerText.includes('main') || lowerText.includes('landing')) {
@@ -1220,10 +1232,18 @@ What would you like to post about? 🌟`;
                 
             case 'navigation':
                 if (command.action?.path) {
-                    console.log('Navigating to:', command.action.path, command.action.page);
-                    navigate(command.action.path);
-                    return `🚀 Taking you to ${command.action.page.name}! ${command.action.page.description} ✨`;
+                    console.log('🎯 EXECUTING NAVIGATION:', command.action.path, command.action.page?.name);
+                    try {
+                        navigate(command.action.path);
+                        console.log('✅ Navigation executed successfully to:', command.action.path);
+                        return `🚀 Taking you to ${command.action.page?.name || command.action.path}! ${command.action.page?.description || 'Loading page...'} ✨`;
+                    } catch (navError) {
+                        console.error('❌ Navigation failed:', navError);
+                        return `❌ Sorry, I couldn't navigate to that page. Please try clicking the menu manually.`;
+                    }
                 }
+                console.error('❌ Navigation command missing path:', command);
+                return `❌ Navigation failed - missing path information.`;
                 break;
                 
             case 'settings':
@@ -1236,14 +1256,35 @@ What would you like to post about? 🌟`;
                     try {
                         switch (setting) {
                             case 'theme':
-                                theme.setTheme(value);
-                                return `🎨 Theme changed to ${value}! The page should update automatically! ✨`;
+                                console.log('🎨 Applying theme change:', value);
+                                if (theme && theme.setTheme) {
+                                    theme.setTheme(value);
+                                    console.log('✅ Theme applied successfully');
+                                    return `🎨 Theme changed to ${value}! The page should update automatically! ✨`;
+                                } else {
+                                    console.error('❌ Theme context not available');
+                                    return `❌ Sorry, I couldn't change the theme right now. Try using the settings menu instead.`;
+                                }
                             case 'fontSize':
-                                theme.setFontSize(value);
-                                return `📝 Font size changed to ${value}! Text should be easier to read now! 📖`;
+                                console.log('📝 Applying font size change:', value);
+                                if (theme && theme.setFontSize) {
+                                    theme.setFontSize(value);
+                                    console.log('✅ Font size applied successfully');
+                                    return `📝 Font size changed to ${value}! Text should be easier to read now! 📖`;
+                                } else {
+                                    console.error('❌ Theme context not available for font size');
+                                    return `❌ Sorry, I couldn't change the font size right now.`;
+                                }
                             case 'animations':
-                                theme.setAnimationsEnabled(value === 'enabled');
-                                return `🎬 Animations ${value === 'enabled' ? 'enabled' : 'disabled'}! ${value === 'enabled' ? 'Things will be more lively!' : 'Things will be calmer!'} 🎭`;
+                                console.log('🎬 Applying animation setting:', value);
+                                if (theme && theme.setAnimationsEnabled) {
+                                    theme.setAnimationsEnabled(value === 'enabled');
+                                    console.log('✅ Animation setting applied successfully');
+                                    return `🎬 Animations ${value === 'enabled' ? 'enabled' : 'disabled'}! ${value === 'enabled' ? 'Things will be more lively!' : 'Things will be calmer!'} 🎭`;
+                                } else {
+                                    console.error('❌ Animation setting not available');
+                                    return `❌ Sorry, couldn't change animation settings right now.`;
+                                }
                             case 'sound':
                                 // This would need to be implemented in the theme context
                                 return `🔊 Sound settings would be updated here! 🔊`;
@@ -1589,23 +1630,50 @@ Need help with anything specific? Just ask! 🌟`;
                     console.log('🔧 WebSocket service exists:', !!webSocketService.current);
                     
                     try {
-                        // Connect to WebSocket server
+                        // Connect to WebSocket server first
+                        console.log('🔗 Connecting to WebSocket server...');
                         await webSocketService.current.connect();
-                        console.log('✅ WebSocket connected');
+                        console.log('✅ WebSocket connected successfully');
+                        
+                        // Small delay to ensure connection is stable
+                        await new Promise(resolve => setTimeout(resolve, 500));
                         
                         // Connect to ElevenLabs via WebSocket
+                        console.log('🎯 Connecting to ElevenLabs...');
                         await webSocketService.current.connectToElevenLabs();
                         console.log('✅ ElevenLabs connected via WebSocket');
+                        
+                        // Another small delay
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        
                     } catch (renderError) {
                         console.error('❌ Render WebSocket setup failed:', renderError);
-                        throw renderError; // Re-throw to trigger main catch block
+                        console.log('🔄 Attempting fallback conversation mode...');
+                        
+                        // Don't throw error - use fallback mode instead
+                        setMode('conversing');
+                        modeRef.current = 'conversing';
+                        
+                        addMessageToConversation(activeConversation, { 
+                            text: "🎤 Basic conversation mode active! I'll respond to your voice messages. The streaming features aren't available right now, but we can still chat! 🌟", 
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                        
+                        console.log('✅ Fallback conversation mode enabled');
+                        return; // Exit without throwing error
                     }
                     
                     // Start local audio recording for streaming
                     console.log('🎤 Requesting microphone access...');
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    console.log('✅ Microphone access granted');
-                    streamRef.current = stream;
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        console.log('✅ Microphone access granted');
+                        streamRef.current = stream;
+                    } catch (micError) {
+                        console.error('❌ Microphone access denied:', micError);
+                        throw new Error('Microphone access required for conversation mode');
+                    }
                     
                     // Use the same MIME type detection as regular voice recording
                     const supportedMimeTypes = [
