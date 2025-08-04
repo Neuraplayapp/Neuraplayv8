@@ -22,7 +22,15 @@ interface FriendsSystemProps {
 
 const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
   const { user, setUser } = useUser();
-  const { isDarkMode } = useTheme();
+  const { 
+    isDarkMode, 
+    animationsEnabled, 
+    reducedMotion, 
+    focusIndicators, 
+    keyboardNavigation,
+    fontSize,
+    highContrast 
+  } = useTheme();
   
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState('');
@@ -54,7 +62,9 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
   const chatInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: reducedMotion ? 'auto' : 'smooth' 
+    });
   };
 
   useEffect(() => {
@@ -221,8 +231,12 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
             </h3>
             <button
               onClick={() => setShowAddFriend(!showAddFriend)}
-              className="p-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-800/50 rounded-full transition-colors"
+              className={`p-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-800/50 rounded-full ${
+                animationsEnabled && !reducedMotion ? 'transition-colors' : ''
+              } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
               title="Add Friend"
+              aria-label="Add new friend"
+              aria-expanded={showAddFriend}
             >
               <UserPlus className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             </button>
@@ -236,11 +250,16 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search friends..."
+              aria-label="Search friends"
               className={`w-full pl-10 pr-4 py-2 rounded-lg border-2 ${
                 isDarkMode 
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              } focus:border-purple-500 focus:outline-none`}
+              } focus:border-purple-500 focus:outline-none ${
+                focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50' : ''
+              } ${fontSize === 'large' || fontSize === 'extra-large' ? 'text-lg' : ''} ${
+                highContrast ? 'border-4' : ''
+              }`}
             />
           </div>
         </div>
@@ -256,17 +275,25 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
                 value={newFriendUsername}
                 onChange={(e) => setNewFriendUsername(e.target.value)}
                 placeholder="Username..."
+                aria-label="Enter friend's username"
                 className={`flex-1 px-3 py-2 rounded-lg border-2 ${
                   isDarkMode 
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                } focus:border-purple-500 focus:outline-none`}
+                } focus:border-purple-500 focus:outline-none ${
+                  focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50' : ''
+                } ${fontSize === 'large' || fontSize === 'extra-large' ? 'text-lg' : ''} ${
+                  highContrast ? 'border-4' : ''
+                }`}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddFriend()}
               />
               <button
                 onClick={handleAddFriend}
                 disabled={!newFriendUsername.trim()}
-                className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                aria-label="Send friend request"
+                className={`px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg ${
+                  animationsEnabled && !reducedMotion ? 'transition-colors' : ''
+                } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
               >
                 <UserPlus className="w-4 h-4" />
               </button>
@@ -290,12 +317,20 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
                 <div
                   key={friendId}
                   onClick={() => setSelectedFriend(friendId)}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                  onKeyPress={(e) => keyboardNavigation && (e.key === 'Enter' || e.key === ' ') && setSelectedFriend(friendId)}
+                  tabIndex={keyboardNavigation ? 0 : -1}
+                  role="button"
+                  aria-pressed={selectedFriend === friendId}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer ${
+                    animationsEnabled && !reducedMotion ? 'transition-all' : ''
+                  } ${
                     selectedFriend === friendId
                       ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600'
                       : isDarkMode
                         ? 'hover:bg-gray-700/50'
                         : 'hover:bg-gray-100'
+                  } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''} ${
+                    fontSize === 'large' || fontSize === 'extra-large' ? 'text-base' : 'text-sm'
                   }`}
                 >
                   <div className="relative">
@@ -428,10 +463,22 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                <button 
+                  className={`p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
+                    animationsEnabled && !reducedMotion ? 'transition-colors' : ''
+                  } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
+                  title="Voice call"
+                  aria-label={`Call ${selectedFriend}`}
+                >
                   <Phone className="w-4 h-4" />
                 </button>
-                <button className="p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                <button 
+                  className={`p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
+                    animationsEnabled && !reducedMotion ? 'transition-colors' : ''
+                  } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
+                  title="Video call"
+                  aria-label={`Video call ${selectedFriend}`}
+                >
                   <Video className="w-4 h-4" />
                 </button>
               </div>
@@ -474,7 +521,13 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
               isDarkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-white/90'
             }`}>
               <div className="flex gap-2">
-                <button className="p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                <button 
+                  className={`p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
+                    animationsEnabled && !reducedMotion ? 'transition-colors' : ''
+                  } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
+                  title="Attach file"
+                  aria-label="Attach file to message"
+                >
                   <Paperclip className="w-4 h-4" />
                 </button>
                 <input
@@ -483,24 +536,39 @@ const FriendsSystem: React.FC<FriendsSystemProps> = ({ className = '' }) => {
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
                   placeholder={`Message ${selectedFriend}...`}
+                  aria-label={`Type message to ${selectedFriend}`}
                   className={`flex-1 px-4 py-2 rounded-xl border-2 ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  } focus:border-purple-500 focus:outline-none`}
+                  } focus:border-purple-500 focus:outline-none ${
+                    focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50' : ''
+                  } ${fontSize === 'large' || fontSize === 'extra-large' ? 'text-lg' : ''} ${
+                    highContrast ? 'border-4' : ''
+                  }`}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
-                <button className="p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                <button 
+                  className={`p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
+                    animationsEnabled && !reducedMotion ? 'transition-colors' : ''
+                  } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
+                  title="Add emoji"
+                >
                   <Smile className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleSendMessage}
                   disabled={!chatMessage.trim()}
-                  className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+                  className={`px-4 py-2 rounded-xl font-semibold ${
+                    animationsEnabled && !reducedMotion ? 'transition-all' : ''
+                  } ${
                     chatMessage.trim()
                       ? 'bg-purple-600 hover:bg-purple-700 text-white'
                       : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  } ${focusIndicators ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''} ${
+                    highContrast ? 'border-2 border-purple-800' : ''
                   }`}
+                  title="Send message"
                 >
                   <Send className="w-4 h-4" />
                 </button>
