@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 // Determine the deployment platform
 const platform = process.env.NETLIFY ? 'netlify' : 
                  process.env.RENDER ? 'render' : 
-                 'local';
+                 process.env.VITE_PLATFORM || 'local';
 
 console.log(`🚀 Post-build script running for platform: ${platform}`);
 
