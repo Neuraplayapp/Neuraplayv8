@@ -260,7 +260,11 @@ app.post('/api/elevenlabs-tts', async (req, res) => {
       return res.status(400).json({ error: 'No text provided' });
     }
 
-    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || 
+                                   process.env.ELEVENLABS_API_KEY || 
+                                   process.env.elven_labs_api_key ||
+                                   process.env.VITE_ELVEN_LABS_API_KEY ||
+                                   process.env.ELEVEN_LABS_API_KEY;
     console.log('🔑 ElevenLabs API key found:', !!ELEVENLABS_API_KEY);
     console.log('🔑 API key length:', ELEVENLABS_API_KEY ? ELEVENLABS_API_KEY.length : 0);
     
@@ -320,7 +324,11 @@ app.post('/.netlify/functions/elevenlabs-streaming-tts', async (req, res) => {
       return res.status(400).json({ error: 'No text provided' });
     }
 
-    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || 
+                                   process.env.ELEVENLABS_API_KEY || 
+                                   process.env.elven_labs_api_key ||
+                                   process.env.VITE_ELVEN_LABS_API_KEY ||
+                                   process.env.ELEVEN_LABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
       console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
@@ -369,7 +377,11 @@ app.post('/api/elevenlabs-streaming-tts', async (req, res) => {
       return res.status(400).json({ error: 'No text provided' });
     }
 
-    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || 
+                                   process.env.ELEVENLABS_API_KEY || 
+                                   process.env.elven_labs_api_key ||
+                                   process.env.VITE_ELVEN_LABS_API_KEY ||
+                                   process.env.ELEVEN_LABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
       console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
@@ -412,7 +424,11 @@ app.post('/api/elevenlabs-streaming-tts', async (req, res) => {
 app.get('/.netlify/functions/test-elevenlabs', async (req, res) => {
   try {
     console.log('🧪 Testing ElevenLabs API');
-    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || 
+                                   process.env.ELEVENLABS_API_KEY || 
+                                   process.env.elven_labs_api_key ||
+                                   process.env.VITE_ELVEN_LABS_API_KEY ||
+                                   process.env.ELEVEN_LABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
       console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
@@ -445,7 +461,11 @@ app.get('/.netlify/functions/test-elevenlabs', async (req, res) => {
 app.get('/api/test-elevenlabs', async (req, res) => {
   try {
     console.log('🧪 Testing ElevenLabs API via /api');
-    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || 
+                                   process.env.ELEVENLABS_API_KEY || 
+                                   process.env.elven_labs_api_key ||
+                                   process.env.VITE_ELVEN_LABS_API_KEY ||
+                                   process.env.ELEVEN_LABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
       console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
@@ -995,6 +1015,102 @@ app.get('/health', (req, res) => {
   });
 });
 
+// OpenAI-compatible endpoint for ElevenLabs agents
+app.post('/api/openai-compatible', async (req, res) => {
+  try {
+    const { messages, model, temperature = 0.7, max_tokens = 100 } = req.body;
+    
+    console.log('🤖 OpenAI-compatible request received');
+    console.log('📝 Messages:', messages?.length || 0, 'messages');
+    console.log('🎯 Model:', model);
+    console.log('🌡️ Temperature:', temperature);
+    console.log('📊 Max tokens:', max_tokens);
+
+    // Get Together AI token
+    const TOGETHER_TOKEN = process.env.together_token || process.env.TOGETHER_TOKEN;
+    
+    if (!TOGETHER_TOKEN) {
+      console.error('❌ Together AI token not found');
+      return res.status(500).json({
+        error: 'Together AI token not configured'
+      });
+    }
+
+    // Convert OpenAI format to Together AI format
+    const systemPrompt = messages?.find(msg => msg.role === 'system')?.content || 
+      'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors.';
+
+    const userMessages = messages?.filter(msg => msg.role !== 'system') || [];
+    
+    console.log('🔄 Calling Together AI API...');
+    
+    // Call Together AI with Qwen model
+    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TOGETHER_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...userMessages
+        ],
+        max_tokens: max_tokens,
+        temperature: temperature,
+        top_p: 0.9
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Together AI error:', response.status, errorText);
+      
+      return res.status(response.status).json({
+        error: `Together AI API error: ${response.status} - ${errorText}`
+      });
+    }
+
+    const result = await response.json();
+    console.log('✅ Together AI response received');
+
+    // Convert back to OpenAI format
+    const openAIResponse = {
+      id: 'chatcmpl-' + Date.now(),
+      object: 'chat.completion',
+      created: Math.floor(Date.now() / 1000),
+      model: model || 'gpt-3.5-turbo',
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: result.choices?.[0]?.message?.content || 'I apologize, but I encountered an error generating a response.'
+          },
+          finish_reason: 'stop'
+        }
+      ],
+      usage: {
+        prompt_tokens: result.usage?.prompt_tokens || 0,
+        completion_tokens: result.usage?.completion_tokens || 0,
+        total_tokens: result.usage?.total_tokens || 0
+      }
+    };
+
+    console.log('🎉 OpenAI-compatible response sent');
+    res.json(openAIResponse);
+
+  } catch (error) {
+    console.error('❌ OpenAI-compatible API error:', error);
+    
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
 // Server info endpoint for debugging
 app.get('/api/server-info', (req, res) => {
   res.json({
@@ -1003,9 +1119,14 @@ app.get('/api/server-info', (req, res) => {
     timestamp: new Date().toISOString(),
     environment_vars: {
       has_ably_key: !!process.env.VITE_ABLY_API_KEY,
-      has_elevenlabs_key: !!process.env.VITE_ELEVENLABS_API_KEY || !!process.env.ELEVENLABS_API_KEY,
+      has_elevenlabs_key: !!process.env.VITE_ELEVENLABS_API_KEY || 
+                          !!process.env.ELEVENLABS_API_KEY || 
+                          !!process.env.elven_labs_api_key ||
+                          !!process.env.VITE_ELVEN_LABS_API_KEY ||
+                          !!process.env.ELEVEN_LABS_API_KEY,
       has_assemblyai_key: !!process.env.VITE_ASSEMBLYAI_API_KEY || !!process.env.ASSEMBLYAI_API_KEY,
-      has_openai_key: !!process.env.OPENAI_API_KEY
+      has_openai_key: !!process.env.OPENAI_API_KEY,
+      has_together_token: !!process.env.together_token || !!process.env.TOGETHER_TOKEN
     }
   });
 });
