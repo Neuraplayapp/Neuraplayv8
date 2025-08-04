@@ -94,6 +94,13 @@ app.post('/.netlify/functions/assemblyai-transcribe', async (req, res) => {
   }
 });
 
+// Also add the /api route for Render compatibility
+app.post('/api/assemblyai-transcribe', async (req, res) => {
+  // Forward to the Netlify-style endpoint
+  req.url = '/.netlify/functions/assemblyai-transcribe';
+  return app._router.handle(req, res, () => {});
+});
+
 // ElevenLabs TTS
 app.post('/.netlify/functions/elevenlabs-tts', async (req, res) => {
   try {
@@ -140,6 +147,12 @@ app.post('/.netlify/functions/elevenlabs-tts', async (req, res) => {
     console.error('❌ ElevenLabs TTS error:', error);
     res.status(500).json({ error: 'TTS failed: ' + error.message });
   }
+});
+
+// Also add the /api route for Render compatibility
+app.post('/api/elevenlabs-tts', async (req, res) => {
+  req.url = '/.netlify/functions/elevenlabs-tts';
+  return app._router.handle(req, res, () => {});
 });
 
 // ElevenLabs Streaming TTS
@@ -190,6 +203,12 @@ app.post('/.netlify/functions/elevenlabs-streaming-tts', async (req, res) => {
   }
 });
 
+// Also add the /api route for Render compatibility
+app.post('/api/elevenlabs-streaming-tts', async (req, res) => {
+  req.url = '/.netlify/functions/elevenlabs-streaming-tts';
+  return app._router.handle(req, res, () => {});
+});
+
 // Test ElevenLabs
 app.get('/.netlify/functions/test-elevenlabs', async (req, res) => {
   try {
@@ -222,6 +241,12 @@ app.get('/.netlify/functions/test-elevenlabs', async (req, res) => {
   }
 });
 
+// Also add the /api route for Render compatibility
+app.get('/api/test-elevenlabs', async (req, res) => {
+  req.url = '/.netlify/functions/test-elevenlabs';
+  return app._router.handle(req, res, () => {});
+});
+
 // Ably Auth
 app.get('/.netlify/functions/ably-auth', async (req, res) => {
   try {
@@ -246,6 +271,12 @@ app.get('/.netlify/functions/ably-auth', async (req, res) => {
     console.error('❌ Ably auth error:', error);
     res.status(500).json({ error: 'Ably auth failed: ' + error.message });
   }
+});
+
+// Also add the /api route for Render compatibility
+app.get('/api/ably-auth', async (req, res) => {
+  req.url = '/.netlify/functions/ably-auth';
+  return app._router.handle(req, res, () => {});
 });
 
 // Generic API endpoint
@@ -295,6 +326,12 @@ app.post('/.netlify/functions/api', async (req, res) => {
   }
 });
 
+// Also add the /api route for Render compatibility
+app.post('/api/api', async (req, res) => {
+  req.url = '/.netlify/functions/api';
+  return app._router.handle(req, res, () => {});
+});
+
 // Contact form
 app.post('/.netlify/functions/contact', async (req, res) => {
   try {
@@ -315,6 +352,12 @@ app.post('/.netlify/functions/contact', async (req, res) => {
     console.error('❌ Contact form error:', error);
     res.status(500).json({ error: 'Contact form failed: ' + error.message });
   }
+});
+
+// Also add the /api route for Render compatibility
+app.post('/api/contact', async (req, res) => {
+  req.url = '/.netlify/functions/contact';
+  return app._router.handle(req, res, () => {});
 });
 
 // Serve static files from the dist directory

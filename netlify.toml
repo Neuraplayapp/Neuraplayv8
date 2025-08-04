@@ -1,8 +1,12 @@
 [build]
   functions = "netlify/functions"
   publish = "dist"
-  command = "npm run build"
+  command = "npm run build:netlify"
   ignore = ".bolt/ .netlify/"
+
+[build.environment]
+  NETLIFY = "true"
+  VITE_PLATFORM = "netlify"
 
 [functions]
   directory = "netlify/functions"

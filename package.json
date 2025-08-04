@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:netlify": "tsc && vite build && node scripts/post-build.js",
+    "build:render": "tsc && vite build && node scripts/post-build.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server-static.js",
+    "start:render": "node server-static.js",
     "serve": "npx serve -s dist -l $PORT",
     "render": "node server-static.js",
     "dev:netlify": "netlify dev",
-    "clean": "rm -rf .bolt .netlify dist node_modules"
+    "clean": "rm -rf .bolt .netlify dist node_modules",
+    "postbuild": "node scripts/post-build.js"
   },
   "dependencies": {
     "@types/node": "^20.10.5",

@@ -182,6 +182,17 @@ const AIAssistant: React.FC = () => {
         'about': { name: 'About', icon: Info, description: 'About NeuraPlay' }
     };
 
+    // Environment detection functions
+    const isNetlify = () => {
+        return window.location.hostname.includes('netlify') ||
+               window.location.hostname.includes('localhost') ||
+               window.location.hostname.includes('127.0.0.1');
+    };
+
+    const isRender = () => {
+        return window.location.hostname.includes('onrender');
+    };
+
     // Available games and their descriptions
     const availableGames = {
         'counting': { name: 'Counting Adventure', icon: Gamepad2, description: 'Learn to count with fun games' },
@@ -1100,128 +1111,106 @@ Need help with anything specific? Just ask! 🌟`;
             });
             
             try {
-                // Initialize Ably connection
-                console.log('🔗 Initializing Ably connection...');
-                await conversationService.current.initialize();
-                console.log('✅ Ably initialized successfully');
-                
-                // Start conversation with ElevenLabs
-                console.log('🎯 Starting conversation with ElevenLabs...');
-                console.log('🎯 Agent ID:', getAgentId());
-                console.log('🎯 Voice ID:', getVoiceId());
-                
-                await conversationService.current.startConversation({
-                    agentId: getAgentId(),
-                    voiceId: getVoiceId()
-                });
-                console.log('✅ ElevenLabs conversation started successfully');
-                
-                // Ensure mode is set to conversing before proceeding
-                setMode('conversing');
-                modeRef.current = 'conversing';
-                
-                // Small delay to ensure mode transition is complete
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                console.log('✅ Mode confirmed as conversing:', modeRef.current);
-                
-                // Start local audio recording for streaming
-                console.log('🎤 Requesting microphone access...');
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('✅ Microphone access granted');
-                console.log('✅ Audio stream created:', stream);
-                streamRef.current = stream;
-                
-                console.log('🎙️ Creating MediaRecorder with stream...');
-                console.log('🎙️ Stream active:', stream.active);
-                console.log('🎙️ Stream tracks:', stream.getTracks().length);
-                
-                const mediaRecorder = new MediaRecorder(stream, {
-                    mimeType: 'audio/webm;codecs=opus'
-                });
-                console.log('🎙️ MediaRecorder created successfully');
-                console.log('🎙️ MediaRecorder state:', mediaRecorder.state);
-                
-                // Store reference for cleanup
-                mediaRecorderRef.current = mediaRecorder;
-                console.log('🎙️ MediaRecorder reference stored');
-                
-                mediaRecorder.ondataavailable = async (event) => {
-                    console.log(`🔊 Audio data available: ${event.data.size} bytes`);
+                if (isNetlify()) {
+                    // Initialize Ably connection only on Netlify
+                    console.log('🔗 Initializing Ably connection...');
+                    await conversationService.current.initialize();
+                    console.log('✅ Ably initialized successfully');
                     
-                    // Check if we're still in conversation mode and have an active conversation
-                    const hasData = event.data.size > 0;
-                    const isConnected = conversationService.current.connected;
-                    const hasActiveConversation = conversationService.current.hasActiveConversation;
-                    const currentMode = modeRef.current; // Use ref instead of state
+                    // Start conversation with ElevenLabs
+                    console.log('🎯 Starting conversation with ElevenLabs...');
+                    console.log('🎯 Agent ID:', getAgentId());
+                    console.log('🎯 Voice ID:', getVoiceId());
                     
-                    console.log(`🔍 Condition check:`, {
-                        hasData,
-                        isConnected,
-                        currentMode,
-                        hasActiveConversation,
-                        mediaRecorderState: mediaRecorder.state,
-                        conversationServiceStatus: conversationService.current ? 'exists' : 'null'
+                    await conversationService.current.startConversation({
+                        agentId: getAgentId(),
+                        voiceId: getVoiceId()
                     });
+                    console.log('✅ ElevenLabs conversation started successfully');
                     
-                    // Only process audio if we're in conversing mode and have an active conversation
-                    if (hasData && isConnected && hasActiveConversation && currentMode === 'conversing') {
-                        try {
-                            // Convert audio chunk and send to Ably
-                            const buffer = await event.data.arrayBuffer();
-                            console.log(`📤 Sending audio buffer: ${buffer.byteLength} bytes`);
-                            await conversationService.current.sendAudio(buffer);
-                            console.log('✅ Audio chunk sent successfully');
-                        } catch (error) {
-                            console.error('❌ Error sending audio chunk:', error);
-                        }
-                    } else {
-                        console.log('⚠️ Skipping audio send - conditions not met:', {
+                    // Ensure mode is set to conversing before proceeding
+                    setMode('conversing');
+                    modeRef.current = 'conversing';
+                    
+                    // Small delay to ensure mode transition is complete
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    console.log('✅ Mode confirmed as conversing:', modeRef.current);
+                    
+                    // Start local audio recording for streaming
+                    console.log('🎤 Requesting microphone access...');
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('✅ Microphone access granted');
+                    console.log('✅ Audio stream created:', stream);
+                    streamRef.current = stream;
+                    
+                    console.log('🎙️ Creating MediaRecorder with stream...');
+                    console.log('🎙️ Stream active:', stream.active);
+                    console.log('🎙️ Stream tracks:', stream.getTracks().length);
+                    
+                    const mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+                    console.log('🎙️ MediaRecorder created successfully');
+                    console.log('🎙️ MediaRecorder state:', mediaRecorder.state);
+                    
+                    // Store reference for cleanup
+                    mediaRecorderRef.current = mediaRecorder;
+                    console.log('🎙️ MediaRecorder reference stored');
+                    
+                    mediaRecorder.ondataavailable = async (event) => {
+                        console.log(`🔊 Audio data available: ${event.data.size} bytes`);
+                        
+                        // Check if we're still in conversation mode and have an active conversation
+                        const hasData = event.data.size > 0;
+                        const isConnected = conversationService.current.connected;
+                        const hasActiveConversation = conversationService.current.hasActiveConversation;
+                        const currentMode = modeRef.current; // Use ref instead of state
+                        
+                        console.log(`🔍 Condition check:`, {
                             hasData,
                             isConnected,
                             currentMode,
                             hasActiveConversation,
-                            reason: !hasData ? 'no data' : !isConnected ? 'not connected' : currentMode !== 'conversing' ? 'not in conversing mode' : !hasActiveConversation ? 'no active conversation' : 'unknown'
+                            mediaRecorderState: mediaRecorder.state,
+                            conversationServiceStatus: conversationService.current ? 'exists' : 'null'
                         });
-                    }
-                };
-                
-                mediaRecorder.onstart = () => {
-                    console.log('🟢 MediaRecorder started successfully');
-                };
-                
-                mediaRecorder.onerror = (event) => {
-                    console.error('❌ MediaRecorder error:', event);
-                };
-                
-                // Start recording in small chunks
-                console.log('▶️ Starting MediaRecorder...');
-                console.log('▶️ Current mode before start:', mode);
-                console.log('▶️ Mode ref before start:', modeRef.current);
-                console.log('▶️ MediaRecorder state before start:', mediaRecorder.state);
-                
-                mediaRecorder.start(500);
-                console.log('🎵 Recording started with 500ms chunks');
-                console.log('🎵 MediaRecorder state after start:', mediaRecorder.state);
-                console.log('🎵 Current mode after start:', mode);
-                console.log('🎵 Mode ref after start:', modeRef.current);
-                
-                // Final verification
-                console.log('🎉 CONVERSATION SETUP COMPLETE!');
-                console.log('🎉 Final status check:', {
-                    mode: mode,
-                    modeRef: modeRef.current,
-                    mediaRecorderState: mediaRecorder.state,
-                    streamActive: stream.active,
-                    conversationServiceConnected: conversationService.current.connected,
-                    hasActiveConversation: conversationService.current.hasActiveConversation
-                });
-                
-                addMessageToConversation(activeConversation, { 
-                    text: "Conversation mode active! Speak anytime to chat with me. 🎤", 
-                    isUser: false, 
-                    timestamp: new Date() 
-                });
+                        
+                        // Only process audio if we're in conversing mode and have an active conversation
+                        if (hasData && isConnected && currentMode === 'conversing' && hasActiveConversation) {
+                            console.log('🎯 Processing audio data for ElevenLabs...');
+                            const arrayBuffer = await event.data.arrayBuffer();
+                            await conversationService.current.sendAudio(arrayBuffer);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        console.log('🎙️ MediaRecorder stopped');
+                    };
+                    
+                    mediaRecorder.onerror = (event) => {
+                        console.error('🎙️ MediaRecorder error:', event);
+                    };
+                    
+                    // Start recording
+                    mediaRecorder.start(100); // Collect data every 100ms
+                    console.log('🎙️ MediaRecorder started');
+                    
+                    addMessageToConversation(activeConversation, { 
+                        text: "Conversation mode active! Speak anytime to chat with me. 🎤", 
+                        isUser: false, 
+                        timestamp: new Date() 
+                    });
+                    
+                } else if (isRender()) {
+                    // On Render, just enable voice recording without Ably
+                    console.log('🎤 Enabling voice recording on Render...');
+                    addMessageToConversation(activeConversation, { 
+                        text: "Voice recording enabled! Use the microphone button to record messages. 🎤", 
+                        isUser: false, 
+                        timestamp: new Date() 
+                    });
+                }
                 
             } catch (error) {
                 console.error('❌ CONVERSATION SETUP FAILED:', error);
@@ -1257,6 +1246,7 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
+
     const handleRecordButtonClick = async () => {
         if (mode === 'single_recording') {
             // Stop recording and send
@@ -1276,7 +1266,7 @@ Need help with anything specific? Just ask! 🌟`;
         setMode('idle');
     };
 
-    // Updated processVoiceInput to use unified handler
+    // Updated processVoiceInput to use unified handler with environment detection
     const processVoiceInput = async (audioBlob: Blob) => {
         try {
             console.log('Processing voice input with language:', selectedLanguage);
@@ -1285,8 +1275,13 @@ Need help with anything specific? Just ask! 🌟`;
             const arrayBuffer = await audioBlob.arrayBuffer();
             const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
             
+            // Environment-specific API endpoint
+            const apiEndpoint = isNetlify() 
+                ? '/.netlify/functions/assemblyai-transcribe'
+                : '/api/assemblyai-transcribe'; // For Render, we'll need to create this endpoint
+            
             // Send to AssemblyAI for transcription with language support
-            const response = await fetch('/.netlify/functions/assemblyai-transcribe', {
+            const response = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
