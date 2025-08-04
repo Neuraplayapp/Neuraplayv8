@@ -768,8 +768,6 @@ const AIAssistant: React.FC = () => {
         }
         
         // Enhanced Navigation commands - MUCH MORE SPECIFIC
-        const navigationKeywords = ['go to', 'take me to', 'navigate to', 'open', 'get', 'list', 'show', 'search', 'bring', 'go', 'take me', 'remove', 'edit', 'visit', 'access'];
-        
         // ONLY block pure greetings that have no other intent
         const pureGreetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'yo', 'greetings', 'goodbye', 'bye'];
         
@@ -1030,7 +1028,7 @@ const AIAssistant: React.FC = () => {
         // === ENHANCED GAME RECOMMENDATIONS ===
         const gameKeywords = ['game', 'play', 'activity', 'exercise', 'fun'];
         if (gameKeywords.some(keyword => lowerText.includes(keyword))) {
-            return { type: 'games', action: { 
+            return { type: 'game', action: { 
                 request: 'recommend',
                 message: '🎮 Let me recommend perfect games for you based on your interests!'
             }};
