@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
-import { Send } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Mic, MicOff } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAIAgent } from '../contexts/AIAgentContext';
 import { useUser } from '../contexts/UserContext';
+import { StreamingConversationService, type ConversationEvent } from '../services/StreamingConversationService';
 import { ElevenLabsConversation } from './ElevenLabsConversation';
-import { getAgentId } from '../config/elevenlabs';
 import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
 
@@ -22,6 +22,8 @@ interface Conversation {
     timestamp: Date;
 }
 
+type AssistantMode = 'idle' | 'conversing' | 'single_recording';
+
 const AIAssistantSimple: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -37,7 +39,7 @@ const AIAssistantSimple: React.FC = () => {
             title: 'Current Chat',
             messages: [
                 { 
-                    text: "🌟 Hi there! I'm Synapse, your friendly AI teacher! Click the plasma ball to start real-time ElevenLabs conversation! 🚀", 
+                    text: "🌟 Hi there! I'm Synapse, your friendly AI teacher! Click the plasma ball to start streaming conversation! 🚀", 
                     isUser: false, 
                     timestamp: new Date() 
                 }
@@ -48,6 +50,15 @@ const AIAssistantSimple: React.FC = () => {
     
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [mode, setMode] = useState<AssistantMode>('idle');
+    
+    // ElevenLabs conversation state (this is now our main conversation mode)
+    const [useElevenLabs, setUseElevenLabs] = useState(false);
+    
+    // Voice recording states
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
     
     // Helper function to add messages to conversation
     const addMessageToConversation = (conversationId: string, message: Message) => {
@@ -65,7 +76,7 @@ const AIAssistantSimple: React.FC = () => {
     const currentMessages = conversations[activeConversation]?.messages || [];
     
     // ElevenLabs conversation handlers
-    const handleElevenLabsMessage = useCallback((message: any) => {
+    const handleElevenLabsMessage = (message: any) => {
         console.log('📨 ElevenLabs message received:', message);
         
         // Add the message to our conversation
@@ -82,64 +93,364 @@ const AIAssistantSimple: React.FC = () => {
                 timestamp: new Date()
             });
         }
-    }, [activeConversation]);
+    };
 
-    const handleElevenLabsError = useCallback((error: any) => {
+    const handleElevenLabsError = (error: any) => {
         console.error('❌ ElevenLabs error:', error);
         addMessageToConversation(activeConversation, {
             text: `🤖 Sorry, I encountered an error with ElevenLabs: ${error.message || 'Unknown error'}. Please try again! 🌟`,
             isUser: false,
             timestamp: new Date()
         });
+    };
+
+    const handleElevenLabsConnect = () => {
+        console.log('🎯 ElevenLabs connected');
+        addMessageToConversation(activeConversation, {
+            text: "🌊 ElevenLabs voice conversation started! Speak naturally with me! ✨",
+            isUser: false,
+            timestamp: new Date()
+        });
+        setUseElevenLabs(true);
+    };
+
+    const handleElevenLabsDisconnect = () => {
+        console.log('🔌 ElevenLabs disconnected');
+        addMessageToConversation(activeConversation, {
+            text: "🎤 ElevenLabs voice conversation ended! You can still chat via text. ✨",
+            isUser: false,
+            timestamp: new Date()
+        });
+        setUseElevenLabs(false);
+    };
+    
+    // Streaming conversation event handler
+    const handleStreamingEvent = (event: ConversationEvent) => {
+        console.log('🌊 Streaming event:', event.type, event.data);
+        
+        switch (event.type) {
+            case 'llm_response':
+                const response = event.data.text;
+                addMessageToConversation(activeConversation, {
+                    text: response,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                break;
+                
+            case 'user_speech':
+                addMessageToConversation(activeConversation, {
+                    text: event.data.text,
+                    isUser: true,
+                    timestamp: new Date()
+                });
+                break;
+                
+            case 'error':
+                console.error('Streaming conversation error:', event.data.error);
+                addMessageToConversation(activeConversation, {
+                    text: `🤖 Sorry, I encountered an error: ${event.data.error}. Let's try again! 🌟`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                break;
+        }
+    };
+
+    // Initialize streaming service event listener
+    useEffect(() => {
+        streamingService.current.addEventListener(handleStreamingEvent);
+        
+        return () => {
+            streamingService.current.removeEventListener(handleStreamingEvent);
+        };
     }, [activeConversation]);
 
-    // Handle regular AI messages (for text input when not using ElevenLabs voice)
-    const simulateAIResponse = useCallback((userText: string) => {
-        // Simulate AI response for text-based chat
-        const responses = [
-            `🤖 I heard you say: "${userText}". Try the ElevenLabs voice conversation for real-time chat!`,
-            `📝 Text message received: "${userText}". For the full experience, use the plasma ball voice chat!`,
-            `💬 Thanks for your message: "${userText}". The voice conversation mode is much more interactive!`,
-        ];
-        
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        
-        setTimeout(() => {
+    // Start streaming conversation
+    const activateConversationMode = async () => {
+        try {
+            console.log('🚀 Starting streaming conversation mode...');
+            setMode('conversing');
+            setIsStreaming(true);
+            
+            // Configure streaming service
+            streamingService.current.configure({
+                language: 'english',
+                enableSTT: true,
+                enableTTS: true,
+                enableLLM: true
+            });
+            
+            // Start streaming conversation
+            await streamingService.current.startConversation();
+            
             addMessageToConversation(activeConversation, {
-                text: randomResponse,
+                text: "🌊 Streaming conversation started! Speak or type to chat with me in real-time! ✨",
+                isUser: false,
+                timestamp: new Date()
+            });
+            
+            console.log('✅ Streaming conversation started successfully');
+        } catch (error) {
+            console.error('❌ Failed to start streaming conversation:', error);
+            setMode('idle');
+            setIsStreaming(false);
+            
+            addMessageToConversation(activeConversation, {
+                text: "🤖 Sorry, I couldn't start the streaming conversation. Let's try regular chat instead! 🌟",
+                isUser: false,
+                timestamp: new Date()
+            });
+        }
+    };
+
+    // Stop streaming conversation
+    const stopConversationMode = async () => {
+        try {
+            console.log('🔄 Ending streaming conversation mode...');
+            
+            await streamingService.current.stopConversation();
+            setIsStreaming(false);
+            setMode('idle');
+            
+            addMessageToConversation(activeConversation, { 
+                text: "🎤 Streaming conversation ended! The plasma is calm now. You can still chat with me via text! ✨", 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+            
+            console.log('✅ Streaming conversation ended successfully');
+        } catch (error) {
+            console.error('❌ Error ending streaming conversation:', error);
+            setMode('idle');
+            setIsStreaming(false);
+        }
+    };
+
+    // Voice recording functions (restored original functionality)
+    const startVoiceRecording = async () => {
+        try {
+            console.log('🎤 Starting voice recording...');
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamRef.current = stream;
+            
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            
+            const audioChunks: Blob[] = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = async () => {
+                if (audioChunks.length > 0) {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    // Convert to base64 for transcription
+                    const arrayBuffer = await audioBlob.arrayBuffer();
+                    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+                    
+                    setIsLoading(true);
+                    addMessageToConversation(activeConversation, {
+                        text: "🎤 Processing your voice...",
+                        isUser: false,
+                        timestamp: new Date()
+                    });
+                    
+                    try {
+                        // Use AssemblyAI for transcription
+                        const transcriptionResult = await fetch('/.netlify/functions/assemblyai-transcribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ audio: base64Audio })
+                        });
+                        
+                        if (transcriptionResult.ok) {
+                            const { text: transcribedText } = await transcriptionResult.json();
+                            
+                            if (transcribedText && transcribedText.trim()) {
+                                // Add transcribed text as user message
+                                addMessageToConversation(activeConversation, {
+                                    text: transcribedText,
+                                    isUser: true,
+                                    timestamp: new Date()
+                                });
+                                
+                                // Process the transcribed message
+                                await handleSendMessage(transcribedText);
+                            } else {
+                                addMessageToConversation(activeConversation, {
+                                    text: "🎤 I couldn't understand that. Please try speaking again! 🌟",
+                                    isUser: false,
+                                    timestamp: new Date()
+                                });
+                            }
+                        } else {
+                            throw new Error('Transcription failed');
+                        }
+                    } catch (error) {
+                        console.error('Voice processing error:', error);
+                        addMessageToConversation(activeConversation, {
+                            text: "🎤 Sorry, I couldn't process that voice message. Please try again! 🌟",
+                            isUser: false,
+                            timestamp: new Date()
+                        });
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
+            };
+            
+            mediaRecorder.start();
+            setIsRecording(true);
+            console.log('✅ Voice recording started');
+            
+        } catch (error) {
+            console.error('❌ Failed to start voice recording:', error);
+            addMessageToConversation(activeConversation, {
+                text: "🎤 Couldn't access microphone. Please check permissions! 🌟",
+                isUser: false,
+                timestamp: new Date()
+            });
+        }
+    };
+
+    const stopVoiceRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
+            
+            console.log('🛑 Voice recording stopped');
+        }
+    };
+
+    const toggleVoiceRecording = () => {
+        if (isRecording) {
+            stopVoiceRecording();
+        } else {
+            startVoiceRecording();
+        }
+    };
+
+    // Helper function to check if message is an image request
+    const isImageRequest = (text: string): boolean => {
+        const imageKeywords = [
+            'generate image', 'create image', 'draw', 'make image', 'picture of',
+            'generate a picture', 'create a picture', 'show me image', 'make picture'
+        ];
+        return imageKeywords.some(keyword => text.toLowerCase().includes(keyword));
+    };
+
+    // Handle image generation requests
+    const handleImageRequest = async (text: string) => {
+        try {
+            // Add a thinking message
+            addMessageToConversation(activeConversation, {
+                text: "🎨 Creating your image... This might take a moment! ✨",
+                isUser: false,
+                timestamp: new Date()
+            });
+
+            // Simulate image generation (replace with actual API call)
+            setTimeout(() => {
+                addMessageToConversation(activeConversation, {
+                    text: `🎨 I would generate an image for: "${text}". Image generation feature coming soon! 🖼️`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                setIsLoading(false);
+            }, 2000);
+        } catch (error) {
+            console.error('Image generation error:', error);
+            addMessageToConversation(activeConversation, {
+                text: "🎨 Sorry, I couldn't create that image right now. Please try again later! 🌟",
                 isUser: false,
                 timestamp: new Date()
             });
             setIsLoading(false);
-        }, 1000);
-    }, [activeConversation]);
+        }
+    };
 
-    // Handle text message sending
-    const handleSendMessage = useCallback(async (text: string) => {
+    // Handle text message sending with full functionality
+    const handleSendMessage = async (text: string) => {
         if (!text.trim() || isLoading) return;
         
-        // Add user message to UI
+        // Add user message to UI immediately
         const userMessage: Message = { text, isUser: true, timestamp: new Date() };
         addMessageToConversation(activeConversation, userMessage);
         setInputMessage('');
         setIsLoading(true);
 
-        // Simulate AI response for text input
-        simulateAIResponse(text);
-    }, [isLoading, activeConversation, simulateAIResponse]);
+        try {
+            // Check for image requests first
+            if (isImageRequest(text)) {
+                await handleImageRequest(text);
+                return;
+            }
+
+            // ElevenLabs voice conversation handles its own messages
+            // Text input when ElevenLabs is active just acknowledges and encourages voice
+
+            // If ElevenLabs is active, acknowledge text but encourage voice
+            if (useElevenLabs) {
+                setTimeout(() => {
+                    addMessageToConversation(activeConversation, {
+                        text: `🎯 I see your text message! For the best experience, try speaking directly - I'm listening through ElevenLabs voice chat! 🗣️`,
+                        isUser: false,
+                        timestamp: new Date()
+                    });
+                    setIsLoading(false);
+                }, 500);
+                return;
+            }
+
+            // Regular text conversation - simulate AI response
+            setTimeout(() => {
+                const responses = [
+                    `🤖 I received: "${text}". Try the conversation modes below for more interactive chat! 🌊`,
+                    `💬 Thanks for your message: "${text}". Click the plasma ball for voice conversation! 🎤`,
+                    `✨ I understand: "${text}". For real-time chat, try the ElevenLabs or streaming modes below! 🚀`
+                ];
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                
+                addMessageToConversation(activeConversation, {
+                    text: randomResponse,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                setIsLoading(false);
+            }, 1000);
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            addMessageToConversation(activeConversation, { 
+                text: `Oops! Something went wrong. Let's try again! 🌟`, 
+                isUser: false, 
+                timestamp: new Date() 
+            });
+            setIsLoading(false);
+        }
+    };
 
     // Handle text input
-    const handleSendText = useCallback(() => {
+    const handleSendText = () => {
         handleSendMessage(inputMessage);
-    }, [handleSendMessage, inputMessage]);
+    };
 
     // Handle key press
-    const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
+    const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendText();
         }
-    }, [handleSendText]);
+    };
 
     if (!isOpen) {
         return (
@@ -205,22 +516,30 @@ const AIAssistantSimple: React.FC = () => {
                     )}
                 </div>
 
-                {/* Info Panel */}
-                <div className="mx-4 mb-2 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/20 rounded-lg">
-                    <div className="text-center text-sm text-blue-300">
-                        <span className="font-semibold">💬 Text Chat & 🌊 Voice Conversation Available</span>
-                        <div className="text-xs mt-1 opacity-80">
-                            Type messages or click the plasma ball for real-time voice chat with ElevenLabs AI
+                                 {/* ElevenLabs Conversation Mode Indicator */}
+                {useElevenLabs && (
+                    <div className="mx-4 mb-2 p-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-400/30 rounded-lg">
+                        <div className="flex items-center gap-2 text-purple-300 text-sm">
+                            <PlasmaBall size={24} className="animate-pulse" />
+                            <div className="flex flex-col">
+                                <span className="font-semibold">🎯 ElevenLabs Conversation Mode Active</span>
+                                <span className="text-xs opacity-80">Real-time voice conversation with official ElevenLabs AI</span>
+                            </div>
+                            <div className="flex gap-1">
+                                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Input */}
                 <div className="p-4">
                     <div className="flex items-center gap-2">
                         <input 
                             type="text"
-                            placeholder="Type a message or use voice conversation! 🚀"
+                            placeholder={mode === 'conversing' ? "Talk to Synapse in streaming mode! 🗣️" : "Ask me anything! 🚀"}
                             value={inputMessage}
                             onChange={(e) => setInputMessage(e.target.value)}
                             onKeyPress={handleKeyPress}
@@ -235,16 +554,44 @@ const AIAssistantSimple: React.FC = () => {
                         >
                             <Send size={16} />
                         </button>
+                        
+                        {/* Enhanced Plasma Ball with ElevenLabs Conversation Mode */}
+                        <div 
+                            className={`plasma-ball-conversation-container ${useElevenLabs ? 'active streaming' : ''}`}
+                            title={useElevenLabs ? 'Stop ElevenLabs Conversation' : 'Start ElevenLabs Conversation'}
+                        >
+                            <div className="relative">
+                                <ElevenLabsConversation
+                                    onMessage={handleElevenLabsMessage}
+                                    onError={handleElevenLabsError}
+                                    onConnect={handleElevenLabsConnect}
+                                    onDisconnect={handleElevenLabsDisconnect}
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Voice Recording Button */}
+                        <button
+                            onClick={toggleVoiceRecording}
+                            className={`ai-mode-button flex-1 ${isRecording ? 'recording' : ''}`}
+                            title={isRecording ? 'Stop Recording' : 'Start Voice Recording'}
+                            disabled={isLoading}
+                        >
+                            {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+                            <span>{isRecording ? 'Stop' : 'Record'}</span>
+                        </button>
                     </div>
                     
-                    {/* ElevenLabs Conversation Component */}
-                    <div className="mt-4 flex justify-center">
-                        <ElevenLabsConversation
-                            agentId={getAgentId()}
-                            onMessage={handleElevenLabsMessage}
-                            onError={handleElevenLabsError}
-                        />
-                    </div>
+                    {useElevenLabs && (
+                        <div className="text-center mt-2">
+                            <div className="text-purple-400 text-xs font-bold animate-pulse mb-1">
+                                🎯 ElevenLabs Voice Conversation Active 🔊
+                            </div>
+                            <div className="text-blue-400 text-xs">
+                                Speak naturally with the AI - no buttons needed! ✨
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </aside>

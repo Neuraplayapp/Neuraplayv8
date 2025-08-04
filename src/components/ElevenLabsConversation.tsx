@@ -1,29 +1,29 @@
-'use client';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useConversation } from '@elevenlabs/react';
+import { getAgentId } from '../config/elevenlabs';
 import PlasmaBall from './PlasmaBall';
 
 interface ElevenLabsConversationProps {
-  agentId: string;
   onMessage?: (message: any) => void;
   onError?: (error: any) => void;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
 }
 
-export function ElevenLabsConversation({ 
-  agentId, 
-  onMessage, 
-  onError 
-}: ElevenLabsConversationProps) {
-  const [isConnecting, setIsConnecting] = useState(false);
-  
+export const ElevenLabsConversation: React.FC<ElevenLabsConversationProps> = ({
+  onMessage,
+  onError,
+  onConnect,
+  onDisconnect
+}) => {
   const conversation = useConversation({
     onConnect: () => {
-      console.log('🟢 ElevenLabs Connected');
-      setIsConnecting(false);
+      console.log('🎯 ElevenLabs Connected');
+      onConnect?.();
     },
     onDisconnect: () => {
-      console.log('🔴 ElevenLabs Disconnected');
-      setIsConnecting(false);
+      console.log('🔌 ElevenLabs Disconnected');
+      onDisconnect?.();
     },
     onMessage: (message) => {
       console.log('📨 ElevenLabs Message:', message);
@@ -31,116 +31,107 @@ export function ElevenLabsConversation({
     },
     onError: (error) => {
       console.error('❌ ElevenLabs Error:', error);
-      setIsConnecting(false);
       onError?.(error);
     },
   });
 
   const startConversation = useCallback(async () => {
     try {
-      setIsConnecting(true);
-      console.log('🚀 Starting ElevenLabs conversation with agent:', agentId);
+      console.log('🚀 Starting ElevenLabs conversation...');
+      
+      // Check if we have proper configuration
+      const agentId = getAgentId();
+      if (!agentId || agentId === 'YOUR_AGENT_ID') {
+        throw new Error('ElevenLabs Agent ID not configured. Please set your agent ID in the elevenlabs config.');
+      }
+      
+      // Check if API key is available (this is handled by the @elevenlabs/react package)
+      const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+      if (!apiKey) {
+        throw new Error('ElevenLabs API key not found. Please set VITE_ELEVENLABS_API_KEY in your environment variables.');
+      }
+      
+      console.log('🔑 Using Agent ID:', agentId);
+      console.log('🔑 API Key configured:', apiKey ? 'Yes' : 'No');
       
       // Request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('🎤 Microphone permission granted');
       
       // Start the conversation with your agent
       await conversation.startSession({
-        agentId: agentId,
-        // user_id: 'neuraplay_user' // Optional field for tracking
+        agentId: agentId
       });
       
       console.log('✅ ElevenLabs conversation started successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to start ElevenLabs conversation:', error);
-      setIsConnecting(false);
-      onError?.(error);
+      
+      // Handle specific authorization errors
+      if (error.code === 3000 || error.reason?.includes('authorize')) {
+        const authError = new Error(
+          '🔐 Authorization failed. This could be due to:\n' +
+          '• Invalid or missing ElevenLabs API key\n' +
+          '• Incorrect Agent ID\n' +
+          '• Agent not accessible with current API key\n' +
+          '• Domain not whitelisted for this agent\n' +
+          'Please check your ElevenLabs configuration.'
+        );
+        onError?.(authError);
+      } else if (error.message?.includes('Agent ID not configured')) {
+        onError?.(error);
+      } else if (error.message?.includes('API key not found')) {
+        onError?.(error);
+      } else {
+        onError?.(error);
+      }
     }
-  }, [conversation, agentId, onError]);
+  }, [conversation, onError]);
 
   const stopConversation = useCallback(async () => {
     try {
       console.log('🛑 Stopping ElevenLabs conversation...');
       await conversation.endSession();
-      console.log('✅ ElevenLabs conversation stopped');
+      console.log('✅ ElevenLabs conversation stopped successfully');
     } catch (error) {
-      console.error('❌ Error stopping conversation:', error);
+      console.error('❌ Failed to stop ElevenLabs conversation:', error);
       onError?.(error);
     }
   }, [conversation, onError]);
 
-  const isActive = conversation.status === 'connected';
-  const isLoading = isConnecting || conversation.status === 'connecting';
+  const isConnected = conversation.status === 'connected';
+  const isConnecting = conversation.status === 'connecting';
 
   return (
-    <div className="elevenlabs-conversation">
-      {/* Enhanced Streaming Plasma Ball */}
-      <div 
-        className={`plasma-ball-conversation-container ${isActive ? 'active streaming' : ''}`}
-        onClick={isActive ? stopConversation : startConversation}
-        title={isActive ? 'Stop ElevenLabs Conversation' : 'Start ElevenLabs Conversation'}
-      >
-        <div className="relative">
-          <PlasmaBall 
-            size={36}
-            className={`conversation-plasma-ball ${isActive ? 'active streaming-pulse' : ''}`}
-            intensity={isActive ? 1.2 : 0.3}
-          />
-          {isActive && (
-            <>
-              {/* Streaming indicator rings */}
-              <div className="absolute inset-0 rounded-full border-2 border-purple-400/50 animate-ping"></div>
-              <div className="absolute inset-0 rounded-full border border-blue-400/30 animate-pulse"></div>
-              {/* Status indicator */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-            </>
-          )}
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce"></div>
-            </div>
-          )}
-        </div>
-        <span className={`plasma-label ${isActive ? 'text-purple-300 font-bold animate-pulse' : ''}`}>
-          {isLoading ? '⏳ ...' : isActive ? '🌊 Live' : '💬 Chat'}
-        </span>
-      </div>
-
-      {/* Status Display */}
-      <div className="text-center text-xs mt-2">
-        <div className={`font-semibold ${
-          isActive ? 'text-green-400' : 
-          isLoading ? 'text-yellow-400' : 
-          'text-gray-400'
-        }`}>
-          Status: {isLoading ? 'Connecting...' : conversation.status}
-        </div>
-        {isActive && (
-          <div className="text-blue-400 mt-1">
-            Agent is {conversation.isSpeaking ? '🗣️ speaking' : '👂 listening'}
-          </div>
+    <div 
+      className={`plasma-ball-conversation-container ${isConnected ? 'active streaming' : ''} ${isConnecting ? 'connecting' : ''}`}
+      onClick={isConnected ? stopConversation : startConversation}
+      title={isConnected ? 'Stop ElevenLabs Conversation' : 'Start ElevenLabs Conversation'}
+    >
+      <div className="relative">
+        <PlasmaBall 
+          size={36}
+          className={`conversation-plasma-ball ${isConnected ? 'active streaming-pulse' : ''}`}
+          intensity={isConnected ? 1.5 : (isConnecting ? 0.8 : 0.3)}
+        />
+        {isConnected && (
+          <>
+            {/* Streaming indicator rings */}
+            <div className="absolute inset-0 rounded-full border-2 border-purple-400/50 animate-ping"></div>
+            <div className="absolute inset-0 rounded-full border border-blue-400/30 animate-pulse"></div>
+            {/* Live status indicator */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+          </>
+        )}
+        {isConnecting && (
+          <div className="absolute inset-0 rounded-full border-2 border-yellow-400/50 animate-spin"></div>
         )}
       </div>
-
-      {/* Live Status Indicator */}
-      {isActive && (
-        <div className="mt-2 p-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-400/30 rounded-lg">
-          <div className="flex items-center gap-2 text-purple-300 text-sm">
-            <PlasmaBall size={16} className="animate-pulse" />
-            <div className="flex flex-col">
-              <span className="font-semibold">🌊 ElevenLabs Live Conversation</span>
-              <span className="text-xs opacity-80">
-                Real-time AI agent • Voice enabled
-              </span>
-            </div>
-            <div className="flex gap-1">
-              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-            </div>
-          </div>
-        </div>
-      )}
+      <span className={`plasma-label ${isConnected ? 'text-purple-300 font-bold animate-pulse' : isConnecting ? 'text-yellow-300 animate-pulse' : ''}`}>
+        {isConnecting ? '🔄 Chat' : isConnected ? '🌊 Live' : '💬 Chat'}
+      </span>
     </div>
   );
-}
+};
+
+export default ElevenLabsConversation;
