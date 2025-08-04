@@ -43,7 +43,7 @@ import BerryBlasterGame from '../components/games/BerryBlasterGame';
 import FuzzlingGame from '../components/games/FuzzlingGame';
 import FuzzlingAdvancedGame from '../components/games/FuzzlingAdvancedGame';
 import MountainClimberGame from '../components/games/MountainClimberGame';
-import StarbloomAdventureGame from '../components/games/StarbloomAdventureGame';
+import MagicStorytellerGame from '../components/games/MagicStorytellerGame';
 
 interface GameInfo {
   id: string;
@@ -81,7 +81,7 @@ const PlaygroundPageAlternative: React.FC = () => {
     'fuzzling': FuzzlingGame,
     'fuzzling-advanced': FuzzlingAdvancedGame,
     'mountain-climber': MountainClimberGame,
-    'starbloom-adventure': StarbloomAdventureGame,
+    'magic-storyteller': MagicStorytellerGame,
   };
 
   const gameDetails: { [key: string]: GameInfo } = {
@@ -253,12 +253,12 @@ const PlaygroundPageAlternative: React.FC = () => {
       instructions: 'Use physics to climb mountains and reach the top!',
       icon: Mountain
     },
-    'starbloom-adventure': {
-      id: 'starbloom-adventure',
-      title: 'Starbloom Forest',
+    'magic-storyteller': {
+      id: 'magic-storyteller',
+      title: 'Magic Storyteller',
       category: 'Story',
-      description: 'Embark on an interactive story adventure in the magical forest.',
-      skills: ['Reading Comprehension', 'Decision Making', 'Empathy'],
+      description: 'Premium AI-powered storytelling adventure with personalized narratives and neuropsychological assessment.',
+      skills: ['Executive Function', 'Working Memory', 'Social Cognition', 'Theory of Mind', 'Emotional Regulation'],
       difficulty: 'Medium',
       duration: '10-15 minutes',
       ageRange: '8-12 years',

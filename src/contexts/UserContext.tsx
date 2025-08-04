@@ -1,5 +1,37 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export interface NeuropsychologicalProfile {
+  [conceptName: string]: {
+    level: number; // 1-5 scale
+    frequency: number; // How often this concept appears in gameplay
+    lastUpdated: string;
+    trend: 'improving' | 'stable' | 'declining';
+    gameContributions: { // Which games contributed to this score
+      [gameId: string]: {
+        sessions: number;
+        avgScore: number;
+        lastPlayed: string;
+      };
+    };
+  };
+}
+
+export interface AIAssessment {
+  cognitiveProfile: NeuropsychologicalProfile;
+  strengths: string[]; // Top performing neuropsychological concepts
+  growthAreas: string[]; // Areas needing improvement
+  recommendations: string[]; // AI-generated recommendations
+  overallScore: number; // 1-100 overall cognitive performance
+  lastUpdated: string;
+  totalSessions: number;
+  personalityInsights: {
+    traits: string[];
+    preferredLearningStyle: string;
+    motivationalFactors: string[];
+  };
+  detailedAnalysis: string; // AI-generated detailed analysis
+}
+
 export interface User {
   id: string;
   username: string;
@@ -22,6 +54,7 @@ export interface User {
         playTime?: number;
       };
     };
+    aiAssessment?: AIAssessment;
   };
   journeyLog: Array<{
     id: string;
@@ -55,6 +88,10 @@ interface UserContextType {
     playTime?: number;
     success?: boolean;
   }) => void;
+  // AI Assessment functions
+  updateAIAssessment: (gameId: string, neuropsychConcepts: string[], choiceData: any[]) => Promise<void>;
+  generateAIReport: () => Promise<string>;
+  getStrengthsAndGrowthAreas: () => { strengths: string[], growthAreas: string[] };
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -202,6 +239,302 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUserWithPersistence(updatedUser);
   };
 
+  // The comprehensive 41 neuropsychological concepts
+  const NEUROPSYCHOLOGICAL_CONCEPTS = [
+    'Working Memory', 'Executive Function', 'Attention Control', 'Cognitive Flexibility',
+    'Inhibitory Control', 'Planning', 'Problem Solving', 'Decision Making',
+    'Emotional Regulation', 'Social Cognition', 'Theory of Mind', 'Metacognition',
+    'Processing Speed', 'Visual Processing', 'Auditory Processing', 'Spatial Reasoning',
+    'Verbal Memory', 'Visual Memory', 'Sequential Processing', 'Simultaneous Processing',
+    'Fluid Reasoning', 'Crystallized Intelligence', 'Processing Efficiency', 'Cognitive Load',
+    'Mental Set', 'Cognitive Bias', 'Heuristic Processing', 'Automatic Processing',
+    'Controlled Processing', 'Divided Attention', 'Sustained Attention', 'Selective Attention',
+    'Response Inhibition', 'Task Switching', 'Goal Setting', 'Self-Monitoring',
+    'Error Detection', 'Feedback Processing', 'Adaptive Behavior', 'Cognitive Strategy',
+    'Motor Skills'
+  ];
+
+  // Update AI Assessment based on game session data
+  const updateAIAssessment = async (gameId: string, neuropsychConcepts: string[], choiceData: any[]) => {
+    if (!user) return;
+
+    const updatedUser = { ...user };
+    
+    // Initialize AI assessment if it doesn't exist
+    if (!updatedUser.profile.aiAssessment) {
+      updatedUser.profile.aiAssessment = {
+        cognitiveProfile: {},
+        strengths: [],
+        growthAreas: [],
+        recommendations: [],
+        overallScore: 50,
+        lastUpdated: new Date().toISOString(),
+        totalSessions: 0,
+        personalityInsights: {
+          traits: [],
+          preferredLearningStyle: 'adaptive',
+          motivationalFactors: []
+        },
+        detailedAnalysis: ''
+      };
+    }
+
+    const assessment = updatedUser.profile.aiAssessment;
+    const now = new Date().toISOString();
+
+    // Update total sessions
+    assessment.totalSessions += 1;
+    assessment.lastUpdated = now;
+
+    // Process each neuropsychological concept from the session
+    neuropsychConcepts.forEach((concept, index) => {
+      if (!NEUROPSYCHOLOGICAL_CONCEPTS.includes(concept)) return;
+
+      // Initialize concept if it doesn't exist
+      if (!assessment.cognitiveProfile[concept]) {
+        assessment.cognitiveProfile[concept] = {
+          level: 3, // Start at middle
+          frequency: 0,
+          lastUpdated: now,
+          trend: 'stable',
+          gameContributions: {}
+        };
+      }
+
+      const profile = assessment.cognitiveProfile[concept];
+      
+      // Update frequency
+      profile.frequency += 1;
+      profile.lastUpdated = now;
+
+      // Initialize game contribution
+      if (!profile.gameContributions[gameId]) {
+        profile.gameContributions[gameId] = {
+          sessions: 0,
+          avgScore: 0,
+          lastPlayed: now
+        };
+      }
+
+      const gameContrib = profile.gameContributions[gameId];
+      gameContrib.sessions += 1;
+      gameContrib.lastPlayed = now;
+
+      // Calculate performance score based on choice quality (simplified)
+      const choiceScore = choiceData[index] ? 4 : 3; // Good choice = 4, average = 3
+      gameContrib.avgScore = (gameContrib.avgScore * (gameContrib.sessions - 1) + choiceScore) / gameContrib.sessions;
+
+      // Update concept level based on performance trend
+      const previousLevel = profile.level;
+      profile.level = Math.max(1, Math.min(5, 
+        (profile.level * 0.8) + (gameContrib.avgScore * 0.2)
+      ));
+
+      // Determine trend
+      if (profile.level > previousLevel + 0.1) profile.trend = 'improving';
+      else if (profile.level < previousLevel - 0.1) profile.trend = 'declining';
+      else profile.trend = 'stable';
+    });
+
+    // Calculate overall score
+    const conceptLevels = Object.values(assessment.cognitiveProfile).map(p => p.level);
+    assessment.overallScore = conceptLevels.length > 0 
+      ? Math.round((conceptLevels.reduce((sum, level) => sum + level, 0) / conceptLevels.length) * 20)
+      : 50;
+
+    // Update strengths and growth areas
+    const { strengths, growthAreas } = getStrengthsAndGrowthAreas();
+    assessment.strengths = strengths;
+    assessment.growthAreas = growthAreas;
+
+    // Generate AI recommendations
+    try {
+      const recommendations = await generateRecommendations(assessment);
+      assessment.recommendations = recommendations;
+      
+      const detailedAnalysis = await generateDetailedAnalysis(assessment);
+      assessment.detailedAnalysis = detailedAnalysis;
+    } catch (error) {
+      console.error('Error generating AI recommendations:', error);
+    }
+
+    setUserWithPersistence(updatedUser);
+  };
+
+  // Generate AI-powered recommendations
+  const generateRecommendations = async (assessment: AIAssessment): Promise<string[]> => {
+    try {
+      const prompt = `Based on this cognitive assessment data:
+      
+Overall Score: ${assessment.overallScore}/100
+Strengths: ${assessment.strengths.join(', ')}
+Growth Areas: ${assessment.growthAreas.join(', ')}
+Total Sessions: ${assessment.totalSessions}
+
+Generate 3-5 specific, actionable recommendations for improving cognitive performance and learning. Focus on practical activities and strategies.`;
+
+      const response = await fetch('/.netlify/functions/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_type: 'chat',
+          input_data: {
+            messages: [
+              { role: 'system', content: 'You are an expert educational psychologist providing personalized learning recommendations for children.' },
+              { role: 'user', content: prompt }
+            ]
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const aiResponse = data.response || data.data || '';
+        
+        // Extract recommendations (simple parsing)
+        const recommendations = aiResponse
+          .split('\n')
+          .filter((line: string) => line.trim().length > 0 && (line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.')))
+          .map((line: string) => line.replace(/^[-•\d.]\s*/, '').trim())
+          .slice(0, 5);
+
+        return recommendations.length > 0 ? recommendations : [
+          'Continue playing diverse cognitive games to strengthen different skills',
+          'Practice mindful attention exercises for improved focus',
+          'Engage in creative storytelling to enhance imagination and language skills'
+        ];
+      }
+    } catch (error) {
+      console.error('Error generating recommendations:', error);
+    }
+
+    // Fallback recommendations
+    return [
+      'Continue playing diverse cognitive games to strengthen different skills',
+      'Practice mindful attention exercises for improved focus',
+      'Engage in creative storytelling to enhance imagination and language skills'
+    ];
+  };
+
+  // Generate detailed AI analysis
+  const generateDetailedAnalysis = async (assessment: AIAssessment): Promise<string> => {
+    try {
+      const conceptSummary = Object.entries(assessment.cognitiveProfile)
+        .map(([concept, data]) => `${concept}: Level ${data.level.toFixed(1)} (${data.trend})`)
+        .join(', ');
+
+      const prompt = `Create a comprehensive cognitive assessment report for a young learner:
+
+Cognitive Profile: ${conceptSummary}
+Overall Performance: ${assessment.overallScore}/100
+Total Learning Sessions: ${assessment.totalSessions}
+Key Strengths: ${assessment.strengths.join(', ')}
+Growth Areas: ${assessment.growthAreas.join(', ')}
+
+Write a detailed, encouraging analysis (2-3 paragraphs) that explains their cognitive development patterns, celebrates their strengths, and provides insight into their learning journey. Use positive, child-friendly language while being informative for parents.`;
+
+      const response = await fetch('/.netlify/functions/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_type: 'chat',
+          input_data: {
+            messages: [
+              { role: 'system', content: 'You are an expert child psychologist writing encouraging, insightful assessment reports for parents and educators.' },
+              { role: 'user', content: prompt }
+            ]
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.response || data.data || 'Your learning journey shows great progress across multiple cognitive areas. Keep exploring and growing!';
+      }
+    } catch (error) {
+      console.error('Error generating detailed analysis:', error);
+    }
+
+    return 'Your learning journey shows great progress across multiple cognitive areas. Keep exploring and growing!';
+  };
+
+  // Generate comprehensive AI report
+  const generateAIReport = async (): Promise<string> => {
+    if (!user?.profile.aiAssessment) return 'No assessment data available yet. Play some games to generate your cognitive profile!';
+    
+    const assessment = user.profile.aiAssessment;
+    
+    try {
+      const conceptDetails = Object.entries(assessment.cognitiveProfile)
+        .sort(([,a], [,b]) => b.level - a.level)
+        .slice(0, 10)
+        .map(([concept, data]) => `${concept}: ${data.level.toFixed(1)}/5.0 (${data.frequency} sessions, ${data.trend})`)
+        .join('\n');
+
+      const prompt = `Generate a comprehensive cognitive assessment report:
+
+LEARNER PROFILE:
+${user.username}, Age: ${user.age || 'Not specified'}
+Total XP: ${user.profile.xp}
+Games Played: ${Object.keys(user.profile.gameProgress).length}
+Assessment Sessions: ${assessment.totalSessions}
+
+COGNITIVE PERFORMANCE:
+Overall Score: ${assessment.overallScore}/100
+${conceptDetails}
+
+STRENGTHS: ${assessment.strengths.join(', ')}
+GROWTH AREAS: ${assessment.growthAreas.join(', ')}
+
+Create a detailed psychological report (4-5 paragraphs) that:
+1. Summarizes cognitive strengths and development patterns
+2. Identifies learning preferences and motivational factors  
+3. Provides educational recommendations for parents/teachers
+4. Celebrates progress and encourages continued growth
+5. Includes specific next steps for cognitive development
+
+Use professional but accessible language suitable for parents and educators.`;
+
+      const response = await fetch('/.netlify/functions/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_type: 'chat',
+          input_data: {
+            messages: [
+              { role: 'system', content: 'You are a licensed educational psychologist creating comprehensive cognitive assessment reports for children.' },
+              { role: 'user', content: prompt }
+            ]
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.response || data.data || assessment.detailedAnalysis || 'Assessment report generation is temporarily unavailable.';
+      }
+    } catch (error) {
+      console.error('Error generating AI report:', error);
+    }
+
+    return assessment.detailedAnalysis || 'Your cognitive assessment shows positive development across multiple areas. Continue your learning journey!';
+  };
+
+  // Get current strengths and growth areas
+  const getStrengthsAndGrowthAreas = (): { strengths: string[], growthAreas: string[] } => {
+    if (!user?.profile.aiAssessment?.cognitiveProfile) {
+      return { strengths: [], growthAreas: [] };
+    }
+
+    const concepts = Object.entries(user.profile.aiAssessment.cognitiveProfile);
+    const sorted = concepts.sort(([,a], [,b]) => b.level - a.level);
+    
+    const strengths = sorted.slice(0, 3).map(([concept]) => concept);
+    const growthAreas = sorted.slice(-3).map(([concept]) => concept);
+    
+    return { strengths, growthAreas };
+  };
+
   return (
     <UserContext.Provider value={{ 
       user, 
@@ -211,7 +544,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateGameProgress, 
       updateFriends, 
       updateFriendRequests,
-      recordGameSession
+      recordGameSession,
+      updateAIAssessment,
+      generateAIReport,
+      getStrengthsAndGrowthAreas
     }}>
       {children}
     </UserContext.Provider>

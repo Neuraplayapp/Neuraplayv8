@@ -8,7 +8,7 @@ import { Gamepad2, BarChart, Users, Star, Brain, Sparkles, Trophy, Target, FileT
 import { Link } from 'react-router-dom';
 import CrossroadFunGame from '../components/games/CrossroadFunGame';
 import MemorySequenceGame from '../components/games/MemorySequenceGame';
-import StarbloomAdventureGame from '../components/games/StarbloomAdventureGame';
+import MagicStorytellerGame from '../components/games/MagicStorytellerGame';
 import InhibitionGame from '../components/games/InhibitionGame';
 import BerryBlasterGame from '../components/games/BerryBlasterGame';
 import PatternMatchingGame from '../components/games/PatternMatchingGame';
@@ -47,7 +47,7 @@ const PlaygroundPage: React.FC = () => {
         { id: 'crossroad-fun', title: 'Crossroad Fun', category: 'Logic', icon: <Gamepad2 />, color: 'from-blue-400 to-blue-700', image: '/assets/images/crosswalk.png' },
         { id: 'the-cube', title: 'The Cube', category: 'Logic', icon: <Trophy />, color: 'from-indigo-600 to-purple-600', image: '/assets/images/Thecube.png' },
         { id: 'memory-sequence', title: 'Memory Galaxy', category: 'Memory', icon: <Star />, color: 'from-blue-500 to-cyan-500', image: '/assets/images/Neuraplaybrain.png' },
-        { id: 'starbloom-adventure', title: 'Starbloom Forest', category: 'Memory', icon: <Brain />, color: 'from-green-500 to-teal-500', image: '/assets/images/Mascot.png' },
+        { id: 'magic-storyteller', title: 'Magic Storyteller', category: 'Story', icon: <Sparkles />, color: 'from-purple-500 to-pink-500', image: '/assets/images/Mascot.png' },
         { id: 'inhibition', title: 'Stop & Go Adventure', category: 'Focus', icon: <Target />, color: 'from-emerald-500 to-green-500', image: '/assets/images/Neuraplaybrain.png' },
         { id: 'berry-blaster', title: 'Berry Blaster', category: 'Focus', icon: <Gamepad2 />, color: 'from-indigo-500 to-blue-500', image: '/assets/images/Alfiya.png' },
         { id: 'pattern-matching', title: 'Pattern Detective', category: 'Logic', icon: <Brain />, color: 'from-purple-500 to-violet-500', image: '/assets/images/Neuraplaybrain.png' },
@@ -100,18 +100,18 @@ const PlaygroundPage: React.FC = () => {
             features: ['Traffic simulation', 'Increasing difficulty', 'Score tracking'],
             instructions: 'Wait for the traffic to clear, then quickly cross the road. Be careful of oncoming vehicles!',
         },
-        'starbloom-adventure': {
-            id: 'starbloom-adventure',
-            title: 'Starbloom Forest',
-            category: 'Memory',
-            description: 'Explore a magical forest while training your memory and pattern recognition.',
-            skills: ['Visual Memory', 'Pattern Recognition', 'Spatial Awareness'],
+            'magic-storyteller': {
+      id: 'magic-storyteller',
+            title: 'Magic Storyteller',
+            category: 'Story',
+            description: 'Premium AI-powered storytelling adventure with personalized narratives and comprehensive neuropsychological assessment.',
+            skills: ['Executive Function', 'Working Memory', 'Social Cognition', 'Theory of Mind', 'Emotional Regulation'],
             difficulty: 'Easy',
             duration: '5-8 min',
             ageRange: '4-10',
             image: '/assets/images/Mascot.png',
-            features: ['Magical forest theme', 'Progressive levels', 'Beautiful animations'],
-            instructions: 'Remember the sequence of flowers and repeat them in the correct order.',
+            features: ['AI-powered storytelling', 'Character creation', 'Neuropsychological assessment', 'Text-to-speech narration'],
+            instructions: 'Create your character and embark on a personalized magical adventure where your choices shape the story and reveal cognitive insights!',
         },
         'inhibition': {
             id: 'inhibition',
@@ -255,8 +255,8 @@ const PlaygroundPage: React.FC = () => {
                 return <CrossroadFunGame onClose={handleGameClose} />;
             case 'memory-sequence':
                 return <MemorySequenceGame onClose={handleGameClose} />;
-            case 'starbloom-adventure':
-                return <StarbloomAdventureGame onClose={handleGameClose} />;
+                    case 'magic-storyteller':
+            return <MagicStorytellerGame onClose={handleGameClose} />;
             case 'inhibition':
                 return <InhibitionGame onClose={handleGameClose} />;
             case 'berry-blaster':

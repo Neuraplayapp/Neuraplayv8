@@ -10,6 +10,7 @@ import {
   BarChart3, Sparkles, Crown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AIAssessmentReport from '../components/AIAssessmentReport';
 
 
 const ProfilePage: React.FC = () => {
@@ -844,28 +845,13 @@ const ProfilePage: React.FC = () => {
 
           {activeTab === 'ai-insights' && (
             <div className="space-y-8">
-              <h2 className="text-3xl font-bold text-purple-900 dark:text-white mb-6">AI Insights</h2>
+              <h2 className="text-3xl font-bold text-purple-900 dark:text-white mb-6">AI Cognitive Assessment</h2>
               
-              {/* AI Analysis - Dark Blue Purple Gradient */}
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl p-6 text-white">
-                <div className="flex items-center gap-4 mb-4">
-                  <Brain className="w-8 h-8 text-blue-300" />
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Synapse AI Analysis</h3>
-                    <p className="text-purple-100">Your personalized learning insights</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={triggerAIInsights}
-                  className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4 text-yellow-400" />
-                  Get AI Insights
-                </button>
-              </div>
+              {/* Comprehensive AI Assessment Report */}
+              <AIAssessmentReport />
 
               {/* AI Assistant - Note: Global AI Assistant is available via the floating button */}
-              <div>
+              <div className="mt-8">
                 <h3 className="text-xl font-bold text-purple-900 dark:text-white mb-4 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
                   AI Assistant
@@ -873,7 +859,7 @@ const ProfilePage: React.FC = () => {
                 <div className="p-4 bg-purple-50 dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-gray-700">
                   <p className="text-purple-700 dark:text-purple-300 text-sm">
                     Your AI assistant is available via the floating button in the bottom-right corner of the screen. 
-                    Click the purple brain icon to start chatting! 🧠✨
+                    Click the purple brain icon to start chatting about your cognitive assessment! 🧠✨
                   </p>
                 </div>
               </div>
