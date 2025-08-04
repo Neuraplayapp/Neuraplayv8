@@ -209,9 +209,12 @@ app.post('/.netlify/functions/elevenlabs-tts', async (req, res) => {
       return res.status(400).json({ error: 'No text provided' });
     }
 
-    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || 
+                               process.env.ELEVENLABS_API_KEY ||
+                               process.env.VITE_ELVEN_LABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
       return res.status(500).json({ error: 'ElevenLabs API key not configured' });
     }
 
@@ -258,14 +261,19 @@ app.post('/api/elevenlabs-tts', async (req, res) => {
     }
 
     const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    console.log('🔑 ElevenLabs API key found:', !!ELEVENLABS_API_KEY);
+    console.log('🔑 API key length:', ELEVENLABS_API_KEY ? ELEVENLABS_API_KEY.length : 0);
     
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY');
       return res.status(500).json({ error: 'ElevenLabs API key not configured' });
     }
 
+    console.log('🎵 Making TTS request to ElevenLabs API...');
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
+        'Accept': 'audio/mpeg',
         'xi-api-key': ELEVENLABS_API_KEY,
         'Content-Type': 'application/json'
       },
@@ -279,8 +287,15 @@ app.post('/api/elevenlabs-tts', async (req, res) => {
       })
     });
 
+    console.log('📡 ElevenLabs API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`ElevenLabs API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ ElevenLabs TTS API error:', response.status, errorText);
+      return res.status(response.status).json({ 
+        error: `ElevenLabs API error: ${response.status}`, 
+        details: errorText 
+      });
     }
 
     const audioBuffer = await response.arrayBuffer();
@@ -308,6 +323,7 @@ app.post('/.netlify/functions/elevenlabs-streaming-tts', async (req, res) => {
     const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
       return res.status(500).json({ error: 'ElevenLabs API key not configured' });
     }
 
@@ -356,6 +372,7 @@ app.post('/api/elevenlabs-streaming-tts', async (req, res) => {
     const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
       return res.status(500).json({ error: 'ElevenLabs API key not configured' });
     }
 
@@ -398,6 +415,7 @@ app.get('/.netlify/functions/test-elevenlabs', async (req, res) => {
     const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
       return res.status(500).json({ error: 'ElevenLabs API key not configured' });
     }
 
@@ -430,6 +448,7 @@ app.get('/api/test-elevenlabs', async (req, res) => {
     const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     
     if (!ELEVENLABS_API_KEY) {
+      console.error('ElevenLabs API key not found. Checked: VITE_ELEVENLABS_API_KEY, ELEVENLABS_API_KEY, VITE_ELVEN_LABS_API_KEY');
       return res.status(500).json({ error: 'ElevenLabs API key not configured' });
     }
 
