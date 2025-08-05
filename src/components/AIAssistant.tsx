@@ -3193,11 +3193,133 @@ This two-step process is mandatory. Do not deviate.`;
                 <span className="glow glow-bottom"></span>
 
                 <div className="inner">
-                    {/* Fullscreen Header */}
+                    {/* Fullscreen Header with ElevenLabs Widget in Middle Top */}
                     {isFullscreen && (
                         <div className="ai-fullscreen-header">
                             <div className="ai-fullscreen-title flex items-center gap-2">
                                 <span>AI Assistant - Fullscreen Mode</span>
+                            </div>
+                            {/* ElevenLabs Widget in Middle Top of Fullscreen Header */}
+                            <div 
+                                className="elevenlabs-widget-fullscreen-container"
+                                title="AI Voice Conversation"
+                                style={{
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    minHeight: '60px',
+                                    maxHeight: '100px',
+                                    width: 'auto',
+                                    maxWidth: '320px',
+                                    overflow: 'visible',
+                                    position: 'relative',
+                                    zIndex: 15
+                                }}
+                            >
+                                <elevenlabs-convai 
+                                    key="elevenlabs-widget-fullscreen-v1"
+                                    agent-id={getAgentId()}
+                                    variant="expanded"
+                                    action-text="🎤 Voice Chat"
+                                    start-call-text="Start Voice"
+                                    end-call-text="End Voice"
+                                    avatar-orb-color-1="#8b5cf6"
+                                    avatar-orb-color-2="#a855f7"
+                                    data-public="true"
+                                    data-no-auth="true" 
+                                    disable-auth="true"
+                                    no-authentication="true"
+                                    public-agent="true"
+                                    onError={(error: any) => {
+                                        console.error('🚫 ElevenLabs Widget Fullscreen Error:', error);
+                                        console.error('🚫 Error type:', typeof error);
+                                        console.error('🚫 Error keys:', Object.keys(error || {}));
+                                        console.error('🚫 Error message:', error?.message || 'No message');
+                                        console.error('🚫 Error stack:', error?.stack || 'No stack');
+                                        console.error('🚫 Full error object:', JSON.stringify(error, null, 2));
+                                        
+                                        // Check if this is an authorization error
+                                        if (error?.message?.includes('authorize') || error?.message?.includes('authorization') || 
+                                            error?.toString?.()?.includes('authorize') || error?.toString?.()?.includes('authorization')) {
+                                            console.error('🚫 FULLSCREEN WIDGET AUTHORIZATION ERROR DETECTED');
+                                            console.error('🔍 Debugging fullscreen authorization issue...');
+                                            console.error('🔍 Agent ID:', getAgentId());
+                                            console.error('🔍 Agent ID length:', getAgentId()?.length);
+                                            console.error('🔍 Agent ID type:', typeof getAgentId());
+                                            console.error('🔍 Environment check:');
+                                            console.error('  - NODE_ENV:', import.meta.env.NODE_ENV);
+                                            console.error('  - MODE:', import.meta.env.MODE);
+                                            console.error('  - DEV:', import.meta.env.DEV);
+                                            console.error('  - PROD:', import.meta.env.PROD);
+                                            console.error('  - VITE_ELEVENLABS_API_KEY exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
+                                            console.error('  - VITE_ELEVENLABS_API_KEY length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
+                                            
+                                            // Check if running on localhost vs production
+                                            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                                            const isNetlifyDev = window.location.hostname.includes('localhost') && window.location.port;
+                                            const isNetlifyProd = window.location.hostname.includes('netlify.app') || window.location.hostname.includes('neuraplay');
+                                            
+                                            console.error('🔍 Environment detection:');
+                                            console.error('  - Is localhost:', isLocalhost);
+                                            console.error('  - Is Netlify dev:', isNetlifyDev);
+                                            console.error('  - Is Netlify prod:', isNetlifyProd);
+                                            console.error('  - Current origin:', window.location.origin);
+                                            console.error('  - Current hostname:', window.location.hostname);
+                                            
+                                            // Test if agent ID is reachable
+                                            console.error('🔍 Testing agent configuration...');
+                                            const testAgentConfig = async () => {
+                                                try {
+                                                    const agentId = getAgentId();
+                                                    console.error('🔍 Testing agent ID:', agentId);
+                                                    
+                                                    // Try to make a simple request to ElevenLabs to test the agent
+                                                    const testUrl = `https://api.elevenlabs.io/v1/convai/agents/${agentId}`;
+                                                    console.error('🔍 Testing agent URL:', testUrl);
+                                                    
+                                                    const response = await fetch(testUrl, {
+                                                        method: 'GET',
+                                                        headers: {
+                                                            'Authorization': `Bearer ${import.meta.env.VITE_ELEVENLABS_API_KEY}`,
+                                                            'Content-Type': 'application/json'
+                                                        }
+                                                    });
+                                                    
+                                                    console.error('🔍 Agent test response status:', response.status);
+                                                    console.error('🔍 Agent test response headers:', Object.fromEntries(response.headers.entries()));
+                                                    
+                                                    if (!response.ok) {
+                                                        const errorText = await response.text();
+                                                        console.error('🔍 Agent test error response:', errorText);
+                                                    } else {
+                                                        const agentData = await response.json();
+                                                        console.error('🔍 Agent test success:', agentData);
+                                                    }
+                                                } catch (testError) {
+                                                    console.error('🔍 Agent test failed:', testError);
+                                                }
+                                            };
+                                            
+                                            testAgentConfig();
+                                        }
+                                        
+                                        console.log('💡 Widget positioned in fullscreen header middle top');
+                                    }}
+                                    style={{
+                                        '--primary-color': '#8b5cf6',
+                                        '--secondary-color': '#a855f7',
+                                        '--background-color': 'rgba(139, 92, 246, 0.1)',
+                                        '--text-color': '#333333',
+                                        '--border-radius': '12px',
+                                        width: '100%',
+                                        maxWidth: '320px',
+                                        minHeight: '60px',
+                                        maxHeight: '100px',
+                                        fontSize: '16px',
+                                        overflow: 'visible',
+                                        zIndex: '15'
+                                    }}
+                                ></elevenlabs-convai>
                             </div>
                             <div className="ai-fullscreen-controls">
                                 <button
@@ -3269,7 +3391,7 @@ This two-step process is mandatory. Do not deviate.`;
                         </div>
                     )}
 
-                    {/* Regular Header with ElevenLabs Widget - Only show when not in fullscreen */}
+                    {/* Regular Header with ElevenLabs Widget */}
                     {!isFullscreen && (
                         <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between min-h-[80px] auto-h">
                             <div className="flex items-center gap-4">
@@ -3285,10 +3407,10 @@ This two-step process is mandatory. Do not deviate.`;
                                         justifyContent: 'center', 
                                         alignItems: 'center',
                                         minHeight: '50px',
-                                        maxHeight: '80px', // Constrain height to prevent overlap
+                                        maxHeight: '80px',
                                         width: 'auto',
                                         maxWidth: '280px',
-                                        overflow: 'hidden', // Prevent widget from expanding beyond header
+                                        overflow: 'visible',
                                         position: 'relative',
                                         zIndex: 10
                                     }}

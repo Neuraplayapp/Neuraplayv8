@@ -922,4 +922,35 @@ button[title="Exit Fullscreen"] svg {
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
+}
+
+/* Fullscreen widget container styling */
+.elevenlabs-widget-fullscreen-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  z-index: 15 !important;
+}
+
+/* Fullscreen widget styling */
+.elevenlabs-widget-fullscreen-container elevenlabs-convai {
+  min-height: 60px !important;
+  max-height: 100px !important;
+  height: auto !important;
+  overflow: visible !important;
+  z-index: 15 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+  position: relative !important;
+}
+
+/* Fullscreen header layout adjustments */
+.ai-fullscreen-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 16px !important;
 } 
