@@ -196,21 +196,77 @@ const AIAssistant: React.FC = () => {
     // Remove limits for DemoUser
     const isDemoUser = user?.username === 'DemoUser';
 
-    // Load ElevenLabs widget script
+    // Load ElevenLabs widget script and custom styling (only once)
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
-        script.async = true;
-        script.type = 'text/javascript';
-        document.head.appendChild(script);
+        // Check if script is already loaded
+        const existingScript = document.querySelector('script[src="https://unpkg.com/@elevenlabs/convai-widget-embed"]');
+        const existingStyle = document.querySelector('#elevenlabs-custom-style');
+        
+        if (!existingScript && !customElements.get('elevenlabs-convai')) {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+            script.async = true;
+            script.type = 'text/javascript';
+            script.id = 'elevenlabs-widget-script';
+            
+            // Handle any loading errors gracefully
+            script.onerror = () => {
+                console.warn('⚠️ ElevenLabs widget script failed to load, fallback to plasma ball');
+            };
+            
+            document.head.appendChild(script);
+        } else if (customElements.get('elevenlabs-convai')) {
+            console.log('✅ ElevenLabs widget already registered');
+        }
 
-        return () => {
-            // Cleanup script on unmount
-            const existingScript = document.querySelector('script[src="https://unpkg.com/@elevenlabs/convai-widget-embed"]');
-            if (existingScript) {
-                document.head.removeChild(existingScript);
-            }
-        };
+        // Add custom CSS to hide branding and improve styling (only once)
+        if (!existingStyle) {
+            const style = document.createElement('style');
+            style.id = 'elevenlabs-custom-style';
+            style.textContent = `
+                /* Hide ElevenLabs branding */
+                elevenlabs-convai::part(branding),
+                elevenlabs-convai [data-testid*="branding"],
+                elevenlabs-convai [class*="branding"],
+                elevenlabs-convai [class*="footer"],
+                elevenlabs-convai [class*="powered"],
+                elevenlabs-convai::shadow [data-testid*="branding"],
+                elevenlabs-convai::shadow [class*="branding"],
+                elevenlabs-convai::shadow [class*="footer"],
+                elevenlabs-convai::shadow [class*="powered"] {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                
+                /* Center and style the widget */
+                .elevenlabs-widget-container elevenlabs-convai {
+                    display: flex !important;
+                    justify-content: center !important;
+                    align-items: center !important;
+                    margin: 0 auto !important;
+                }
+                
+                /* Custom widget styling */
+                elevenlabs-convai {
+                    border-radius: 12px !important;
+                    overflow: hidden !important;
+                }
+                
+                /* Remove any bottom spacing/padding that might contain branding */
+                elevenlabs-convai::shadow .widget-footer,
+                elevenlabs-convai::shadow .footer,
+                elevenlabs-convai::shadow .branding-container {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // No cleanup function - keep script and styles loaded globally
     }, []);
 
     // Debug MediaRecorder on mount
@@ -3010,43 +3066,66 @@ This two-step process is mandatory. Do not deviate.`;
                             />
                         </label>
                         
-                        {/* Control Buttons */}
-                        <div className="ai-input-controls mt-3 flex gap-2">
-                            {/* Text Send Button */}
-                            <button
-                                onClick={handleSendText}
-                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
-                                className={`ai-mode-button flex-1 ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
-                                title="Send Message"
-                            >
-                                <Send size={16} />
-                                <span>Send</span>
-                            </button>
-                            
-                            {/* ElevenLabs Conversation Widget */}
-                            <div 
-                                className="elevenlabs-widget-container flex-1"
-                                title="AI Voice Conversation"
-                                style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center',
-                                    minHeight: '36px'
-                                }}
-                            >
-                                <elevenlabs-convai 
-                                    agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
-                                    variant="expanded"
-                                    action-text="Talk to AI!"
-                                    start-call-text="Start Voice Chat"
-                                    end-call-text="End Chat"
-                                    style={{
-                                        '--primary-color': '#8b5cf6',
-                                        '--secondary-color': '#a855f7',
-                                        '--background-color': 'rgba(139, 92, 246, 0.1)',
-                                        '--text-color': '#ffffff'
+                        {/* Control Buttons - All in one row */}
+                        <div className="ai-input-controls mt-3">
+                            <div className="flex gap-2 items-center">
+                                {/* Send Button */}
+                                <button
+                                    onClick={handleSendText}
+                                    disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
+                                    className={`ai-mode-button ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
+                                    title="Send Message"
+                                    style={{ minWidth: '80px' }}
+                                >
+                                    <Send size={16} />
+                                    <span>Send</span>
+                                </button>
+                                
+                                {/* ElevenLabs Voice Conversation Widget - Center */}
+                                <div 
+                                    className="elevenlabs-widget-container flex-1"
+                                    title="AI Voice Conversation"
+                                    style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'center', 
+                                        alignItems: 'center',
+                                        minHeight: '40px',
+                                        margin: '0 8px'
                                     }}
-                                ></elevenlabs-convai>
+                                >
+                                    <elevenlabs-convai 
+                                        key="elevenlabs-widget-unique"
+                                        agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
+                                        variant="floating"
+                                        action-text="🎤 Voice Chat"
+                                        start-call-text="Start"
+                                        end-call-text="End"
+                                        avatar-orb-color-1="#8b5cf6"
+                                        avatar-orb-color-2="#a855f7"
+                                        style={{
+                                            '--primary-color': '#8b5cf6',
+                                            '--secondary-color': '#a855f7',
+                                            '--background-color': 'rgba(139, 92, 246, 0.15)',
+                                            '--text-color': '#ffffff',
+                                            '--border-radius': '10px',
+                                            width: '100%',
+                                            maxWidth: '160px',
+                                            height: '40px'
+                                        }}
+                                    ></elevenlabs-convai>
+                                </div>
+                                
+                                {/* Voice Recording Button */}
+                                <button
+                                    onClick={handleRecordButtonClick}
+                                    className={`ai-mode-button ${mode === 'single_recording' ? 'recording' : ''}`}
+                                    title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
+                                    disabled={isLoading || mode === 'conversing'}
+                                    style={{ minWidth: '80px' }}
+                                >
+                                    {mode === 'single_recording' ? <MicOff size={16} /> : <Mic size={16} />}
+                                    <span>{mode === 'single_recording' ? 'Stop' : 'Record'}</span>
+                                </button>
                             </div>
                             
                             {/* Backup: Plasma Ball Conversation Mode (hidden when widget works) */}
@@ -3062,17 +3141,6 @@ This two-step process is mandatory. Do not deviate.`;
                                     intensity={mode === 'conversing' ? 1.0 : 0.3}
                                 />
                             </div>
-                            
-                            {/* Voice Recording Button */}
-                            <button
-                                onClick={handleRecordButtonClick}
-                                className={`ai-mode-button flex-1 ${mode === 'single_recording' ? 'recording' : ''}`}
-                                title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
-                                disabled={isLoading || mode === 'conversing'}
-                            >
-                                {mode === 'single_recording' ? <MicOff size={16} /> : <Mic size={16} />}
-                                <span>{mode === 'single_recording' ? 'Stop' : 'Record'}</span>
-                            </button>
                         </div>
                         {!isDemoUser && promptCount >= 10 && (
                             <div className="text-center text-amber-400 text-xs mt-2 font-bold">🎯 You've used all your daily questions! Come back tomorrow for more fun! 🌟</div>
