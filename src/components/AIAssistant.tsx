@@ -203,11 +203,32 @@ const AIAssistant: React.FC = () => {
         const existingStyle = document.querySelector('#elevenlabs-custom-style');
         
         if (!existingScript && !customElements.get('elevenlabs-convai')) {
+            console.log('🔄 Loading ElevenLabs widget script...');
             const script = document.createElement('script');
             script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
             script.async = true;
             script.type = 'text/javascript';
             script.id = 'elevenlabs-widget-script';
+            
+            // Handle successful loading
+            script.onload = () => {
+                console.log('✅ ElevenLabs widget script loaded successfully');
+                // Add event listeners for widget debugging
+                setTimeout(() => {
+                    const widget = document.querySelector('elevenlabs-convai');
+                    if (widget) {
+                        widget.addEventListener('elevenlabs-convai:call', (event) => {
+                            console.log('🎤 Widget call started:', event.detail);
+                        });
+                        widget.addEventListener('elevenlabs-convai:error', (event) => {
+                            console.error('❌ Widget error:', event.detail);
+                        });
+                        widget.addEventListener('elevenlabs-convai:end', (event) => {
+                            console.log('🔚 Widget call ended:', event.detail);
+                        });
+                    }
+                }, 1000);
+            };
             
             // Handle any loading errors gracefully
             script.onerror = () => {
@@ -3066,66 +3087,68 @@ This two-step process is mandatory. Do not deviate.`;
                             />
                         </label>
                         
-                        {/* Control Buttons - All in one row */}
-                        <div className="ai-input-controls mt-3">
-                            <div className="flex gap-2 items-center">
-                                {/* Send Button */}
+                        {/* Control Buttons Layout */}
+                        <div className="ai-input-controls mt-3 space-y-3">
+                            {/* Top Row: Send and Record Buttons */}
+                            <div className="flex gap-3 justify-center">
                                 <button
                                     onClick={handleSendText}
                                     disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
                                     className={`ai-mode-button ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
                                     title="Send Message"
-                                    style={{ minWidth: '80px' }}
                                 >
                                     <Send size={16} />
                                     <span>Send</span>
                                 </button>
                                 
-                                {/* ElevenLabs Voice Conversation Widget - Center */}
-                                <div 
-                                    className="elevenlabs-widget-container flex-1"
-                                    title="AI Voice Conversation"
-                                    style={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'center', 
-                                        alignItems: 'center',
-                                        minHeight: '40px',
-                                        margin: '0 8px'
-                                    }}
-                                >
-                                    <elevenlabs-convai 
-                                        key="elevenlabs-widget-unique"
-                                        agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
-                                        variant="floating"
-                                        action-text="🎤 Voice Chat"
-                                        start-call-text="Start"
-                                        end-call-text="End"
-                                        avatar-orb-color-1="#8b5cf6"
-                                        avatar-orb-color-2="#a855f7"
-                                        style={{
-                                            '--primary-color': '#8b5cf6',
-                                            '--secondary-color': '#a855f7',
-                                            '--background-color': 'rgba(139, 92, 246, 0.15)',
-                                            '--text-color': '#ffffff',
-                                            '--border-radius': '10px',
-                                            width: '100%',
-                                            maxWidth: '160px',
-                                            height: '40px'
-                                        }}
-                                    ></elevenlabs-convai>
-                                </div>
-                                
-                                {/* Voice Recording Button */}
                                 <button
                                     onClick={handleRecordButtonClick}
                                     className={`ai-mode-button ${mode === 'single_recording' ? 'recording' : ''}`}
                                     title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
                                     disabled={isLoading || mode === 'conversing'}
-                                    style={{ minWidth: '80px' }}
                                 >
                                     {mode === 'single_recording' ? <MicOff size={16} /> : <Mic size={16} />}
                                     <span>{mode === 'single_recording' ? 'Stop' : 'Record'}</span>
                                 </button>
+                            </div>
+                            
+                            {/* Bottom Center: ElevenLabs Voice Conversation Widget */}
+                            <div 
+                                className="elevenlabs-widget-container"
+                                title="AI Voice Conversation"
+                                style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    width: '100%',
+                                    minHeight: '50px',
+                                    padding: '8px 0'
+                                }}
+                            >
+                                <elevenlabs-convai 
+                                    key="elevenlabs-widget-unique"
+                                    agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
+                                    variant="expanded"
+                                    action-text="🎤 Start Voice Conversation"
+                                    start-call-text="Start Voice Chat"
+                                    end-call-text="End Voice Chat"
+                                    avatar-orb-color-1="#8b5cf6"
+                                    avatar-orb-color-2="#a855f7"
+                                    onError={(error: any) => {
+                                        console.error('🚫 ElevenLabs Widget Error:', error);
+                                        console.log('💡 Check: 1) Agent must be PUBLIC, 2) Authentication DISABLED, 3) Domain allowlisted');
+                                    }}
+                                    style={{
+                                        '--primary-color': '#8b5cf6',
+                                        '--secondary-color': '#a855f7',
+                                        '--background-color': 'rgba(139, 92, 246, 0.2)',
+                                        '--text-color': '#ffffff',
+                                        '--border-radius': '12px',
+                                        width: '100%',
+                                        maxWidth: '280px',
+                                        minHeight: '50px'
+                                    }}
+                                ></elevenlabs-convai>
                             </div>
                             
                             {/* Backup: Plasma Ball Conversation Mode (hidden when widget works) */}
@@ -3133,10 +3156,10 @@ This two-step process is mandatory. Do not deviate.`;
                                 className={`plasma-ball-conversation-container ${mode === 'conversing' ? 'active' : ''}`}
                                 onClick={handleToggleConversationMode}
                                 title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
-                                style={{ display: 'none' }}
+                                style={{ display: 'none', justifyContent: 'center', padding: '10px 0' }}
                             >
                                 <PlasmaBall 
-                                    size={isFullscreen ? 72 : 36}
+                                    size={isFullscreen ? 72 : 50}
                                     className={`conversation-plasma-ball ${mode === 'conversing' ? 'active' : ''}`}
                                     intensity={mode === 'conversing' ? 1.0 : 0.3}
                                 />
