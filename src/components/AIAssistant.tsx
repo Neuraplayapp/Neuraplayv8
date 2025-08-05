@@ -3069,33 +3069,21 @@ This two-step process is mandatory. Do not deviate.`;
                             </div>
                         )}
                         
-                        {/* DEFINITIVE CENTERED LAYOUT SOLUTION */}
-                        <div className="flex flex-col items-center gap-3">
-                            {/* Send and Record Buttons - Top Row */}
-                            <div className="flex gap-3 w-full justify-center">
-                                <button
-                                    onClick={handleSendText}
-                                    disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
-                                    className={`ai-mode-button ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
-                                    title="Send Message"
-                                >
-                                    <Send size={16} />
-                                    <span>Send</span>
-                                </button>
-                                
-                                <button
-                                    onClick={handleRecordButtonClick}
-                                    className={`ai-mode-button ${mode === 'single_recording' ? 'recording' : ''}`}
-                                    title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
-                                    disabled={isLoading || mode === 'conversing'}
-                                >
-                                    {mode === 'single_recording' ? <MicOff size={16} /> : <Mic size={16} />}
-                                    <span>{mode === 'single_recording' ? 'Stop' : 'Record'}</span>
-                                </button>
-                            </div>
+                        {/* HORIZONTAL LAYOUT: Send - Input - Record */}
+                        <div className="flex items-center gap-3 w-full">
+                            {/* Send Button - Left */}
+                            <button
+                                onClick={handleSendText}
+                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
+                                className={`ai-mode-button flex-shrink-0 ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
+                                title="Send Message"
+                            >
+                                <Send size={16} />
+                                <span>Send</span>
+                            </button>
                             
-                            {/* Input Field - Perfectly Centered Between Buttons */}
-                            <div className="w-full px-4">
+                            {/* Input Field - Center (takes remaining space) */}
+                            <div className="flex-grow">
                                 <label className="flex items-center gap-2">
                                     <input 
                                         type="text"
@@ -3109,12 +3097,22 @@ This two-step process is mandatory. Do not deviate.`;
                                         value={inputMessage}
                                         onChange={(e) => setInputMessage(e.target.value)}
                                         onKeyPress={handleKeyPress}
-                                        className="ai-input-field w-full text-center"
+                                        className="ai-input-field w-full"
                                         disabled={isLoading || (!isDemoUser && promptCount >= 10)}
-                                        style={{ textAlign: 'center' }}
                                     />
                                 </label>
                             </div>
+                            
+                            {/* Record Button - Right */}
+                            <button
+                                onClick={handleRecordButtonClick}
+                                className={`ai-mode-button flex-shrink-0 ${mode === 'single_recording' ? 'recording' : ''}`}
+                                title={mode === 'single_recording' ? 'Stop Recording' : 'Start Voice Recording'}
+                                disabled={isLoading || mode === 'conversing'}
+                            >
+                                {mode === 'single_recording' ? <MicOff size={16} /> : <Mic size={16} />}
+                                <span>{mode === 'single_recording' ? 'Stop' : 'Record'}</span>
+                            </button>
                         </div>
                         
                         {/* Voice Conversation Widget - Separate Section */}
@@ -3133,7 +3131,7 @@ This two-step process is mandatory. Do not deviate.`;
                                 }}
                             >
                                 <elevenlabs-convai 
-                                    key="elevenlabs-widget-unique"
+                                    key="elevenlabs-widget-unique-v2"
                                     agent-id={getAgentId()}
                                     variant="expanded"
                                     action-text="🎤 Start Voice Conversation"
@@ -3141,12 +3139,30 @@ This two-step process is mandatory. Do not deviate.`;
                                     end-call-text="End Voice Chat"
                                     avatar-orb-color-1="#8b5cf6"
                                     avatar-orb-color-2="#a855f7"
-                                    public="true"
-                                    authorization="none"
+                                    {...({
+                                        // Try multiple approaches to disable auth
+                                        'data-public': 'true',
+                                        'data-no-auth': 'true', 
+                                        'disable-auth': 'true'
+                                    })}
                                     onError={(error: any) => {
-                                        console.error('🚫 ElevenLabs Widget Error:', error);
-                                        console.log('💡 Authorization Fix Applied: agent-id from config, public=true, authorization=none');
-                                        console.log('💡 If still failing: 1) Check agent is PUBLIC in ElevenLabs, 2) Verify domain allowlist, 3) Agent auth disabled');
+                                        console.error('🚫 ElevenLabs Widget Authorization Error:', error);
+                                        console.error('🚫 Full error object:', JSON.stringify(error, null, 2));
+                                        console.log('💡 TROUBLESHOOTING STEPS:');
+                                        console.log('1. Agent must be PUBLIC in ElevenLabs dashboard');
+                                        console.log('2. Agent authentication must be DISABLED');
+                                        console.log('3. Domain must be allowlisted in agent settings');
+                                        console.log('4. Check if agent exists and is active');
+                                        console.log('5. Verify agent ID:', getAgentId());
+                                        
+                                        // Auto-fallback to plasma ball if widget fails
+                                        setTimeout(() => {
+                                            const plasmaContainer = document.querySelector('.plasma-ball-conversation-container') as HTMLElement;
+                                            if (plasmaContainer) {
+                                                plasmaContainer.style.display = 'flex';
+                                                console.log('🔄 Fallback: Enabled Plasma Ball conversation mode');
+                                            }
+                                        }, 2000);
                                     }}
                                     style={{
                                         '--primary-color': '#8b5cf6',
@@ -3161,18 +3177,23 @@ This two-step process is mandatory. Do not deviate.`;
                                 ></elevenlabs-convai>
                             </div>
                             
-                            {/* Backup: Plasma Ball Conversation Mode (hidden when widget works) */}
+                            {/* Backup: Plasma Ball Conversation Mode (auto-enabled if widget fails) */}
                             <div 
                                 className={`plasma-ball-conversation-container ${mode === 'conversing' ? 'active' : ''}`}
                                 onClick={handleToggleConversationMode}
                                 title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
                                 style={{ display: 'none', justifyContent: 'center', padding: '10px 0' }}
                             >
-                                <PlasmaBall 
-                                    size={isFullscreen ? 72 : 50}
-                                    className={`conversation-plasma-ball ${mode === 'conversing' ? 'active' : ''}`}
-                                    intensity={mode === 'conversing' ? 1.0 : 0.3}
-                                />
+                                <div className="text-center">
+                                    <PlasmaBall 
+                                        size={isFullscreen ? 72 : 50}
+                                        className={`conversation-plasma-ball ${mode === 'conversing' ? 'active' : ''}`}
+                                        intensity={mode === 'conversing' ? 1.0 : 0.3}
+                                    />
+                                    <div className="text-xs text-purple-300 mt-2">
+                                        {mode === 'conversing' ? 'Voice Active 🎤' : 'Backup Voice Mode 🔄'}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         {!isDemoUser && promptCount >= 10 && (
