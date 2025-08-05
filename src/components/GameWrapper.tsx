@@ -230,6 +230,16 @@ const GameWrapper: React.FC<GameWrapperProps> = ({
       maxHeight: 'max-h-[95vh]',
       showVolumeSlider: true,
       showGameControls: true
+    },
+    'magic-storyteller': {
+      title: 'Magic Storyteller',
+      subtitle: 'AI-powered interactive storytelling adventure',
+      icon: <Sparkles className="w-5 h-5" />,
+      maxWidth: 'max-w-7xl',
+      maxHeight: 'max-h-[95vh]',
+      showVolumeSlider: true,
+      showGameControls: true,
+      showSkipControls: false
     }
   };
 

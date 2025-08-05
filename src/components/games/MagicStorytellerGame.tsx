@@ -253,7 +253,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt }) => {
 };
 
 interface MagicStorytellerGameProps {
-  onClose?: () => void;
+  onClose: () => void;
 }
 
 const MagicStorytellerGame: React.FC<MagicStorytellerGameProps> = ({ onClose }) => {
@@ -668,99 +668,127 @@ Your response MUST be in JSON format with this exact structure:
     }
 
     return (
-      <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'} h-full flex flex-col`}>
+      <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'} h-full flex flex-col max-w-4xl mx-auto`}>
         {/* Image section */}
-        <div className="mb-6">
-          <ImageViewer src={gameState.imageUrl || ''} alt={gameState.imagePrompt || 'Magical scene'} />
+        <div className="mb-4 flex-shrink-0">
+          <div className="max-h-64 overflow-hidden">
+            <ImageViewer src={gameState.imageUrl || ''} alt={gameState.imagePrompt || 'Magical scene'} />
+          </div>
         </div>
 
         {/* Story section */}
-        <div className="mb-6 flex-1">
-          <StoryDisplay 
-            text={gameState.story} 
-            onSpeak={() => speakText(gameState.story)}
-            isSpeaking={isSpeaking}
-          />
+        <div className="mb-4 flex-1 min-h-0">
+          <div className="h-full overflow-auto">
+            <StoryDisplay 
+              text={gameState.story} 
+              onSpeak={() => speakText(gameState.story)}
+              isSpeaking={isSpeaking}
+            />
+          </div>
         </div>
 
         {/* Choices section */}
-        {!isGameOver && (
-          <div className="grid grid-cols-1 gap-4">
-            {gameState.choices.map((choice, index) => (
-              <ChoiceButton
-                key={index}
-                choice={choice}
-                onClick={handleChoice}
-                disabled={isLoading}
-              />
-            ))}
-          </div>
-        )}
+        <div className="flex-shrink-0">
+          {!isGameOver && (
+            <div className="grid grid-cols-1 gap-3">
+              {gameState.choices.map((choice, index) => (
+                <ChoiceButton
+                  key={index}
+                  choice={choice}
+                  onClick={handleChoice}
+                  disabled={isLoading}
+                />
+              ))}
+            </div>
+          )}
 
-        {isGameOver && (
-           <div className="bg-purple-100 border-2 border-purple-300 rounded-xl p-6 text-center">
-             <h2 className="text-2xl font-bold text-purple-800 mb-2">The End</h2>
-             <p className="text-slate-700 mb-4">Thank you for playing! You've completed this chapter of your magical adventure.</p>
-             <button
-               onClick={startGame}
-               className="bg-purple-600 text-white font-bold py-3 px-6 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105"
-             >
-               Start a New Adventure
-             </button>
-           </div>
-        )}
+          {isGameOver && (
+             <div className="bg-purple-100 border-2 border-purple-300 rounded-xl p-6 text-center">
+               <h2 className="text-2xl font-bold text-purple-800 mb-2">The End</h2>
+               <p className="text-slate-700 mb-4">Thank you for playing! You've completed this chapter of your magical adventure.</p>
+               <button
+                 onClick={startGame}
+                 className="bg-purple-600 text-white font-bold py-3 px-6 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105"
+               >
+                 Start a New Adventure
+               </button>
+             </div>
+          )}
+        </div>
       </div>
     );
   };
 
-  if (!avatarCreated) {
-    return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 p-4 md:p-12">
-        <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8 md:p-12 mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-              Create Your Hero
-            </h1>
-            <p className="text-gray-700 text-lg">
-              Design your character for an epic magical adventure
-            </p>
+  const gameContent = () => {
+    if (!avatarCreated) {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 p-4">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8 mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                Create Your Hero
+              </h1>
+              <p className="text-gray-700 text-lg">
+                Design your character for an epic magical adventure
+              </p>
+            </div>
+            <AvatarCreationForm onCreateAvatar={createAvatar} isLoading={isLoading} />
           </div>
-          <AvatarCreationForm onCreateAvatar={createAvatar} isLoading={isLoading} />
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full h-full flex flex-col bg-gradient-to-br from-purple-50 to-pink-100">
+        {/* Audio element for background music */}
+        <audio ref={audioRef} preload="auto" />
+        <div className="flex-1 flex flex-col p-4 overflow-hidden">
+          {/* Header */}
+          <div className="text-center mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-purple-800 mb-1">
+              ✨ {playerAvatar.name}'s Adventure ✨
+            </h1>
+          </div>
+          {/* Loading overlay */}
+          {isLoading && gameState && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+              <LoadingSpinner message="Crafting your next chapter..." />
+            </div>
+          )}
+          {/* Main content */}
+          <div className="flex-1 relative overflow-auto">
+            {renderContent()}
+          </div>
         </div>
       </div>
     );
-  }
+  };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100 p-4 md:p-12">
-      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl p-8 md:p-12 mx-auto relative">
-        {/* Audio element for background music */}
-        <audio ref={audioRef} preload="auto" />
-        <div className="p-6 h-full overflow-y-auto">
-          <div className="max-w-4xl mx-auto h-full">
-            {/* Header */}
-            <div className="text-center mb-6">
-              <h1 className="text-3xl md:text-4xl font-bold text-purple-800 mb-2">
-                ✨ Magic Storyteller ✨
-              </h1>
-              <p className="text-purple-600 text-lg font-medium">
-                {playerAvatar.name}'s Epic Adventure
-              </p>
-            </div>
-            {/* Loading overlay */}
-            {isLoading && gameState && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
-                <LoadingSpinner message="Crafting your next chapter..." />
-              </div>
-            )}
-            {/* Main content */}
-            <div className="relative">
-              {renderContent()}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <GameModal
+      isOpen={true}
+      onClose={onClose}
+      title="Magic Storyteller"
+      subtitle="AI-powered interactive storytelling adventure"
+      gameIcon={<Sparkles className="w-5 h-5" />}
+      showProgress={false}
+      showControls={true}
+      onReset={() => {
+        setAvatarCreated(false);
+        setGameState(null);
+        setHistory([]);
+        setIsGameOver(false);
+      }}
+      showMusicControl={true}
+      isMusicPlaying={isMusicPlaying}
+      onToggleMusic={toggleMusic}
+      maxWidth="max-w-7xl"
+      maxHeight="max-h-[95vh]"
+      showVolumeSlider={true}
+      showGameControls={true}
+    >
+      {gameContent()}
+    </GameModal>
   );
 };
 
