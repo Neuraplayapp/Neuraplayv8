@@ -16,7 +16,7 @@ VITE_ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
 together_token=your_together_ai_api_key_here
 
 # ElevenLabs Agent ID (for conversational AI)
-ELEVENLABS_AGENT_ID=your_agent_id_here
+ELEVENLABS_AGENT_ID=agent_2201k13zjq5nf9faywz14701hyhb
 ```
 
 ### Platform Configuration

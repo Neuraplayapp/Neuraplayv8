@@ -27,5 +27,7 @@ services:
         sync: false
       - key: ASSEMBLY_API_KEY
         sync: false
+      - key: ELEVENLABS_AGENT_ID
+        value: agent_2201k13zjq5nf9faywz14701hyhb
     healthCheckPath: /
     autoDeploy: true 

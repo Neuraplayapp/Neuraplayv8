@@ -236,16 +236,22 @@ async function handleElevenLabsConnection(clientWs, clientId) {
     console.log('🎯 Connecting to ElevenLabs Conversational AI...');
     
     const ElevenLabsWS = require('ws');
-    const agentId = process.env.ELEVENLABS_AGENT_ID || 'your-agent-id';
+    const agentId = process.env.ELEVENLABS_AGENT_ID || 'agent_2201k13zjq5nf9faywz14701hyhb';
+    const apiKey = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     
-    const elevenLabsWs = new ElevenLabsWS(
-      `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`,
-      {
-        headers: {
-          'xi-api-key': process.env.VITE_ELEVENLABS_API_KEY,
-        }
-      }
-    );
+    console.log('🔑 Using Agent ID:', agentId);
+    console.log('🔑 API Key available:', !!apiKey);
+    console.log('🔑 API Key length:', apiKey ? apiKey.length : 0);
+    
+    if (!apiKey) {
+      throw new Error('ElevenLabs API key not found in environment variables');
+    }
+    
+    // FIXED: API key must be in URL as query parameter, not in headers
+    const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}&xi-api-key=${apiKey}`;
+    console.log('🌐 WebSocket URL constructed (API key hidden):', wsUrl.replace(/xi-api-key=[^&]+/, 'xi-api-key=***'));
+    
+    const elevenLabsWs = new ElevenLabsWS(wsUrl);
     
     elevenLabsWs.on('open', () => {
       console.log('✅ Connected to ElevenLabs');

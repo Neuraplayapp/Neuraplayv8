@@ -150,6 +150,9 @@ const AIAssistant: React.FC = () => {
         },
         onError: (error) => {
             console.error('❌ ElevenLabs Conversation Error:', error);
+            console.error('❌ Error details:', JSON.stringify(error, null, 2));
+            console.error('❌ Error type:', typeof error);
+            console.error('❌ Error properties:', Object.keys(error || {}));
             addMessageToConversation(activeConversation, { 
                 text: "⚠️ Connection error. Please try again or use text chat! 🔄", 
                 isUser: false, 
@@ -192,6 +195,23 @@ const AIAssistant: React.FC = () => {
     
     // Remove limits for DemoUser
     const isDemoUser = user?.username === 'DemoUser';
+
+    // Load ElevenLabs widget script
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+        script.async = true;
+        script.type = 'text/javascript';
+        document.head.appendChild(script);
+
+        return () => {
+            // Cleanup script on unmount
+            const existingScript = document.querySelector('script[src="https://unpkg.com/@elevenlabs/convai-widget-embed"]');
+            if (existingScript) {
+                document.head.removeChild(existingScript);
+            }
+        };
+    }, []);
 
     // Debug MediaRecorder on mount
     useEffect(() => {
@@ -1714,10 +1734,13 @@ Need help with anything specific? Just ask! 🌟`;
                 // Start ElevenLabs conversation session with agent ID
                 console.log('🎯 Starting ElevenLabs conversation...');
                 console.log('🎯 Agent ID:', getAgentId());
+                console.log('🔍 Current origin:', window.location.origin);
+                console.log('🔍 Current hostname:', window.location.hostname);
+                console.log('🔍 Full URL:', window.location.href);
                 
                 await elevenLabsConversation.startSession({
                     agentId: getAgentId(),
-                    connectionType: 'websocket', // Required by ElevenLabs API
+                    // connectionType: 'websocket', // Remove this as it might not be needed
                     // Optional: add user_id for tracking if needed
                     // user_id: user?.username || 'anonymous'
                 });
@@ -3000,11 +3023,38 @@ This two-step process is mandatory. Do not deviate.`;
                                 <span>Send</span>
                             </button>
                             
-                            {/* Plasma Ball Conversation Mode */}
+                            {/* ElevenLabs Conversation Widget */}
+                            <div 
+                                className="elevenlabs-widget-container flex-1"
+                                title="AI Voice Conversation"
+                                style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    minHeight: '36px'
+                                }}
+                            >
+                                <elevenlabs-convai 
+                                    agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
+                                    variant="expanded"
+                                    action-text="Talk to AI!"
+                                    start-call-text="Start Voice Chat"
+                                    end-call-text="End Chat"
+                                    style={{
+                                        '--primary-color': '#8b5cf6',
+                                        '--secondary-color': '#a855f7',
+                                        '--background-color': 'rgba(139, 92, 246, 0.1)',
+                                        '--text-color': '#ffffff'
+                                    }}
+                                ></elevenlabs-convai>
+                            </div>
+                            
+                            {/* Backup: Plasma Ball Conversation Mode (hidden when widget works) */}
                             <div 
                                 className={`plasma-ball-conversation-container ${mode === 'conversing' ? 'active' : ''}`}
                                 onClick={handleToggleConversationMode}
                                 title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
+                                style={{ display: 'none' }}
                             >
                                 <PlasmaBall 
                                     size={isFullscreen ? 72 : 36}
