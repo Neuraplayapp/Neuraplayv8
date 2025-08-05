@@ -117,6 +117,10 @@ const AIAssistant: React.FC = () => {
     const elevenLabsConversation = useConversation({
         onConnect: () => {
             console.log('✅ ElevenLabs Conversation Connected');
+            console.log('🔍 Connection details:');
+            console.log('  - Agent ID used:', getAgentId());
+            console.log('  - Connection timestamp:', new Date().toISOString());
+            console.log('  - Browser info:', navigator.userAgent);
             addMessageToConversation(activeConversation, { 
                 text: "🎤 Voice conversation ready! Start speaking anytime! ✨", 
                 isUser: false, 
@@ -125,6 +129,7 @@ const AIAssistant: React.FC = () => {
         },
         onDisconnect: () => {
             console.log('❌ ElevenLabs Conversation Disconnected');
+            console.log('🔍 Disconnection timestamp:', new Date().toISOString());
             addMessageToConversation(activeConversation, { 
                 text: "🔌 Voice conversation ended. You can still chat with text or single recordings! 💬", 
                 isUser: false, 
@@ -133,6 +138,12 @@ const AIAssistant: React.FC = () => {
         },
         onMessage: (message) => {
             console.log('📥 ElevenLabs Message:', message);
+            console.log('📥 Message type:', typeof message);
+            console.log('📥 Message keys:', Object.keys(message || {}));
+            console.log('📥 Message source:', message?.source);
+            console.log('📥 Message content:', message?.message);
+            console.log('📥 Message timestamp:', new Date().toISOString());
+            
             // Handle different message sources based on ElevenLabs API
             if (message.source === 'ai' && message.message) {
                 addMessageToConversation(activeConversation, { 
@@ -149,10 +160,71 @@ const AIAssistant: React.FC = () => {
             }
         },
         onError: (error) => {
-            console.error('❌ ElevenLabs Conversation Error:', error);
+            console.error('❌ ElevenLabs Conversation Hook Error:', error);
             console.error('❌ Error details:', JSON.stringify(error, null, 2));
             console.error('❌ Error type:', typeof error);
             console.error('❌ Error properties:', Object.keys(error || {}));
+            console.error('❌ Error message:', error?.message || 'No message');
+            console.error('❌ Error stack:', error?.stack || 'No stack');
+            console.error('❌ Error timestamp:', new Date().toISOString());
+            
+            // Enhanced authorization error debugging for the hook
+            if (error?.message?.includes('authorize') || error?.message?.includes('authorization') ||
+                error?.toString?.()?.includes('authorize') || error?.toString?.()?.includes('authorization') ||
+                error?.name?.includes('Authorization') || error?.code?.includes('auth')) {
+                console.error('🚫 CONVERSATION HOOK AUTHORIZATION ERROR DETECTED');
+                console.error('🔍 Detailed authorization debugging:');
+                console.error('  - Agent ID:', getAgentId());
+                console.error('  - Voice ID:', getVoiceId());
+                console.error('  - API Key exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
+                console.error('  - API Key length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
+                console.error('  - API Key starts with sk-:', import.meta.env.VITE_ELEVENLABS_API_KEY?.startsWith('sk-') || false);
+                console.error('  - Current URL:', window.location.href);
+                console.error('  - User agent:', navigator.userAgent);
+                console.error('  - Permissions API available:', !!navigator.permissions);
+                
+                // Check microphone permissions
+                if (navigator.permissions) {
+                    navigator.permissions.query({ name: 'microphone' as PermissionName }).then(result => {
+                        console.error('🔍 Microphone permission:', result.state);
+                    }).catch(permError => {
+                        console.error('🔍 Microphone permission check failed:', permError);
+                    });
+                }
+                
+                // Check if this is a CORS issue
+                console.error('🔍 Checking for CORS issues...');
+                console.error('  - Origin:', window.location.origin);
+                console.error('  - Protocol:', window.location.protocol);
+                console.error('  - Is HTTPS:', window.location.protocol === 'https:');
+                console.error('  - Is localhost:', window.location.hostname === 'localhost');
+                
+                // Test basic API connectivity
+                console.error('🔍 Testing basic ElevenLabs API connectivity...');
+                const testBasicAPI = async () => {
+                    try {
+                        const response = await fetch('https://api.elevenlabs.io/v1/user', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${import.meta.env.VITE_ELEVENLABS_API_KEY}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        console.error('🔍 Basic API test status:', response.status);
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('🔍 Basic API test error:', errorText);
+                        } else {
+                            const userData = await response.json();
+                            console.error('🔍 Basic API test success:', userData);
+                        }
+                    } catch (apiError) {
+                        console.error('🔍 Basic API test failed:', apiError);
+                    }
+                };
+                testBasicAPI();
+            }
+            
             addMessageToConversation(activeConversation, { 
                 text: "⚠️ Connection error. Please try again or use text chat! 🔄", 
                 isUser: false, 
@@ -198,6 +270,13 @@ const AIAssistant: React.FC = () => {
 
     // Load ElevenLabs widget script and custom styling (only once)
     useEffect(() => {
+        console.log('🔍 ElevenLabs Integration Debug - Starting widget initialization...');
+        console.log('🔍 Current Agent ID:', getAgentId());
+        console.log('🔍 Current Voice ID:', getVoiceId());
+        console.log('🔍 Window origin:', window.location.origin);
+        console.log('🔍 Window hostname:', window.location.hostname);
+        console.log('🔍 Full URL:', window.location.href);
+        
         // Check if script is already loaded
         const existingScript = document.querySelector('script[src="https://unpkg.com/@elevenlabs/convai-widget-embed"]');
         const existingStyle = document.querySelector('#elevenlabs-custom-style');
@@ -213,31 +292,94 @@ const AIAssistant: React.FC = () => {
             // Handle successful loading
             script.onload = () => {
                 console.log('✅ ElevenLabs widget script loaded successfully');
-                // Add event listeners for widget debugging
+                console.log('🔍 Custom elements available:', !!window.customElements);
+                console.log('🔍 ElevenLabs ConvAI element registered:', !!customElements.get('elevenlabs-convai'));
+                
+                // Add comprehensive event listeners for widget debugging
                 setTimeout(() => {
                     const widget = document.querySelector('elevenlabs-convai');
+                    console.log('🔍 Widget found in DOM:', !!widget);
+                    
                     if (widget) {
+                        console.log('🔍 Widget attributes:', Array.from(widget.attributes).map(attr => `${attr.name}="${attr.value}"`));
+                        
+                        // Add all possible event listeners for debugging
                         widget.addEventListener('elevenlabs-convai:call', (event) => {
                             console.log('🎤 Widget call started:', event.detail);
                         });
+                        
                         widget.addEventListener('elevenlabs-convai:error', (event) => {
-                            console.error('❌ Widget error:', event.detail);
+                            console.error('❌ Widget error event:', event.detail);
+                            console.error('❌ Error type:', typeof event.detail);
+                            console.error('❌ Error keys:', Object.keys(event.detail || {}));
+                            if (event.detail?.message) {
+                                console.error('❌ Error message:', event.detail.message);
+                            }
+                            if (event.detail?.error) {
+                                console.error('❌ Error object:', event.detail.error);
+                            }
+                            
+                            // Specific authorization error debugging
+                            if (event.detail?.message?.includes('authorize') || event.detail?.message?.includes('authorization')) {
+                                console.error('🚫 AUTHORIZATION ERROR DETECTED');
+                                console.error('🔍 Agent ID being used:', getAgentId());
+                                console.error('🔍 Is agent ID valid?', !!getAgentId() && getAgentId().length > 0);
+                                console.error('🔍 Environment variables check:');
+                                console.error('  - VITE_ELEVENLABS_API_KEY exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
+                                console.error('  - Agent ID from config:', getAgentId());
+                                console.error('🔍 Widget configuration:');
+                                console.error('  - data-public:', widget.getAttribute('data-public'));
+                                console.error('  - data-no-auth:', widget.getAttribute('data-no-auth'));
+                                console.error('  - disable-auth:', widget.getAttribute('disable-auth'));
+                                console.error('  - no-authentication:', widget.getAttribute('no-authentication'));
+                                console.error('  - public-agent:', widget.getAttribute('public-agent'));
+                            }
                         });
+                        
                         widget.addEventListener('elevenlabs-convai:end', (event) => {
                             console.log('🔚 Widget call ended:', event.detail);
                         });
+                        
+                        widget.addEventListener('elevenlabs-convai:connect', (event) => {
+                            console.log('🔗 Widget connected:', event.detail);
+                        });
+                        
+                        widget.addEventListener('elevenlabs-convai:disconnect', (event) => {
+                            console.log('🔌 Widget disconnected:', event.detail);
+                        });
+                        
+                        widget.addEventListener('elevenlabs-convai:message', (event) => {
+                            console.log('💬 Widget message:', event.detail);
+                        });
+                        
+                        // Add generic error event listener
+                        widget.addEventListener('error', (event) => {
+                            console.error('❌ Generic widget error:', event);
+                        });
+                    } else {
+                        console.warn('⚠️ Widget not found in DOM after script load');
                     }
                 }, 1000);
             };
             
             // Handle any loading errors gracefully
-            script.onerror = () => {
-                console.warn('⚠️ ElevenLabs widget script failed to load, fallback to plasma ball');
+            script.onerror = (error) => {
+                console.error('❌ ElevenLabs widget script failed to load:', error);
+                console.warn('⚠️ Falling back to plasma ball voice interface');
             };
             
             document.head.appendChild(script);
         } else if (customElements.get('elevenlabs-convai')) {
             console.log('✅ ElevenLabs widget already registered');
+            console.log('🔍 Existing widget status check...');
+            
+            // Check existing widget
+            setTimeout(() => {
+                const existingWidget = document.querySelector('elevenlabs-convai');
+                if (existingWidget) {
+                    console.log('🔍 Existing widget found, attributes:', Array.from(existingWidget.attributes).map(attr => `${attr.name}="${attr.value}"`));
+                }
+            }, 500);
         }
 
         // Add custom CSS to hide branding and improve styling (only once)
@@ -1724,9 +1866,15 @@ Need help with anything specific? Just ask! 🌟`;
         }
 
         try {
-            // In full conversation mode, always treat input as a chat message
+            // In full conversation mode, treat as chat but allow some tool calling for accessibility/urgent needs
             if (currentMode === 'conversing') {
-                await handleConversationMode(text);
+                // Check for urgent tool needs (accessibility, settings) even in conversation mode
+                const urgentToolNeeds = checkUrgentToolNeeds(text);
+                if (urgentToolNeeds.length > 0) {
+                    await handleAIWithToolCalling(text, true); // Enable tool calling for urgent needs
+                } else {
+                    await handleConversationMode(text); // Pure conversation
+                }
                 // Auto-play the response
                 setTimeout(async () => {
                     const messages = conversations[activeConversation]?.messages || [];
@@ -1789,70 +1937,147 @@ Need help with anything specific? Just ask! 🌟`;
                 timestamp: new Date() 
             });
             
-            try {
-                // Request microphone permission (required by ElevenLabs)
-                console.log('🎤 Requesting microphone access...');
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('✅ Microphone access granted');
+                            try {
+                    // Request microphone permission (required by ElevenLabs)
+                    console.log('🎤 Requesting microphone access...');
+                    console.log('🔍 Navigator.mediaDevices available:', !!navigator.mediaDevices);
+                    console.log('🔍 getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('✅ Microphone access granted');
+                    console.log('🔍 Stream info:', {
+                        id: stream.id,
+                        active: stream.active,
+                        tracks: stream.getTracks().length
+                    });
+                    
+                    // Stop the test stream since ElevenLabs will handle audio
+                    stream.getTracks().forEach(track => track.stop());
 
-                // Start ElevenLabs conversation session with agent ID
-                console.log('🎯 Starting ElevenLabs conversation...');
-                console.log('🎯 Agent ID:', getAgentId());
-                console.log('🔍 Current origin:', window.location.origin);
-                console.log('🔍 Current hostname:', window.location.hostname);
-                console.log('🔍 Full URL:', window.location.href);
-                
-                await elevenLabsConversation.startSession({
-                    agentId: getAgentId(),
-                    // connectionType: 'websocket', // Remove this as it might not be needed
-                    // Optional: add user_id for tracking if needed
-                    // user_id: user?.username || 'anonymous'
-                });
-                
-                console.log('✅ ElevenLabs conversation started successfully');
-                
-                // Note: The official ElevenLabs hook handles all audio streaming automatically
-                // No need for manual MediaRecorder setup - it's all handled internally
-                
-            } catch (error) {
-                console.error('❌ CONVERSATION SETUP FAILED:', error);
-                console.error('❌ Error type:', typeof error);
-                console.error('❌ Error message:', (error as Error)?.message);
-                console.error('❌ Error stack:', (error as Error)?.stack);
-                console.error('❌ Full error object:', error);
-                console.log('🔄 Resetting mode to idle due to error...');
-                
-                setMode('idle');
-                console.log('✅ Mode reset to idle');
-                
-                // Check if it's a connection error and provide helpful messaging
-                const errorMsg = (error as Error)?.message || '';
-                const isConnectionError = errorMsg.includes('agent') || 
-                                        errorMsg.includes('connection') || 
-                                        errorMsg.includes('network') ||
-                                        errorMsg.includes('timeout') ||
-                                        errorMsg.includes('permission');
-                
-                if (isConnectionError || errorMsg.includes('getUserMedia')) {
-                    // Microphone or connection error
-                    const errorMessage = errorMsg.includes('getUserMedia') || errorMsg.includes('permission')
-                        ? "🎤 Microphone access is required for conversation mode. Please allow microphone access and try again! You can still use:\n\n✅ Voice recording (microphone button)\n✅ Chat with text\n✅ All other features! 🌟"
-                        : "🔧 Conversation mode is temporarily unavailable. But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟";
-                        
-                    addMessageToConversation(activeConversation, { 
-                        text: errorMessage, 
-                        isUser: false, 
-                        timestamp: new Date() 
-                    });
-                } else {
-                    // Generic error
-                    addMessageToConversation(activeConversation, { 
-                        text: "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟", 
-                        isUser: false, 
-                        timestamp: new Date() 
-                    });
+                    // Start ElevenLabs conversation session with agent ID
+                    console.log('🎯 Starting ElevenLabs conversation...');
+                    console.log('🎯 Agent ID:', getAgentId());
+                    console.log('🎯 Agent ID type:', typeof getAgentId());
+                    console.log('🎯 Agent ID length:', getAgentId()?.length);
+                    console.log('🔍 Current origin:', window.location.origin);
+                    console.log('🔍 Current hostname:', window.location.hostname);
+                    console.log('🔍 Full URL:', window.location.href);
+                    console.log('🔍 Protocol:', window.location.protocol);
+                    console.log('🔍 Is HTTPS:', window.location.protocol === 'https:');
+                    console.log('🔍 User agent:', navigator.userAgent);
+                    console.log('🔍 API Key exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
+                    console.log('🔍 API Key length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
+                    
+                    const sessionConfig = {
+                        agentId: getAgentId()
+                        // connectionType: 'websocket', // Remove this as it might not be needed
+                        // Optional: add user_id for tracking if needed
+                        // user_id: user?.username || 'anonymous'
+                    };
+                    
+                    console.log('🔍 Session config:', sessionConfig);
+                    console.log('🔍 ElevenLabs conversation object:', elevenLabsConversation);
+                    console.log('🔍 startSession method available:', typeof elevenLabsConversation.startSession);
+                    
+                    await elevenLabsConversation.startSession(sessionConfig);
+                    
+                    console.log('✅ ElevenLabs conversation started successfully');
+                    
+                    // Note: The official ElevenLabs hook handles all audio streaming automatically
+                    // No need for manual MediaRecorder setup - it's all handled internally
+                    
+                } catch (error) {
+                    console.error('❌ CONVERSATION SETUP FAILED:', error);
+                    console.error('❌ Error type:', typeof error);
+                    console.error('❌ Error constructor:', error?.constructor?.name);
+                    console.error('❌ Error message:', (error as Error)?.message);
+                    console.error('❌ Error stack:', (error as Error)?.stack);
+                    console.error('❌ Error code:', (error as any)?.code);
+                    console.error('❌ Error status:', (error as any)?.status);
+                    console.error('❌ Error statusText:', (error as any)?.statusText);
+                    console.error('❌ Full error object:', error);
+                    console.error('❌ Error properties:', Object.keys(error || {}));
+                    
+                    // Try to get more details from the error
+                    if (typeof error === 'object' && error !== null) {
+                        console.error('❌ Error object inspection:');
+                        for (const [key, value] of Object.entries(error)) {
+                            console.error(`  - ${key}:`, value);
+                        }
+                    }
+                    
+                    // Check if this is specifically an authorization error
+                    const errorMessage = (error as Error)?.message || '';
+                    const errorString = error?.toString?.() || '';
+                    
+                    if (errorMessage.includes('authorize') || errorMessage.includes('authorization') ||
+                        errorString.includes('authorize') || errorString.includes('authorization') ||
+                        errorMessage.includes('401') || errorMessage.includes('403') ||
+                        errorMessage.includes('Unauthorized') || errorMessage.includes('Forbidden')) {
+                        console.error('🚫 AUTHORIZATION ERROR IN CONVERSATION SETUP');
+                        console.error('🔍 This appears to be an authorization issue with the ElevenLabs agent');
+                        console.error('🔍 Possible causes:');
+                        console.error('  1. Invalid or missing API key');
+                        console.error('  2. Agent ID not found or not accessible');
+                        console.error('  3. Agent not properly configured in ElevenLabs dashboard');
+                        console.error('  4. Domain not whitelisted for this agent');
+                        console.error('  5. API key doesn\'t have ConvAI permissions');
+                        console.error('🔍 Troubleshooting steps:');
+                        console.error('  1. Verify agent ID in ElevenLabs dashboard');
+                        console.error('  2. Check API key permissions');
+                        console.error('  3. Ensure agent is published and accessible');
+                        console.error('  4. Check domain whitelist settings');
+                    }
+                    
+                    console.log('🔄 Resetting mode to idle due to error...');
+                    
+                    setMode('idle');
+                    console.log('✅ Mode reset to idle');
+                    
+                    // Check if it's a connection error and provide helpful messaging
+                    const errorMsg = (error as Error)?.message || '';
+                    const isConnectionError = errorMsg.includes('agent') || 
+                                            errorMsg.includes('connection') || 
+                                            errorMsg.includes('network') ||
+                                            errorMsg.includes('timeout') ||
+                                            errorMsg.includes('permission');
+                    
+                    const isAuthError = errorMsg.includes('authorize') || errorMsg.includes('authorization') ||
+                                       errorMsg.includes('401') || errorMsg.includes('403');
+                    
+                    if (errorMsg.includes('getUserMedia') || errorMsg.includes('permission')) {
+                        // Microphone error
+                        const errorMessage = "🎤 Microphone access is required for conversation mode. Please allow microphone access and try again! You can still use:\n\n✅ Voice recording (microphone button)\n✅ Chat with text\n✅ All other features! 🌟";
+                        addMessageToConversation(activeConversation, { 
+                            text: errorMessage, 
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                    } else if (isAuthError) {
+                        // Authorization error
+                        const errorMessage = "🚫 Authorization error with voice conversation. This might be due to:\n\n• Agent configuration issues\n• API key permissions\n• Domain restrictions\n\nYou can still use:\n✅ Voice recording (microphone button)\n✅ Chat with text\n✅ All other features! 🌟";
+                        addMessageToConversation(activeConversation, { 
+                            text: errorMessage, 
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                    } else if (isConnectionError) {
+                        // Connection error
+                        const errorMessage = "🔧 Conversation mode is temporarily unavailable. But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟";
+                        addMessageToConversation(activeConversation, { 
+                            text: errorMessage, 
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                    } else {
+                        // Generic error
+                        addMessageToConversation(activeConversation, { 
+                            text: "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟", 
+                            isUser: false, 
+                            timestamp: new Date() 
+                        });
+                    }
                 }
-            }
         }
     };
 
@@ -2349,6 +2574,45 @@ Need help with anything specific? Just ask! 🌟`;
         }
 
         return { text: cleanText, toolCalls };
+    };
+
+    // Check for urgent tool needs that should work even in conversation mode
+    const checkUrgentToolNeeds = (text: string): string[] => {
+        const lowerText = text.toLowerCase();
+        const urgentNeeds = [];
+
+        // Accessibility needs are always urgent
+        const accessibilityKeywords = [
+            'color blind', 'colorblind', 'can\'t see', 'hard to see', 'trouble seeing',
+            'high contrast', 'bigger text', 'larger font', 'zoom in',
+            'screen reader', 'voice over', 'accessibility'
+        ];
+        
+        if (accessibilityKeywords.some(keyword => lowerText.includes(keyword))) {
+            urgentNeeds.push('accessibility');
+        }
+
+        // Critical settings changes
+        const criticalSettings = [
+            'turn off sound', 'mute', 'volume', 'disable notifications',
+            'stop animations', 'reduce motion', 'pause', 'emergency'
+        ];
+        
+        if (criticalSettings.some(keyword => lowerText.includes(keyword))) {
+            urgentNeeds.push('critical_settings');
+        }
+
+        // Navigation requests that indicate user is lost/frustrated
+        const urgentNavigation = [
+            'take me', 'go to', 'show me', 'where is', 'find',
+            'lost', 'stuck', 'confused', 'help me find'
+        ];
+        
+        if (urgentNavigation.some(keyword => lowerText.includes(keyword))) {
+            urgentNeeds.push('navigation');
+        }
+
+        return urgentNeeds;
     };
 
     // Determine appropriate response length based on input and mode
@@ -3007,24 +3271,28 @@ This two-step process is mandatory. Do not deviate.`;
 
                     {/* Regular Header with ElevenLabs Widget - Only show when not in fullscreen */}
                     {!isFullscreen && (
-                        <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between min-h-[80px]">
-                            <div className="flex items-center gap-4">
-                                <h3 className="font-bold text-black flex items-center gap-2" style={{ color: 'black !important', zIndex: 9999 }}>
+                        <div className="p-4 border-b border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-4 min-h-[80px] auto-h">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                <h3 className="font-bold text-black flex items-center gap-2 flex-shrink-0" style={{ color: 'black !important', zIndex: 9999 }}>
                                     Neural AI
                                 </h3>
-                                {/* ElevenLabs Voice Widget moved to header */}
+                                {/* ElevenLabs Voice Widget with expanded header support */}
                                 <div 
-                                    className="elevenlabs-widget-container"
+                                    className="elevenlabs-widget-container flex-grow"
                                     title="AI Voice Conversation"
                                     style={{
                                         display: 'flex', 
-                                        justifyContent: 'center', 
+                                        justifyContent: 'flex-start', 
                                         alignItems: 'center',
-                                        minHeight: '50px'
+                                        minHeight: '50px',
+                                        maxHeight: '120px', // Allow header expansion
+                                        width: '100%',
+                                        maxWidth: '280px',
+                                        overflow: 'visible' // Allow widget to expand beyond container if needed
                                     }}
                                 >
                                     <elevenlabs-convai 
-                                        key="elevenlabs-widget-header-v1"
+                                        key="elevenlabs-widget-header-expanded-v2"
                                         agent-id={getAgentId()}
                                         variant="expanded"
                                         action-text="🎤 Voice Chat"
@@ -3039,7 +3307,78 @@ This two-step process is mandatory. Do not deviate.`;
                                         public-agent="true"
                                         onError={(error: any) => {
                                             console.error('🚫 ElevenLabs Widget Header Error:', error);
-                                            console.log('💡 Widget now in header next to Neural AI');
+                                            console.error('🚫 Error type:', typeof error);
+                                            console.error('🚫 Error keys:', Object.keys(error || {}));
+                                            console.error('🚫 Error message:', error?.message || 'No message');
+                                            console.error('🚫 Error stack:', error?.stack || 'No stack');
+                                            console.error('🚫 Full error object:', JSON.stringify(error, null, 2));
+                                            
+                                            // Check if this is an authorization error
+                                            if (error?.message?.includes('authorize') || error?.message?.includes('authorization') || 
+                                                error?.toString?.()?.includes('authorize') || error?.toString?.()?.includes('authorization')) {
+                                                console.error('🚫 WIDGET AUTHORIZATION ERROR DETECTED');
+                                                console.error('🔍 Debugging authorization issue...');
+                                                console.error('🔍 Agent ID:', getAgentId());
+                                                console.error('🔍 Agent ID length:', getAgentId()?.length);
+                                                console.error('🔍 Agent ID type:', typeof getAgentId());
+                                                console.error('🔍 Environment check:');
+                                                console.error('  - NODE_ENV:', import.meta.env.NODE_ENV);
+                                                console.error('  - MODE:', import.meta.env.MODE);
+                                                console.error('  - DEV:', import.meta.env.DEV);
+                                                console.error('  - PROD:', import.meta.env.PROD);
+                                                console.error('  - VITE_ELEVENLABS_API_KEY exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
+                                                console.error('  - VITE_ELEVENLABS_API_KEY length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
+                                                
+                                                // Check if running on localhost vs production
+                                                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                                                const isNetlifyDev = window.location.hostname.includes('localhost') && window.location.port;
+                                                const isNetlifyProd = window.location.hostname.includes('netlify.app') || window.location.hostname.includes('neuraplay');
+                                                
+                                                console.error('🔍 Environment detection:');
+                                                console.error('  - Is localhost:', isLocalhost);
+                                                console.error('  - Is Netlify dev:', isNetlifyDev);
+                                                console.error('  - Is Netlify prod:', isNetlifyProd);
+                                                console.error('  - Current origin:', window.location.origin);
+                                                console.error('  - Current hostname:', window.location.hostname);
+                                                
+                                                // Test if agent ID is reachable
+                                                console.error('🔍 Testing agent configuration...');
+                                                const testAgentConfig = async () => {
+                                                    try {
+                                                        const agentId = getAgentId();
+                                                        console.error('🔍 Testing agent ID:', agentId);
+                                                        
+                                                        // Try to make a simple request to ElevenLabs to test the agent
+                                                        const testUrl = `https://api.elevenlabs.io/v1/convai/agents/${agentId}`;
+                                                        console.error('🔍 Testing agent URL:', testUrl);
+                                                        
+                                                        const response = await fetch(testUrl, {
+                                                            method: 'GET',
+                                                            headers: {
+                                                                'Authorization': `Bearer ${import.meta.env.VITE_ELEVENLABS_API_KEY}`,
+                                                                'Content-Type': 'application/json'
+                                                            }
+                                                        });
+                                                        
+                                                        console.error('🔍 Agent test response status:', response.status);
+                                                        console.error('🔍 Agent test response headers:', Object.fromEntries(response.headers.entries()));
+                                                        
+                                                        if (!response.ok) {
+                                                            const errorText = await response.text();
+                                                            console.error('🔍 Agent test error response:', errorText);
+                                                        } else {
+                                                            const agentData = await response.json();
+                                                            console.error('🔍 Agent test success:', agentData);
+                                                        }
+                                                    } catch (testError) {
+                                                        console.error('🔍 Agent test failed:', testError);
+                                                    }
+                                                };
+                                                
+                                                testAgentConfig();
+                                            }
+                                            
+                                            console.log('💡 Widget expanded in header with auto-height support');
                                         }}
                                         style={{
                                             '--primary-color': '#8b5cf6',
@@ -3047,10 +3386,13 @@ This two-step process is mandatory. Do not deviate.`;
                                             '--background-color': 'rgba(139, 92, 246, 0.1)',
                                             '--text-color': '#333333',
                                             '--border-radius': '8px',
-                                            width: 'auto',
-                                            maxWidth: '200px',
-                                            minHeight: '40px',
-                                            fontSize: '14px'
+                                            width: '100%',
+                                            maxWidth: '280px',
+                                            minHeight: '50px',
+                                            maxHeight: '120px', // Allow widget to expand
+                                            fontSize: '14px',
+                                            overflow: 'visible', // Allow content to be visible
+                                            zIndex: '10'
                                         }}
                                     ></elevenlabs-convai>
                                 </div>

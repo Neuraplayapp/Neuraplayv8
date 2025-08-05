@@ -855,4 +855,45 @@ button[title="Close"] svg,
 button[title="Exit Fullscreen"] svg {
   color: #111 !important;
   fill: #111 !important;
+}
+
+/* Auto-height header for widget expansion */
+.auto-h {
+  height: auto !important;
+  min-height: 80px;
+}
+
+/* Enhanced header responsive design for widget */
+.elevenlabs-widget-container {
+  transition: all 0.3s ease-in-out;
+  overflow: visible !important;
+}
+
+/* Ensure widget can expand header when needed */
+.elevenlabs-widget-container elevenlabs-convai {
+  min-height: 50px !important;
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  z-index: 10 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Responsive header layout adjustments */
+@media (max-width: 768px) {
+  .elevenlabs-widget-container {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  
+  .auto-h {
+    min-height: 100px;
+  }
+}
+
+/* Allow header to expand vertically for widget content */
+#ai-teacher-menu .inner > div:first-child {
+  flex-shrink: 0;
+  height: auto;
 } 
