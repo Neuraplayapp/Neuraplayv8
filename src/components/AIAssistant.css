@@ -874,14 +874,15 @@ button[title="Exit Fullscreen"] svg {
 
 /* Ensure widget stays within header bounds */
 .elevenlabs-widget-container elevenlabs-convai {
-  min-height: 50px !important;
-  max-height: 80px !important;
+  min-height: 80px !important;
+  max-height: 120px !important;
   height: auto !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   z-index: 10 !important;
   border-radius: 12px !important;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
   position: relative !important;
+  font-size: 16px !important;
 }
 
 /* Responsive header layout adjustments */
@@ -936,14 +937,15 @@ button[title="Exit Fullscreen"] svg {
 
 /* Fullscreen widget styling */
 .elevenlabs-widget-fullscreen-container elevenlabs-convai {
-  min-height: 60px !important;
-  max-height: 100px !important;
+  min-height: 100px !important;
+  max-height: 150px !important;
   height: auto !important;
   overflow: visible !important;
   z-index: 15 !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
   position: relative !important;
+  font-size: 18px !important;
 }
 
 /* Fullscreen header layout adjustments */

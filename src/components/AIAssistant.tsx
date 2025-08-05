@@ -3310,12 +3310,12 @@ This two-step process is mandatory. Do not deviate.`;
                                         '--secondary-color': '#a855f7',
                                         '--background-color': 'rgba(139, 92, 246, 0.1)',
                                         '--text-color': '#333333',
-                                        '--border-radius': '12px',
+                                        '--border-radius': '16px',
                                         width: '100%',
-                                        maxWidth: '320px',
-                                        minHeight: '60px',
-                                        maxHeight: '100px',
-                                        fontSize: '16px',
+                                        maxWidth: '400px',
+                                        minHeight: '100px',
+                                        maxHeight: '150px',
+                                        fontSize: '18px',
                                         overflow: 'visible',
                                         zIndex: '15'
                                     }}
@@ -3406,17 +3406,17 @@ This two-step process is mandatory. Do not deviate.`;
                                         display: 'flex', 
                                         justifyContent: 'center', 
                                         alignItems: 'center',
-                                        minHeight: '50px',
-                                        maxHeight: '80px',
+                                        minHeight: '80px',
+                                        maxHeight: '120px',
                                         width: 'auto',
-                                        maxWidth: '280px',
+                                        maxWidth: '350px',
                                         overflow: 'visible',
                                         position: 'relative',
                                         zIndex: 10
                                     }}
                                 >
                                     <elevenlabs-convai 
-                                        key="elevenlabs-widget-header-expanded-v2"
+                                        key="elevenlabs-widget-header-expanded-v3"
                                         agent-id={getAgentId()}
                                         variant="expanded"
                                         action-text="🎤 Voice Chat"
@@ -3509,13 +3509,13 @@ This two-step process is mandatory. Do not deviate.`;
                                             '--secondary-color': '#a855f7',
                                             '--background-color': 'rgba(139, 92, 246, 0.1)',
                                             '--text-color': '#333333',
-                                            '--border-radius': '8px',
+                                            '--border-radius': '12px',
                                             width: '100%',
-                                            maxWidth: '280px',
-                                            minHeight: '50px',
-                                            maxHeight: '120px', // Allow widget to expand
-                                            fontSize: '14px',
-                                            overflow: 'visible', // Allow content to be visible
+                                            maxWidth: '350px',
+                                            minHeight: '80px',
+                                            maxHeight: '120px',
+                                            fontSize: '16px',
+                                            overflow: 'visible',
                                             zIndex: '10'
                                         }}
                                     ></elevenlabs-convai>
