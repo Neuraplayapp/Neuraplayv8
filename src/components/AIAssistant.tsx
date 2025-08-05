@@ -1742,21 +1742,8 @@ Need help with anything specific? Just ask! 🌟`;
                     }
                 }, 1500);
             } else {
-                // For text or single recordings, check for commands first
-                const command = analyzeCommand(text);
-                if (command.type !== 'chat') {
-                    const responseText = await executeCommand(command);
-                    addMessageToConversation(activeConversation, { 
-                        text: responseText, 
-                        isUser: false, 
-                        timestamp: new Date(),
-                        action: command.type as any
-                    });
-                } else if (isImageRequest(text)) {
-                    await handleImageRequest(text);
-                } else {
-                    await handleChatMode(text);
-                }
+                // For text or single recordings, use enhanced AI with tool calling
+                await handleChatMode(text);
             }
         } catch (error: any) {
             console.error('Error in handleSendMessage:', error);
@@ -2179,28 +2166,35 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
-    // NEW: Handle chat mode (with commands)
+    // Import tool executor at top of component
+    const [toolExecutorService, setToolExecutorService] = useState<any>(null);
+    
+    // Initialize tool executor
+    useEffect(() => {
+        const initToolExecutor = async () => {
+            const { toolExecutorService: service } = await import('../services/ToolExecutorService');
+            setToolExecutorService(service);
+        };
+        initToolExecutor();
+    }, []);
+
+    // Enhanced chat mode with tool calling support
     const handleChatMode = async (inputMessage: string) => {
         try {
             console.log('Handling chat mode message:', inputMessage);
             console.log('Current mode when handling chat:', mode);
             
-            // Send to Synapse API for chat
-            const response = await sendMessageToSynapse(inputMessage);
+            // Determine if we should enable tool calling based on mode
+            const enableToolCalling = mode !== 'conversing'; // Enable for text mode, disable for pure conversation
             
-            const assistantMessage: Message = {
-                text: response,
-                isUser: false,
-                timestamp: new Date()
-            };
-            
-            addMessageToConversation(activeConversation, assistantMessage);
+            // Send to AI service with tool calling capability
+            const response = await handleAIWithToolCalling(inputMessage, enableToolCalling);
             
             // If this was triggered by voice recording, play the response back
-            if (mode === 'single_recording') {
+            if (mode === 'single_recording' && response.textResponse) {
                 console.log('Voice recording detected, playing TTS response');
                 setTimeout(async () => {
-                    await playVoice(response);
+                    await playVoice(response.textResponse);
                 }, 500);
             }
         } catch (error: any) {
@@ -2212,6 +2206,149 @@ Need help with anything specific? Just ask! 🌟`;
             };
             addMessageToConversation(activeConversation, errorMessage);
         }
+    };
+
+    // Enhanced AI handler with tool calling support
+    const handleAIWithToolCalling = async (inputMessage: string, enableToolCalling: boolean = true) => {
+        // Get current context for AI
+        const context = {
+            currentPage: location.pathname,
+            mode: mode,
+            user: { id: 'demo', name: 'User' }, // This would come from your user context
+            timestamp: new Date()
+        };
+
+        // Try AI service first (if available), fallback to direct API
+        let aiResponse;
+        let toolCalls: any[] = [];
+
+        try {
+            // Try the enhanced AI service
+            const { aiService } = await import('../services/AIService');
+            aiResponse = await aiService.sendMessage(inputMessage, context, enableToolCalling);
+            
+            // Parse response for tool calls (if the AI service supports it)
+            const parsed = parseAIResponse(aiResponse);
+            aiResponse = parsed.text;
+            toolCalls = parsed.toolCalls || [];
+            
+        } catch (error) {
+            console.log('AI Service failed, falling back to direct API');
+            // Fallback to existing sendMessageToSynapse
+            aiResponse = await sendMessageToSynapse(inputMessage);
+            
+            // Parse response for manual tool indicators
+            const parsed = parseManualToolCalls(aiResponse);
+            aiResponse = parsed.text;
+            toolCalls = parsed.toolCalls || [];
+        }
+
+        // Add AI response to conversation
+        const assistantMessage: Message = {
+            text: aiResponse,
+            isUser: false,
+            timestamp: new Date()
+        };
+        addMessageToConversation(activeConversation, assistantMessage);
+
+        // Execute tool calls if any
+        if (toolCalls.length > 0 && toolExecutorService) {
+            for (const toolCall of toolCalls) {
+                try {
+                    console.log('🔧 Executing tool call:', toolCall);
+                    const result = await toolExecutorService.executeTool(toolCall, context);
+                    
+                    // Add tool execution results to conversation
+                    if (result.success) {
+                        const toolMessage: Message = {
+                            text: result.message,
+                            isUser: false,
+                            timestamp: new Date(),
+                            action: toolCall.name as any
+                        };
+                        addMessageToConversation(activeConversation, toolMessage);
+                    } else {
+                        console.error('Tool execution failed:', result.message);
+                    }
+                } catch (toolError) {
+                    console.error('Error executing tool:', toolError);
+                }
+            }
+        }
+
+        return {
+            textResponse: aiResponse,
+            toolCalls: toolCalls,
+            success: true
+        };
+    };
+
+    // Parse AI response for tool calls (enhanced format)
+    const parseAIResponse = (response: string) => {
+        try {
+            // Check if response contains tool calls in JSON format
+            const toolCallRegex = /\[TOOL_CALL\](.*?)\[\/TOOL_CALL\]/gs;
+            const matches = [...response.matchAll(toolCallRegex)];
+            
+            if (matches.length === 0) {
+                return { text: response, toolCalls: [] };
+            }
+
+            let cleanText = response;
+            const toolCalls = [];
+
+            for (const match of matches) {
+                try {
+                    const toolCallData = JSON.parse(match[1]);
+                    toolCalls.push(toolCallData);
+                    cleanText = cleanText.replace(match[0], '').trim();
+                } catch (parseError) {
+                    console.error('Failed to parse tool call:', parseError);
+                }
+            }
+
+            return { text: cleanText, toolCalls };
+        } catch (error) {
+            console.error('Error parsing AI response:', error);
+            return { text: response, toolCalls: [] };
+        }
+    };
+
+    // Parse response for manual tool indicators (fallback)
+    const parseManualToolCalls = (response: string) => {
+        const toolCalls = [];
+        let cleanText = response;
+
+        // Look for navigation indicators
+        if (response.includes('🚀 Taking you to') || response.includes('navigate') || response.includes('go to')) {
+            const navigationMatch = response.match(/(?:taking you to|navigate to|go to)\s+(\w+)/i);
+            if (navigationMatch) {
+                toolCalls.push({
+                    name: 'navigate_to_page',
+                    parameters: {
+                        page: navigationMatch[1].toLowerCase(),
+                        reason: 'User requested navigation'
+                    }
+                });
+            }
+        }
+
+        // Look for setting change indicators
+        if (response.includes('changed to') || response.includes('set to') || response.includes('enabled') || response.includes('disabled')) {
+            // This is a simple heuristic - in production you'd want more sophisticated parsing
+            if (response.includes('theme')) {
+                toolCalls.push({
+                    name: 'update_setting',
+                    parameters: {
+                        setting: 'theme',
+                        value: 'dark', // This would need better parsing
+                        reason: 'Theme change requested'
+                    }
+                });
+            }
+        }
+
+        return { text: cleanText, toolCalls };
     };
 
     // Determine appropriate response length based on input and mode
@@ -2868,12 +3005,56 @@ This two-step process is mandatory. Do not deviate.`;
                         </div>
                     )}
 
-                    {/* Regular Header - Only show when not in fullscreen */}
+                    {/* Regular Header with ElevenLabs Widget - Only show when not in fullscreen */}
                     {!isFullscreen && (
-                        <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
-                            <h3 className="font-bold text-black flex items-center gap-2" style={{ color: 'black !important', zIndex: 9999 }}>
-                                Neural AI
-                            </h3>
+                        <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between min-h-[80px]">
+                            <div className="flex items-center gap-4">
+                                <h3 className="font-bold text-black flex items-center gap-2" style={{ color: 'black !important', zIndex: 9999 }}>
+                                    Neural AI
+                                </h3>
+                                {/* ElevenLabs Voice Widget moved to header */}
+                                <div 
+                                    className="elevenlabs-widget-container"
+                                    title="AI Voice Conversation"
+                                    style={{
+                                        display: 'flex', 
+                                        justifyContent: 'center', 
+                                        alignItems: 'center',
+                                        minHeight: '50px'
+                                    }}
+                                >
+                                    <elevenlabs-convai 
+                                        key="elevenlabs-widget-header-v1"
+                                        agent-id={getAgentId()}
+                                        variant="expanded"
+                                        action-text="🎤 Voice Chat"
+                                        start-call-text="Start Voice"
+                                        end-call-text="End Voice"
+                                        avatar-orb-color-1="#8b5cf6"
+                                        avatar-orb-color-2="#a855f7"
+                                        data-public="true"
+                                        data-no-auth="true" 
+                                        disable-auth="true"
+                                        no-authentication="true"
+                                        public-agent="true"
+                                        onError={(error: any) => {
+                                            console.error('🚫 ElevenLabs Widget Header Error:', error);
+                                            console.log('💡 Widget now in header next to Neural AI');
+                                        }}
+                                        style={{
+                                            '--primary-color': '#8b5cf6',
+                                            '--secondary-color': '#a855f7',
+                                            '--background-color': 'rgba(139, 92, 246, 0.1)',
+                                            '--text-color': '#333333',
+                                            '--border-radius': '8px',
+                                            width: 'auto',
+                                            maxWidth: '200px',
+                                            minHeight: '40px',
+                                            fontSize: '14px'
+                                        }}
+                                    ></elevenlabs-convai>
+                                </div>
+                            </div>
                             <div className="flex items-center gap-2">
                                 {/* Fullscreen Toggle */}
                                 <button
@@ -3117,65 +3298,7 @@ This two-step process is mandatory. Do not deviate.`;
                         
                         {/* Voice Conversation Widget - Separate Section */}
                         <div className="mt-4">
-                            {/* ElevenLabs Voice Conversation Widget - Fixed Authorization */}
-                            <div 
-                                className="elevenlabs-widget-container"
-                                title="AI Voice Conversation"
-                                style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center',
-                                    width: '100%',
-                                    minHeight: '50px',
-                                    padding: '8px 0'
-                                }}
-                            >
-                                <elevenlabs-convai 
-                                    key="elevenlabs-widget-unique-v2"
-                                    agent-id={getAgentId()}
-                                    variant="expanded"
-                                    action-text="🎤 Start Voice Conversation"
-                                    start-call-text="Start Voice Chat"
-                                    end-call-text="End Voice Chat"
-                                    avatar-orb-color-1="#8b5cf6"
-                                    avatar-orb-color-2="#a855f7"
-                                    {...({
-                                        // Try multiple approaches to disable auth
-                                        'data-public': 'true',
-                                        'data-no-auth': 'true', 
-                                        'disable-auth': 'true'
-                                    })}
-                                    onError={(error: any) => {
-                                        console.error('🚫 ElevenLabs Widget Authorization Error:', error);
-                                        console.error('🚫 Full error object:', JSON.stringify(error, null, 2));
-                                        console.log('💡 TROUBLESHOOTING STEPS:');
-                                        console.log('1. Agent must be PUBLIC in ElevenLabs dashboard');
-                                        console.log('2. Agent authentication must be DISABLED');
-                                        console.log('3. Domain must be allowlisted in agent settings');
-                                        console.log('4. Check if agent exists and is active');
-                                        console.log('5. Verify agent ID:', getAgentId());
-                                        
-                                        // Auto-fallback to plasma ball if widget fails
-                                        setTimeout(() => {
-                                            const plasmaContainer = document.querySelector('.plasma-ball-conversation-container') as HTMLElement;
-                                            if (plasmaContainer) {
-                                                plasmaContainer.style.display = 'flex';
-                                                console.log('🔄 Fallback: Enabled Plasma Ball conversation mode');
-                                            }
-                                        }, 2000);
-                                    }}
-                                    style={{
-                                        '--primary-color': '#8b5cf6',
-                                        '--secondary-color': '#a855f7',
-                                        '--background-color': 'rgba(139, 92, 246, 0.2)',
-                                        '--text-color': '#ffffff',
-                                        '--border-radius': '12px',
-                                        width: '100%',
-                                        maxWidth: '280px',
-                                        minHeight: '50px'
-                                    }}
-                                ></elevenlabs-convai>
-                            </div>
+                            {/* Voice Widget moved to header next to 'Neural AI' text */}
                             
                             {/* Backup: Plasma Ball Conversation Mode (auto-enabled if widget fails) */}
                             <div 
