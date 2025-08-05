@@ -3069,28 +3069,10 @@ This two-step process is mandatory. Do not deviate.`;
                             </div>
                         )}
                         
-                        <label className="flex items-center gap-2">
-                            <input 
-                                type="text"
-                                placeholder={
-                                    mode === 'conversing' 
-                                        ? "Talk to AI Assistant in conversation mode! 🗣️" 
-                                        : (!isDemoUser && promptCount >= 10)
-                                            ? "Daily limit reached! 🎯" 
-                                            : "Ask me anything, little explorer! 🚀"
-                                }
-                                value={inputMessage}
-                                onChange={(e) => setInputMessage(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                className="ai-input-field"
-                                disabled={isLoading || (!isDemoUser && promptCount >= 10)}
-                            />
-                        </label>
-                        
-                        {/* Control Buttons Layout */}
-                        <div className="ai-input-controls mt-3 space-y-3">
-                            {/* Top Row: Send and Record Buttons */}
-                            <div className="flex gap-3 justify-center">
+                        {/* DEFINITIVE CENTERED LAYOUT SOLUTION */}
+                        <div className="flex flex-col items-center gap-3">
+                            {/* Send and Record Buttons - Top Row */}
+                            <div className="flex gap-3 w-full justify-center">
                                 <button
                                     onClick={handleSendText}
                                     disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
@@ -3112,7 +3094,32 @@ This two-step process is mandatory. Do not deviate.`;
                                 </button>
                             </div>
                             
-                            {/* Bottom Center: ElevenLabs Voice Conversation Widget */}
+                            {/* Input Field - Perfectly Centered Between Buttons */}
+                            <div className="w-full px-4">
+                                <label className="flex items-center gap-2">
+                                    <input 
+                                        type="text"
+                                        placeholder={
+                                            mode === 'conversing' 
+                                                ? "Talk to AI Assistant in conversation mode! 🗣️" 
+                                                : (!isDemoUser && promptCount >= 10)
+                                                    ? "Daily limit reached! 🎯" 
+                                                    : "Ask me anything, little explorer! 🚀"
+                                        }
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        className="ai-input-field w-full text-center"
+                                        disabled={isLoading || (!isDemoUser && promptCount >= 10)}
+                                        style={{ textAlign: 'center' }}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                        
+                        {/* Voice Conversation Widget - Separate Section */}
+                        <div className="mt-4">
+                            {/* ElevenLabs Voice Conversation Widget - Fixed Authorization */}
                             <div 
                                 className="elevenlabs-widget-container"
                                 title="AI Voice Conversation"
@@ -3127,16 +3134,19 @@ This two-step process is mandatory. Do not deviate.`;
                             >
                                 <elevenlabs-convai 
                                     key="elevenlabs-widget-unique"
-                                    agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
+                                    agent-id={getAgentId()}
                                     variant="expanded"
                                     action-text="🎤 Start Voice Conversation"
                                     start-call-text="Start Voice Chat"
                                     end-call-text="End Voice Chat"
                                     avatar-orb-color-1="#8b5cf6"
                                     avatar-orb-color-2="#a855f7"
+                                    public="true"
+                                    authorization="none"
                                     onError={(error: any) => {
                                         console.error('🚫 ElevenLabs Widget Error:', error);
-                                        console.log('💡 Check: 1) Agent must be PUBLIC, 2) Authentication DISABLED, 3) Domain allowlisted');
+                                        console.log('💡 Authorization Fix Applied: agent-id from config, public=true, authorization=none');
+                                        console.log('💡 If still failing: 1) Check agent is PUBLIC in ElevenLabs, 2) Verify domain allowlist, 3) Agent auth disabled');
                                     }}
                                     style={{
                                         '--primary-color': '#8b5cf6',
