@@ -3271,24 +3271,26 @@ This two-step process is mandatory. Do not deviate.`;
 
                     {/* Regular Header with ElevenLabs Widget - Only show when not in fullscreen */}
                     {!isFullscreen && (
-                        <div className="p-4 border-b border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-4 min-h-[80px] auto-h">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between min-h-[80px] auto-h">
+                            <div className="flex items-center gap-4">
                                 <h3 className="font-bold text-black flex items-center gap-2 flex-shrink-0" style={{ color: 'black !important', zIndex: 9999 }}>
                                     Neural AI
                                 </h3>
-                                {/* ElevenLabs Voice Widget with expanded header support */}
+                                {/* ElevenLabs Voice Widget positioned next to Neural AI */}
                                 <div 
-                                    className="elevenlabs-widget-container flex-grow"
+                                    className="elevenlabs-widget-container"
                                     title="AI Voice Conversation"
                                     style={{
                                         display: 'flex', 
-                                        justifyContent: 'flex-start', 
+                                        justifyContent: 'center', 
                                         alignItems: 'center',
                                         minHeight: '50px',
-                                        maxHeight: '120px', // Allow header expansion
-                                        width: '100%',
+                                        maxHeight: '80px', // Constrain height to prevent overlap
+                                        width: 'auto',
                                         maxWidth: '280px',
-                                        overflow: 'visible' // Allow widget to expand beyond container if needed
+                                        overflow: 'hidden', // Prevent widget from expanding beyond header
+                                        position: 'relative',
+                                        zIndex: 10
                                     }}
                                 >
                                     <elevenlabs-convai 

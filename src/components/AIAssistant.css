@@ -867,17 +867,21 @@ button[title="Exit Fullscreen"] svg {
 .elevenlabs-widget-container {
   transition: all 0.3s ease-in-out;
   overflow: visible !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 8px !important;
 }
 
-/* Ensure widget can expand header when needed */
+/* Ensure widget stays within header bounds */
 .elevenlabs-widget-container elevenlabs-convai {
   min-height: 50px !important;
-  max-height: none !important;
+  max-height: 80px !important;
   height: auto !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   z-index: 10 !important;
   border-radius: 12px !important;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+  position: relative !important;
 }
 
 /* Responsive header layout adjustments */
@@ -896,4 +900,26 @@ button[title="Exit Fullscreen"] svg {
 #ai-teacher-menu .inner > div:first-child {
   flex-shrink: 0;
   height: auto;
+  position: relative;
+  z-index: 5;
+}
+
+/* Ensure chat input area is properly positioned */
+#ai-teacher-menu .inner > div:last-child {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure header items are properly aligned */
+#ai-teacher-menu .inner > div:first-child > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Ensure Neural AI title and widget are on the same line */
+#ai-teacher-menu .inner > div:first-child > div > div:first-child {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
 } 
