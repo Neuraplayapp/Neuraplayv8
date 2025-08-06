@@ -3128,17 +3128,23 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 // Generate specialized educational graph
                 const enhancedPrompt = `Create a clear, educational ${prompt}. Professional style with: clean white background, bold labels, bright colors (blue, green, orange), grid lines, clear axes, legible fonts, child-friendly design. Mathematical accuracy is essential. Include all requested data points and proper scaling.`;
                 
-                const result = await aiService.handleImageGeneration(enhancedPrompt);
+                const result = await aiService.handleImageGeneration(enhancedPrompt, {
+                    style: 'educational',
+                    size: '768x768'
+                });
                 
-                if (result && typeof result === 'object') {
-                    return result.image_url || (result.data ? `data:${result.contentType || 'image/jpeg'};base64,${result.data}` : null);
+                if (result?.image_url || result?.data) {
+                    return result.image_url || `data:${result.contentType || 'image/jpeg'};base64,${result.data}`;
                 }
             } else {
                 // Regular image generation through tool system
-                const result = await aiService.handleImageGeneration(prompt);
+                const result = await aiService.handleImageGeneration(prompt, {
+                    style: 'child-friendly',
+                    size: '512x512'
+                });
                 
-                if (result && typeof result === 'object') {
-                    return result.image_url || (result.data ? `data:${result.contentType || 'image/jpeg'};base64,${result.data}` : null);
+                if (result?.image_url || result?.data) {
+                    return result.image_url || `data:${result.contentType || 'image/jpeg'};base64,${result.data}`;
                 }
             }
             
@@ -3662,7 +3668,9 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         <div className="flex-1">
                                             <div className={`${msg.isUser ? 'text-white' : theme.isDarkMode ? 'text-white' : 'text-black'}`} style={{ zIndex: 9999, position: 'relative' }}>
                                                 <RichMessageRenderer 
-                                                    content={msg.text}
+                                                    text={msg.text} 
+                                                    isUser={msg.isUser}
+                                                    isDarkMode={theme.isDarkMode}
                                                 />
                                             </div>
                                             {msg.image && (

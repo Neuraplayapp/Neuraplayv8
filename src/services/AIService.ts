@@ -172,43 +172,18 @@ class AIService {
     try {
       console.log('🔍 AI Service Debug - Sending request with tool calling:', enableToolCalling);
       
-      // Construct message history for AI awareness
-      const messages: any[] = [
-        { role: 'system', content: systemPrompt }
-      ];
-
-      // Add conversation history if available (for AI memory)
-      if (context?.conversationHistory && context.conversationHistory.length > 0) {
-        console.log('🧠 AI Service Debug - Including conversation history:', context.conversationHistory.length, 'messages');
-        
-        // Convert conversation history to proper message format
-        const historyMessages = context.conversationHistory.map((msg: any) => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content || msg.text || '',
-          ...(msg.hasImage && { 
-            // Note that this message contained an image
-            content: (msg.content || msg.text || '') + ' [This message included an image]'
-          })
-        }));
-        
-        messages.push(...historyMessages);
-      }
-
-      // Add current user message
-      messages.push({ role: 'user', content: text });
-
-      console.log('🧠 AI Service Debug - Total messages being sent to AI:', messages.length);
-      console.log('🧠 AI Service Debug - Message structure:', messages.map(m => ({ role: m.role, contentLength: m.content?.length || 0 })));
-
       const response = await this.apiCall(apiEndpoint, {
         method: 'POST',
         body: JSON.stringify({
           task_type: 'chat',
           input_data: {
-            messages,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: text }
+            ],
             tools: enableToolCalling ? this.getToolDefinitions() : undefined,
             tool_choice: enableToolCalling ? 'auto' : undefined,
-            max_tokens: 1500, // Increased for better responses with context
+            max_tokens: 1000,
             temperature: 0.7
           }
         })
@@ -425,13 +400,11 @@ class AIService {
 - **Step-by-Step Visuals**: Break complex processes into illustrated steps
 - **Pedagogical Graphics**: Use colors, labels, and clear formatting for educational impact
 
-🎯 CONVERSATION MEMORY & CONTINUITY:
-- You have access to the full conversation history in your messages
-- ALWAYS reference previous topics when relevant: "Earlier you mentioned...", "Building on our discussion about...", "Remember when you asked about..."
+🎯 CONVERSATION MEMORY:
+- Remember previous conversation context: ${context?.conversationHistory ? 'YES - ' + context.conversationHistory.length + ' messages' : 'NO'}
+- Reference earlier topics and build upon them
 - Connect new concepts to previously discussed material
 - Maintain learning progression throughout the conversation
-- If user asks about something mentioned before, acknowledge and build upon it
-- Show continuity: "Now that we covered X, let's explore Y", "This relates to your earlier question about..."
 
 🌟 RESPONSE STYLE:
 - **Enthusiastic Educator**: Show excitement for learning and discovery
