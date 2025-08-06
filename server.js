@@ -394,10 +394,106 @@ async function getWeatherData(location) {
   }
 }
 
+// Image generation function
+async function handleImageGeneration(input_data, token) {
+  try {
+    const { prompt, size = '512x512' } = input_data;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'No prompt provided for image generation' });
+    }
+
+    console.log('Starting image generation with token:', !!token);
+    console.log('Extracted prompt for image generation:', prompt);
+
+    if (!token) {
+      return res.status(500).json({ error: 'No Together AI token provided for image generation' });
+    }
+
+    // Enhanced prompt for better image generation
+    const enhancedPrompt = `Create a beautiful, high-quality image: ${prompt}. Style: vibrant colors, detailed, professional, child-friendly, educational.`;
+
+    console.log('Image generation prompt:', enhancedPrompt);
+
+    // Try different image generation models
+    const models = [
+      'stability-ai/stable-diffusion-xl-base-1.0',
+      'stability-ai/stable-diffusion-2-1',
+      'runwayml/stable-diffusion-v1-5'
+    ];
+
+    let lastError = null;
+
+    for (const model of models) {
+      try {
+        console.log(`Trying image generation with model: ${model}`);
+        
+        const response = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: model,
+            prompt: enhancedPrompt,
+            n: 1,
+            size: size,
+            response_format: 'b64_json'
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Image generation failed with model ${model}:`, errorText);
+          lastError = new Error(`Image generation failed: ${errorText}`);
+          continue;
+        }
+
+        const result = await response.json();
+        
+        if (result.data && result.data.length > 0) {
+          const imageData = result.data[0];
+          
+          if (imageData.b64_json) {
+            // Convert base64 to data URL
+            const dataUrl = `data:image/png;base64,${imageData.b64_json}`;
+            return {
+              image_url: dataUrl,
+              contentType: 'image/png',
+              data: imageData.b64_json
+            };
+          }
+        }
+      } catch (error) {
+        console.error(`Error with model ${model}:`, error);
+        lastError = error;
+        continue;
+      }
+    }
+
+    throw lastError || new Error('All image generation models failed');
+  } catch (error) {
+    console.error('Image generation error:', error);
+    throw error;
+  }
+}
+
 app.post('/api/api', async (req, res) => {
   try {
     console.log('🤖 AI API request received');
     const { task_type, input_data } = req.body;
+    
+    // Handle image generation separately
+    if (task_type === 'image') {
+      try {
+        const imageResult = await handleImageGeneration(input_data, process.env.together_token);
+        return res.json(imageResult);
+      } catch (error) {
+        console.error('Image generation error:', error);
+        return res.status(500).json({ error: `Image generation failed: ${error.message}` });
+      }
+    }
     
     if (!input_data || !input_data.messages) {
       return res.status(400).json({ error: 'No messages provided' });
