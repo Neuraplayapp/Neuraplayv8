@@ -34,7 +34,10 @@ app.post('/api/assemblyai-transcribe', async (req, res) => {
       body: JSON.stringify({
         audio_data: audio,
         language_code: language_code === 'auto' ? null : language_code,
-        speech_model: speech_model
+        language_detection: language_code === 'auto',
+        speech_model: speech_model,
+        punctuate: true,
+        format_text: true
       })
     });
 

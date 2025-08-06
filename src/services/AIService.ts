@@ -99,10 +99,15 @@ class AIService {
       ? '/api'
       : '/api/api';
     
-    // Prepare system prompt with tool calling instructions
-    const toolCallingsystemPrompt = enableToolCalling 
+    // Prepare system prompt with tool calling instructions and language context
+    let systemPrompt = enableToolCalling 
       ? this.getToolCallingSystemPrompt(context)
       : this.getStandardSystemPrompt();
+    
+    // Add language context if provided
+    if (context?.language) {
+      systemPrompt += `\n\nIMPORTANT: The user is speaking in ${context.language}. Please respond in the same language unless they specifically ask you to translate or respond in another language.`;
+    }
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -111,7 +116,7 @@ class AIService {
           task_type: 'chat',
           input_data: {
             messages: [
-              { role: 'system', content: toolCallingsystemPrompt },
+              { role: 'system', content: systemPrompt },
               { role: 'user', content: text }
             ],
             max_tokens: 1000,

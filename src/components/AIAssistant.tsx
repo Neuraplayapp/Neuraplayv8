@@ -2447,7 +2447,8 @@ Need help with anything specific? Just ask! 🌟`;
             currentPage: location.pathname,
             mode: mode,
             user: { id: 'demo', name: 'User' }, // This would come from your user context
-            timestamp: new Date()
+            timestamp: new Date(),
+            language: selectedLanguage !== 'auto' ? SUPPORTED_LANGUAGES[selectedLanguage] : null
         };
 
         // Check if this is an image generation request
@@ -3522,10 +3523,13 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                             e.stopPropagation();
                                             toggleLanguageDropdown();
                                         }}
-                                        className="ai-language-selector"
+                                        className="ai-language-selector flex items-center gap-1"
                                         title="Select Language"
                                     >
                                         <Globe size={16} />
+                                        <span className="text-xs hidden sm:inline">
+                                            {selectedLanguage === 'auto' ? 'Auto' : SUPPORTED_LANGUAGES[selectedLanguage]?.split(' ')[0] || selectedLanguage}
+                                        </span>
                                     </button>
                                     {showLanguageDropdown && (
                                         <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-[1000] w-56 max-h-64 overflow-y-auto">
