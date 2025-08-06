@@ -2480,10 +2480,25 @@ Need help with anything specific? Just ask! 🌟`;
             const { aiService } = await import('../services/AIService');
             aiResponse = await aiService.sendMessage(inputMessage, context, enableToolCalling);
             
-            // Parse response for tool calls (if the AI service supports it)
-            const parsed = parseAIResponse(aiResponse);
-            aiResponse = parsed.text;
-            toolCalls = parsed.toolCalls || [];
+            // Handle different response formats
+            if (typeof aiResponse === 'string') {
+                // String response - parse for tool calls
+                const parsed = parseAIResponse(aiResponse);
+                aiResponse = parsed.text;
+                toolCalls = parsed.toolCalls || [];
+            } else if (Array.isArray(aiResponse) && aiResponse.length > 0) {
+                // Array response from server with tool calls
+                const firstResponse = aiResponse[0];
+                aiResponse = firstResponse.generated_text || 'No response received';
+                toolCalls = firstResponse.tool_calls || [];
+            } else if (aiResponse && typeof aiResponse === 'object') {
+                // Object response
+                aiResponse = aiResponse.generated_text || aiResponse.text || 'No response received';
+                toolCalls = aiResponse.tool_calls || [];
+            } else {
+                aiResponse = 'No response received';
+                toolCalls = [];
+            }
             
         } catch (error) {
             console.log('AI Service failed, trying basic API test');

@@ -88,10 +88,19 @@ class AIService {
   }
 
   // Enhanced AI Message with Tool Calling Support
-  async sendMessage(text: string, context?: any, enableToolCalling: boolean = true): Promise<string> {
+  async sendMessage(text: string, context?: any, enableToolCalling: boolean = true): Promise<{
+    generated_text: string;
+    tool_calls: any[];
+    tool_results: any[];
+  }> {
     // Check if this is an image generation request
     if (this.isImageRequest(text)) {
-      return this.handleImageGeneration(text);
+      const imageResult = await this.handleImageGeneration(text);
+      return {
+        generated_text: imageResult,
+        tool_calls: [],
+        tool_results: []
+      };
     }
 
     // Use the correct API endpoint for each platform
@@ -127,13 +136,30 @@ class AIService {
 
       // Handle the response format from the server
       if (Array.isArray(response) && response.length > 0) {
-        return response[0].generated_text || 'No response received';
+        const firstResponse = response[0];
+        return {
+          generated_text: firstResponse.generated_text || 'No response received',
+          tool_calls: firstResponse.tool_calls || [],
+          tool_results: firstResponse.tool_results || []
+        };
       } else if (typeof response === 'string') {
-        return response;
-      } else if (response.response) {
-        return response.response;
+        return {
+          generated_text: response,
+          tool_calls: [],
+          tool_results: []
+        };
+      } else if (response && typeof response === 'object') {
+        return {
+          generated_text: response.generated_text || response.text || 'No response received',
+          tool_calls: response.tool_calls || [],
+          tool_results: response.tool_results || []
+        };
       } else {
-        return 'No response received';
+        return {
+          generated_text: 'No response received',
+          tool_calls: [],
+          tool_results: []
+        };
       }
     } catch (error) {
       console.error('AI Service error:', error);
