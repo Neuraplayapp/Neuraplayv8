@@ -472,6 +472,14 @@
   animation: pulse 2s infinite;
 }
 
+.ai-mode-button.conversation-active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #8b5cf6;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
 .dark .ai-mode-button {
   background: rgba(15, 15, 35, 0.8);
   color: #9ca3af;
@@ -870,6 +878,7 @@ button[title="Exit Fullscreen"] svg {
   display: inline-flex !important;
   align-items: center !important;
   margin-left: 8px !important;
+  flex-shrink: 0 !important;
 }
 
 /* Ensure widget stays within header bounds */
@@ -879,13 +888,20 @@ button[title="Exit Fullscreen"] svg {
   height: auto !important;
   max-width: 200px !important;
   overflow: hidden !important;
+  flex-shrink: 0 !important;
 }
 
 /* Responsive header layout adjustments */
 @media (max-width: 768px) {
   .elevenlabs-widget-container {
-    max-width: 100% !important;
-    width: 100% !important;
+    max-width: 150px !important;
+    width: auto !important;
+  }
+  
+  .elevenlabs-widget-container elevenlabs-convai {
+    max-width: 150px !important;
+    min-height: 35px !important;
+    max-height: 50px !important;
   }
   
   .auto-h {
@@ -899,6 +915,7 @@ button[title="Exit Fullscreen"] svg {
   height: auto;
   position: relative;
   z-index: 5;
+  min-height: 80px;
 }
 
 /* Ensure chat input area is properly positioned */
@@ -912,6 +929,8 @@ button[title="Exit Fullscreen"] svg {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
 }
 
 /* Ensure Neural AI title and widget are on the same line */
@@ -919,6 +938,7 @@ button[title="Exit Fullscreen"] svg {
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
+  flex-shrink: 0 !important;
 }
 
 /* Fullscreen widget container styling */
@@ -977,6 +997,23 @@ button[title="Exit Fullscreen"] svg {
     justify-content: center !important;
     width: 100% !important;
   }
+}
+
+/* Audio Visualizer Styling */
+.audio-visualizer {
+  transition: all 0.3s ease-in-out;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+}
+
+.audio-visualizer:hover {
+  filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.5));
+  transform: scale(1.05);
+}
+
+/* Dark mode audio visualizer */
+.dark .audio-visualizer {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
 }
 
 /* Conversation active state styling */

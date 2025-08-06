@@ -12,6 +12,7 @@ import { elevenLabsService } from '../services/elevenLabsService';
 import { WebSocketService } from '../services/WebSocketService';
 
 import PlasmaBall from './PlasmaBall';
+import AudioVisualizer from './AudioVisualizer';
 import './AIAssistant.css';
 
 interface Message {
@@ -1937,54 +1938,60 @@ Need help with anything specific? Just ask! 🌟`;
                 timestamp: new Date() 
             });
             
-                            try {
-                    // Request microphone permission (required by ElevenLabs)
-                    console.log('🎤 Requesting microphone access...');
-                    console.log('🔍 Navigator.mediaDevices available:', !!navigator.mediaDevices);
-                    console.log('🔍 getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
-                    
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    console.log('✅ Microphone access granted');
-                    console.log('🔍 Stream info:', {
-                        id: stream.id,
-                        active: stream.active,
-                        tracks: stream.getTracks().length
-                    });
-                    
-                    // Stop the test stream since ElevenLabs will handle audio
-                    stream.getTracks().forEach(track => track.stop());
+            try {
+                // Test configuration before attempting connection
+                const configTest = await testElevenLabsConfiguration();
+                if (!configTest) {
+                    throw new Error('ElevenLabs configuration test failed');
+                }
+                
+                // Request microphone permission (required by ElevenLabs)
+                console.log('🎤 Requesting microphone access...');
+                console.log('🔍 Navigator.mediaDevices available:', !!navigator.mediaDevices);
+                console.log('🔍 getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('✅ Microphone access granted');
+                console.log('🔍 Stream info:', {
+                    id: stream.id,
+                    active: stream.active,
+                    tracks: stream.getTracks().length
+                });
+                
+                // Stop the test stream since ElevenLabs will handle audio
+                stream.getTracks().forEach(track => track.stop());
 
-                    // Start ElevenLabs conversation session with agent ID
-                    console.log('🎯 Starting ElevenLabs conversation...');
-                    console.log('🎯 Agent ID:', getAgentId());
-                    console.log('🎯 Agent ID type:', typeof getAgentId());
-                    console.log('🎯 Agent ID length:', getAgentId()?.length);
-                    console.log('🔍 Current origin:', window.location.origin);
-                    console.log('🔍 Current hostname:', window.location.hostname);
-                    console.log('🔍 Full URL:', window.location.href);
-                    console.log('🔍 Protocol:', window.location.protocol);
-                    console.log('🔍 Is HTTPS:', window.location.protocol === 'https:');
-                    console.log('🔍 User agent:', navigator.userAgent);
-                    console.log('🔍 API Key exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
-                    console.log('🔍 API Key length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
-                    
-                    const sessionConfig = {
-                        agentId: getAgentId()
-                        // connectionType: 'websocket', // Remove this as it might not be needed
-                        // Optional: add user_id for tracking if needed
-                        // user_id: user?.username || 'anonymous'
-                    };
-                    
-                    console.log('🔍 Session config:', sessionConfig);
-                    console.log('🔍 ElevenLabs conversation object:', elevenLabsConversation);
-                    console.log('🔍 startSession method available:', typeof elevenLabsConversation.startSession);
-                    
-                    await elevenLabsConversation.startSession(sessionConfig);
-                    
-                    console.log('✅ ElevenLabs conversation started successfully');
-                    
-                    // Note: The official ElevenLabs hook handles all audio streaming automatically
-                    // No need for manual MediaRecorder setup - it's all handled internally
+                // Start ElevenLabs conversation session with agent ID
+                console.log('🎯 Starting ElevenLabs conversation...');
+                console.log('🎯 Agent ID:', getAgentId());
+                console.log('🎯 Agent ID type:', typeof getAgentId());
+                console.log('🎯 Agent ID length:', getAgentId()?.length);
+                console.log('🔍 Current origin:', window.location.origin);
+                console.log('🔍 Current hostname:', window.location.hostname);
+                console.log('🔍 Full URL:', window.location.href);
+                console.log('🔍 Protocol:', window.location.protocol);
+                console.log('🔍 Is HTTPS:', window.location.protocol === 'https:');
+                console.log('🔍 User agent:', navigator.userAgent);
+                console.log('🔍 API Key exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
+                console.log('🔍 API Key length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
+                
+                const sessionConfig = {
+                    agentId: getAgentId()
+                    // connectionType: 'websocket', // Remove this as it might not be needed
+                    // Optional: add user_id for tracking if needed
+                    // user_id: user?.username || 'anonymous'
+                };
+                
+                console.log('🔍 Session config:', sessionConfig);
+                console.log('🔍 ElevenLabs conversation object:', elevenLabsConversation);
+                console.log('🔍 startSession method available:', typeof elevenLabsConversation.startSession);
+                
+                await elevenLabsConversation.startSession(sessionConfig);
+                
+                console.log('✅ ElevenLabs conversation started successfully');
+                
+                // Note: The official ElevenLabs hook handles all audio streaming automatically
+                // No need for manual MediaRecorder setup - it's all handled internally
                     
                 } catch (error) {
                     console.error('❌ CONVERSATION SETUP FAILED:', error);
@@ -3162,6 +3169,64 @@ This two-step process is mandatory. Do not deviate.`;
         }
     };
 
+    // Test ElevenLabs agent configuration and connectivity
+    const testElevenLabsConfiguration = async (): Promise<boolean> => {
+        try {
+            console.log('🔍 Testing ElevenLabs configuration...');
+            
+            // Test 1: Check API key
+            const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+            if (!apiKey) {
+                console.error('❌ API key is missing');
+                return false;
+            }
+            
+            // Test 2: Check agent ID
+            const agentId = getAgentId();
+            if (!agentId || !agentId.startsWith('agent_')) {
+                console.error('❌ Agent ID is invalid:', agentId);
+                return false;
+            }
+            
+            // Test 3: Test basic API connectivity
+            console.log('🔍 Testing API connectivity...');
+            const response = await fetch('https://api.elevenlabs.io/v1/user', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                console.error('❌ API connectivity test failed:', response.status);
+                return false;
+            }
+            
+            // Test 4: Test agent accessibility
+            console.log('🔍 Testing agent accessibility...');
+            const agentResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!agentResponse.ok) {
+                console.error('❌ Agent accessibility test failed:', agentResponse.status);
+                return false;
+            }
+            
+            console.log('✅ ElevenLabs configuration test passed');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ ElevenLabs configuration test failed:', error);
+            return false;
+        }
+    };
+
     return (
         <>
             {/* Chat Button */}
@@ -3202,37 +3267,89 @@ This two-step process is mandatory. Do not deviate.`;
                                 </h3>
                                 <div className="elevenlabs-widget-fullscreen-container">
                                     <elevenlabs-convai
-                                        data-public={getAgentId()}
-                                        data-primary="#8b5cf6"
-                                        data-accent="#a78bfa"
-                                        data-radius="1rem"
-                                        data-width="auto"
-                                        data-height="auto"
-                                        data-noauth="true"
+                                        key="elevenlabs-widget-fullscreen-v1"
+                                        agent-id={getAgentId()}
+                                        variant="expanded"
+                                        action-text="🎤 Voice Chat"
+                                        start-call-text="Start Voice"
+                                        end-call-text="End Voice"
+                                        avatar-orb-color-1="#8b5cf6"
+                                        avatar-orb-color-2="#a855f7"
+                                        data-public="true"
+                                        data-no-auth="true" 
+                                        disable-auth="true"
+                                        no-authentication="true"
+                                        public-agent="true"
+                                        enable-weather="true"
+                                        enable-tools="true"
+                                        enable-web-search="true"
+                                        onCall={() => {
+                                            console.log('🎤 ElevenLabs fullscreen widget call started');
+                                            handleToggleConversationMode();
+                                        }}
+                                        onEnd={() => {
+                                            console.log('🎤 ElevenLabs fullscreen widget call ended');
+                                            handleToggleConversationMode();
+                                        }}
+                                        onConnect={() => {
+                                            console.log('🎤 ElevenLabs fullscreen widget connected');
+                                        }}
+                                        onDisconnect={() => {
+                                            console.log('🎤 ElevenLabs fullscreen widget disconnected');
+                                        }}
+                                        onMessage={(message: any) => {
+                                            console.log('🎤 ElevenLabs fullscreen widget message:', message);
+                                        }}
+                                        onError={(error: any) => {
+                                            console.error('🚫 ElevenLabs Fullscreen Widget Error:', error);
+                                        }}
+                                        style={{
+                                            '--primary-color': '#8b5cf6',
+                                            '--secondary-color': '#a855f7',
+                                            '--background-color': 'rgba(139, 92, 246, 0.1)',
+                                            '--text-color': '#333333',
+                                            '--border-radius': '12px',
+                                            width: '100%',
+                                            maxWidth: '300px',
+                                            minHeight: '60px',
+                                            maxHeight: '80px',
+                                            fontSize: '16px',
+                                            overflow: 'visible',
+                                            zIndex: '10'
+                                        }}
                                     />
                                 </div>
                             </div>
-                            <div className="ai-fullscreen-controls flex gap-2">
-                                <button 
+                            <div className="ai-fullscreen-controls">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        createNewConversation();
+                                    }}
                                     className="ai-fullscreen-button"
-                                    onClick={handleToggleReadLastMessage}
-                                    title="Read Last Message Aloud"
+                                    title="New Conversation"
                                 >
-                                    <Volume2 size={20} />
+                                    <MessageSquare size={16} />
                                 </button>
-                                <button 
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleFullscreen();
+                                    }}
                                     className="ai-fullscreen-button"
-                                    onClick={toggleFullscreen}
                                     title="Exit Fullscreen"
                                 >
-                                    <Minimize2 size={20} />
+                                    <Minimize2 size={16} />
                                 </button>
-                                <button 
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsOpen(false);
+                                    }}
                                     className="ai-fullscreen-button"
-                                    onClick={() => setIsOpen(false)}
                                     title="Close"
                                 >
-                                    <X size={20} />
+                                    <X size={16} />
                                 </button>
                             </div>
                         </div>
@@ -3319,6 +3436,9 @@ This two-step process is mandatory. Do not deviate.`;
                                         disable-auth="true"
                                         no-authentication="true"
                                         public-agent="true"
+                                        enable-weather="true"
+                                        enable-tools="true"
+                                        enable-web-search="true"
                                         onCall={() => {
                                             console.log('🎤 ElevenLabs widget call started');
                                             handleToggleConversationMode();
@@ -3608,17 +3728,13 @@ This two-step process is mandatory. Do not deviate.`;
                             </div>
                         )}
                         
-                        {/* Conversation Mode Indicator */}
+                        {/* Conversation Mode Indicator with Audio Visualizer */}
                         {mode === 'conversing' && (
                             <div className="mb-2 p-2 bg-green-500/20 border border-green-400/30 rounded-lg">
                                 <div className="flex items-center gap-2 text-green-300 text-sm">
                                     <PlasmaBall size={20} />
                                     <span className="font-semibold">Conversation Mode Active</span>
-                                    <div className="flex gap-1">
-                                        <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
-                                        <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                                        <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                                    </div>
+                                    <AudioVisualizer isActive={true} intensity={0.8} className="ml-auto" />
                                 </div>
                             </div>
                         )}
@@ -3656,6 +3772,17 @@ This two-step process is mandatory. Do not deviate.`;
                                     />
                                 </label>
                             </div>
+                            
+                            {/* Custom Plasma Ball Conversation Button - Between Input and Record */}
+                            <button
+                                onClick={handleToggleConversationMode}
+                                className={`ai-mode-button flex-shrink-0 ${mode === 'conversing' ? 'conversation-active' : ''}`}
+                                title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
+                                disabled={isLoading}
+                            >
+                                <PlasmaBall size={20} />
+                                <span>{mode === 'conversing' ? 'Stop' : 'Chat'}</span>
+                            </button>
                             
                             {/* Record Button - Right */}
                             <button
