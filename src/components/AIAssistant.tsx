@@ -2406,9 +2406,14 @@ Need help with anything specific? Just ask! 🌟`;
         const initToolExecutor = async () => {
             const { toolExecutorService: service } = await import('../services/ToolExecutorService');
             setToolExecutorService(service);
+            
+            // Initialize navigation service with navigate function
+            const { NavigationService } = await import('../services/NavigationService');
+            const navService = NavigationService.getInstance();
+            navService.setNavigate(navigate);
         };
         initToolExecutor();
-    }, []);
+    }, [navigate]);
 
     // Enhanced chat mode with tool calling support
     const handleChatMode = async (inputMessage: string) => {

@@ -55,30 +55,40 @@ export class NavigationService {
   }
 
   async navigateTo(path: string, user?: any): Promise<{ success: boolean; message: string }> {
+    console.log('🔍 NavigationService Debug - navigateTo called with:', { path, user });
+    console.log('🔍 NavigationService Debug - navigate function available:', !!this.navigate);
+    
     const page = this.pages.get(path);
+    console.log('🔍 NavigationService Debug - page found:', page);
     
     if (!page) {
+      console.log('🔍 NavigationService Debug - Page not found');
       return { success: false, message: `Page "${path}" not found! 🚫` };
     }
 
     if (!page.isActive) {
+      console.log('🔍 NavigationService Debug - Page not active');
       return { success: false, message: `Page "${page.name}" is not available! 🚫` };
     }
 
     if (page.requiresAuth && !user) {
+      console.log('🔍 NavigationService Debug - Auth required but no user');
       return { success: false, message: `You need to sign in to access "${page.name}"! 🚫` };
     }
 
     try {
       if (this.navigate) {
+        console.log('🔍 NavigationService Debug - Using React Router navigate');
         this.navigate(path);
         return { success: true, message: `🚀 Taking you to ${page.name}! ${page.description} ✨` };
       } else {
+        console.log('🔍 NavigationService Debug - Using window.location fallback');
         // Fallback to window.location
         window.location.href = path;
         return { success: true, message: `🚀 Taking you to ${page.name}! ${page.description} ✨` };
       }
     } catch (error) {
+      console.error('🔍 NavigationService Debug - Navigation error:', error);
       return { success: false, message: `Failed to navigate to "${page.name}"! 🚫` };
     }
   }
