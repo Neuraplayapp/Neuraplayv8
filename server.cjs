@@ -327,7 +327,7 @@ const SERVER_SIDE_TOOLS = Object.keys(TOOL_ROUTING_CONFIG.server);
 
 // Tool execution functions (SERVER-SIDE ONLY)
 async function executeTool(toolCall) {
-  const { name, arguments: args } = toolCall;
+  const { name, arguments: args } = toolCall.function;
   const parsedArgs = JSON.parse(args);
   
   console.log(`🔧 Server executing tool: ${name} with args:`, parsedArgs);
