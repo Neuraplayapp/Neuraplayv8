@@ -2680,10 +2680,56 @@ Need help with anything specific? Just ask! 🌟`;
             }
             
             const result = await response.json();
-            // Handle original format: [{ generated_text: "..." }]
-            if (Array.isArray(result) && result[0] && result[0].generated_text) {
-                return result[0].generated_text;
+            
+            // Handle new GPT-OSS tool calling response format
+            if (Array.isArray(result) && result[0]) {
+                const responseData = result[0];
+                
+                // Check if this is a tool calling response
+                if (responseData.tool_calls && responseData.tool_results) {
+                    console.log('🔧 Tool calls detected in response:', responseData.tool_calls);
+                    console.log('📊 Tool results:', responseData.tool_results);
+                    
+                    // Execute tools if tool executor is available
+                    if (toolExecutorService) {
+                        for (const toolCall of responseData.tool_calls) {
+                            try {
+                                console.log('🔧 Executing tool call:', toolCall);
+                                const context = {
+                                    currentPage: location.pathname,
+                                    mode: currentMode,
+                                    user: { id: 'demo', name: 'User' },
+                                    timestamp: new Date()
+                                };
+                                
+                                const result = await toolExecutorService.executeTool(toolCall, context);
+                                
+                                // Add tool execution result to conversation
+                                if (result.success) {
+                                    const toolMessage: Message = {
+                                        text: result.message,
+                                        isUser: false,
+                                        timestamp: new Date(),
+                                        action: toolCall.function.name as any
+                                    };
+                                    addMessageToConversation(activeConversation, toolMessage);
+                                }
+                            } catch (error) {
+                                console.error('Tool execution error:', error);
+                            }
+                        }
+                    }
+                    
+                    // Return the final AI response
+                    return responseData.generated_text || 'Action completed successfully!';
+                }
+                
+                // Handle original format: [{ generated_text: "..." }]
+                if (responseData.generated_text) {
+                    return responseData.generated_text;
+                }
             }
+            
             // Fallback for other formats
             return result.response || result.message || result.generated_text || 'No response received';
         } catch (error) {

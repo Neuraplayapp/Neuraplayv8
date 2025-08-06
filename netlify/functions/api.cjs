@@ -1,5 +1,278 @@
 // Use built-in fetch (available in Node 18+)
 
+// Tool Schema Definition for GPT-OSS
+const tools = [
+  {
+    "type": "function",
+    "function": {
+      "name": "navigate_to_page",
+      "description": "Navigate the user to a different page within the NeuraPlay application. Use this when users want to go to specific sections like playground, dashboard, forum, or profile.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string",
+            "enum": ["playground", "dashboard", "forum", "profile", "home", "about"],
+            "description": "The page to navigate to"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Optional reason for navigation"
+          }
+        },
+        "required": ["page"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_settings",
+      "description": "Update user settings like theme, accessibility, or preferences. Use this when users want to change their experience.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "setting": {
+            "type": "string",
+            "enum": ["theme", "accessibility", "notifications", "language"],
+            "description": "The setting to update"
+          },
+          "value": {
+            "type": "string",
+            "description": "The new value for the setting"
+          }
+        },
+        "required": ["setting", "value"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_game",
+      "description": "Recommend educational games based on user interests, age, or learning goals. Use this when users want to play games or learn specific topics.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The learning topic or subject area"
+          },
+          "age_group": {
+            "type": "string",
+            "enum": ["3-5", "6-8", "9-12", "13+"],
+            "description": "The age group for game recommendations"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard"],
+            "description": "The difficulty level"
+          }
+        },
+        "required": ["topic"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "web_search",
+      "description": "Searches the live internet for up-to-date information, news, current events, or topics beyond its 2023 knowledge cutoff.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A concise search query, like one you would type into Google."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "Retrieves the current weather for a specific location.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and country, e.g., 'Taraz, Kazakhstan'."
+          }
+        },
+        "required": ["location"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "accessibility_support",
+      "description": "Apply accessibility settings for users with disabilities like color blindness, visual impairments, or other accessibility needs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["color_blindness_support", "high_contrast", "large_text", "screen_reader"],
+            "description": "The type of accessibility support needed"
+          },
+          "subtype": {
+            "type": "string",
+            "enum": ["protanopia", "deuteranopia", "tritanopia"],
+            "description": "For color blindness, the specific type"
+          }
+        },
+        "required": ["type"]
+      }
+    }
+  }
+];
+
+// Tool execution functions
+async function executeTool(toolCall) {
+  const { name, arguments: args } = toolCall;
+  const parsedArgs = JSON.parse(args);
+  
+  console.log(`Executing tool: ${name} with args:`, parsedArgs);
+  
+  switch (name) {
+    case 'navigate_to_page':
+      return {
+        success: true,
+        message: `Navigating to ${parsedArgs.page} page`,
+        data: { page: parsedArgs.page, reason: parsedArgs.reason }
+      };
+      
+    case 'update_settings':
+      return {
+        success: true,
+        message: `Updated ${parsedArgs.setting} to ${parsedArgs.value}`,
+        data: { setting: parsedArgs.setting, value: parsedArgs.value }
+      };
+      
+    case 'recommend_game':
+      return {
+        success: true,
+        message: `Recommended games for ${parsedArgs.topic}`,
+        data: { topic: parsedArgs.topic, age_group: parsedArgs.age_group, difficulty: parsedArgs.difficulty }
+      };
+      
+    case 'web_search':
+      return await performWebSearch(parsedArgs.query);
+      
+    case 'get_weather':
+      return await getWeatherData(parsedArgs.location);
+      
+    case 'accessibility_support':
+      return {
+        success: true,
+        message: `Applied ${parsedArgs.type} accessibility support`,
+        data: { type: parsedArgs.type, subtype: parsedArgs.subtype }
+      };
+      
+    default:
+      return {
+        success: false,
+        message: `Unknown tool: ${name}`
+      };
+  }
+}
+
+async function performWebSearch(query) {
+  try {
+    const SERPER_API_KEY = process.env.Serper_api;
+    if (!SERPER_API_KEY) {
+      return {
+        success: false,
+        message: "Search API not configured"
+      };
+    }
+    
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ q: query })
+    });
+    
+    const data = await response.json();
+    
+    if (data.organic && data.organic.length > 0) {
+      const results = data.organic.slice(0, 3).map(result => ({
+        title: result.title,
+        snippet: result.snippet,
+        link: result.link
+      }));
+      
+      return {
+        success: true,
+        message: `Found ${results.length} search results for "${query}"`,
+        data: { query, results }
+      };
+    } else {
+      return {
+        success: false,
+        message: `No search results found for "${query}"`
+      };
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    return {
+      success: false,
+      message: `Search failed: ${error.message}`
+    };
+  }
+}
+
+async function getWeatherData(location) {
+  try {
+    const WEATHER_API_KEY = process.env.WEATHER_API;
+    if (!WEATHER_API_KEY) {
+      return {
+        success: false,
+        message: "Weather API not configured"
+      };
+    }
+    
+    const response = await fetch(`http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(location)}&aqi=no`);
+    const data = await response.json();
+    
+    if (data.error) {
+      return {
+        success: false,
+        message: `Weather data not available for ${location}`
+      };
+    }
+    
+    return {
+      success: true,
+      message: `Current weather for ${location}`,
+      data: {
+        location: data.location.name,
+        country: data.location.country,
+        temperature_c: data.current.temp_c,
+        temperature_f: data.current.temp_f,
+        condition: data.current.condition.text,
+        humidity: data.current.humidity,
+        wind_kph: data.current.wind_kph,
+        feels_like_c: data.current.feelslike_c
+      }
+    };
+  } catch (error) {
+    console.error('Weather error:', error);
+    return {
+      success: false,
+      message: `Weather data unavailable: ${error.message}`
+    };
+  }
+}
+
 async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
   for (let i = 0; i < retries; i++) {
     try {
@@ -144,24 +417,24 @@ async function handleTextGeneration(input_data, token) {
       if (messages.length > 0 && messages[0].role !== 'system') {
         messages.unshift({
           role: 'system',
-          content: 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.'
+          content: 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed. You have access to tools for navigation, settings, game recommendations, web search, weather, and accessibility support. Use these tools when appropriate to help users.'
         });
       } else if (messages.length === 0 || messages[0].role === 'system') {
         // Update existing system message to ensure Synapse identity
         if (messages.length > 0 && messages[0].role === 'system') {
-          messages[0].content = 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.';
+          messages[0].content = 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed. You have access to tools for navigation, settings, game recommendations, web search, weather, and accessibility support. Use these tools when appropriate to help users.';
         }
       }
       userInput = input_data.messages[input_data.messages.length - 1]?.content || '';
     } else {
       userInput = input_data;
       messages = [
-        { role: 'system', content: 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed.' },
+        { role: 'system', content: 'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors. Be creative, engaging, and vary your responses. Ask follow-up questions to encourage learning and exploration. When appropriate, suggest educational games or activities from NeuraPlay that relate to the topic being discussed. You have access to tools for navigation, settings, game recommendations, web search, weather, and accessibility support. Use these tools when appropriate to help users.' },
         { role: 'user', content: input_data }
       ];
     }
 
-    // Step 1: Check user input for inappropriate language (more precise matching)
+    // Check for inappropriate language
     const inappropriateWords = [
       'fuck', 'shit', 'damn', 'bitch', 'ass', 'piss', 'crap', 'hell', 'dick', 'cock', 'pussy', 'vagina', 'penis',
       'bastard', 'whore', 'slut', 'fucker', 'motherfucker', 'fucking', 'shitty', 'damned', 'goddamn',
@@ -171,7 +444,6 @@ async function handleTextGeneration(input_data, token) {
     ];
 
     const userInputLower = userInput.toLowerCase();
-    // More precise matching - check for word boundaries to avoid false positives
     const containsInappropriateLanguage = inappropriateWords.some(word => {
       const regex = new RegExp(`\\b${word}\\b`, 'i');
       return regex.test(userInputLower);
@@ -191,143 +463,74 @@ async function handleTextGeneration(input_data, token) {
       };
     }
 
-    // Step 2: Comprehensive game recognition system
-    const neuraplayGames = {
-      // Memory Games
-      'memory galaxy': {
-        name: 'Memory Galaxy',
-        aliases: ['memory', 'galaxy', 'memory game', 'galaxy game', 'sequence game'],
-        description: '🌟 **Memory Galaxy** helps your brain remember sequences and patterns - like a workout for your memory muscles! It teaches you to hold information in your mind and recall it when needed.',
-        skills: 'Working Memory, Sequential Processing',
-        age: '6-12 years',
-        category: 'Memory'
+    // NEW GPT-OSS TOOL CALLING SYSTEM
+    console.log('Making initial call to GPT-OSS with tools...');
+    
+    // Step 1: Initial call to GPT-OSS with tools
+    const initialResponse = await fetchWithRetry('https://api.together.xyz/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
-      'starbloom': {
-        name: 'Starbloom Forest Adventure',
-        aliases: ['starbloom', 'forest', 'adventure', 'starbloom game', 'forest game', 'adventure game'],
-        description: '🌳 **Starbloom Forest Adventure** is a magical journey that helps you remember patterns and make good choices! It builds your memory and decision-making skills.',
-        skills: 'Working Memory, Decision Making',
-        age: '6-12 years',
-        category: 'Memory'
-      },
-      // Focus Games
-      'inhibition': {
-        name: 'Stop & Go Adventure',
-        aliases: ['stop go', 'stop and go', 'inhibition', 'stop go adventure', 'stop and go adventure', 'inhibition game'],
-        description: '🚦 **Stop & Go Adventure** teaches you to control your impulses and focus! It helps you resist the urge to act quickly and think before you respond.',
-        skills: 'Inhibitory Control, Attention',
-        age: '7-14 years',
-        category: 'Focus'
-      },
-      'berry blaster': {
-        name: 'Berry Blaster',
-        aliases: ['berry', 'blaster', 'berry blaster game', 'shooting game', 'target game'],
-        description: '🎯 **Berry Blaster** improves your focus and hand-eye coordination while having fun! It helps you aim accurately and react quickly.',
-        skills: 'Focus, Hand-Eye Coordination',
-        age: '8-15 years',
-        category: 'Focus'
-      },
-      // Logic Games
-      'pattern detective': {
-        name: 'Pattern Detective',
-        aliases: ['pattern', 'detective', 'pattern detective game', 'pattern game', 'detective game'],
-        description: '🔍 **Pattern Detective** makes you a master at finding patterns and solving puzzles! It helps you recognize sequences and predict what comes next.',
-        skills: 'Pattern Recognition, Logic',
-        age: '9-16 years',
-        category: 'Logic'
-      },
-      'number quest': {
-        name: 'Number Quest',
-        aliases: ['number', 'quest', 'number quest game', 'counting game', 'math game'],
-        description: '🔢 **Number Quest** makes math fun with counting adventures! It helps you recognize numbers and understand basic math concepts.',
-        skills: 'Number Recognition, Counting',
-        age: '5-10 years',
-        category: 'Logic'
-      },
-      'fuzzling': {
-        name: 'Fuzzling Games',
-        aliases: ['fuzzling', 'puzzle', 'fuzzling game', 'puzzle game', 'advanced puzzle'],
-        description: '🧩 **Fuzzling Games** are advanced puzzles that make you think creatively and logically! They help you solve complex problems step by step.',
-        skills: 'Problem Solving, Logic',
-        age: '10-16 years',
-        category: 'Logic'
-      },
-      // Language Games
-      'letter safari': {
-        name: 'Letter Safari',
-        aliases: ['letter', 'safari', 'letter safari game', 'letter game', 'reading game'],
-        description: '🔤 **Letter Safari** helps you learn letters and reading in a jungle adventure! It improves your letter recognition and reading skills.',
-        skills: 'Letter Recognition, Reading',
-        age: '4-8 years',
-        category: 'Language'
-      },
-      // Motor Skills Games
-      'mountain climber': {
-        name: 'Mountain Climber',
-        aliases: ['mountain', 'climber', 'mountain climber game', 'climbing game', 'coordination game'],
-        description: '🏔️ **Mountain Climber** builds coordination and motor skills through climbing challenges! It helps you control your movements precisely.',
-        skills: 'Motor Coordination, Balance',
-        age: '6-12 years',
-        category: 'Motor Skills'
-      },
-      'stacker': {
-        name: 'Block Stacker',
-        aliases: ['stacker', 'block', 'stacker game', 'block game', 'stacking game'],
-        description: '🏗️ **Block Stacker** helps you build towers with perfect timing! It develops your motor skills and spatial awareness.',
-        skills: 'Motor Skills, Spatial Awareness',
-        age: '5-10 years',
-        category: 'Motor Skills'
-      },
-      // Creativity Games
-      'happy builder': {
-        name: 'Happy Builder',
-        aliases: ['happy', 'builder', 'happy builder game', 'building game', 'creative game'],
-        description: '🏗️ **Happy Builder** lets you create and build whatever you imagine! It develops your creativity and spatial thinking skills.',
-        skills: 'Creativity, Spatial Reasoning',
-        age: '6-12 years',
-        category: 'Creativity'
-      },
-      'ai story creator': {
-        name: 'AI Story Creator',
-        aliases: ['story', 'creator', 'ai story', 'story creator', 'story game', 'ai game'],
-        description: '📚 **AI Story Creator** helps you create magical stories with AI help! It develops your imagination and language skills.',
-        skills: 'Creativity, Language Development',
-        age: '6-14 years',
-        category: 'Creativity'
-      },
-      // Logic Games
-      'crossroad fun': {
-        name: 'Crossroad Fun',
-        aliases: ['crossroad', 'crossroad fun', 'crossroad game', 'road game', 'traffic game', 'crossing game'],
-        description: '🚗 **Crossroad Fun** teaches planning and attention while crossing roads safely! It helps you think ahead and make safe decisions.',
-        skills: 'Planning, Attention',
-        age: '7-14 years',
-        category: 'Logic'
-      }
-    };
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: messages,
+        tools: tools,
+        tool_choice: 'auto',
+        max_tokens: 1000,
+        temperature: 0.7
+      })
+    });
 
-    // Advanced game recognition with aliases
-    let recognizedGame = null;
-    for (const [key, game] of Object.entries(neuraplayGames)) {
-      // Check main key
-      if (userInputLower.includes(key)) {
-        recognizedGame = game;
-        break;
-      }
-      // Check aliases
-      for (const alias of game.aliases) {
-        if (userInputLower.includes(alias)) {
-          recognizedGame = game;
-          break;
-        }
-      }
-      if (recognizedGame) break;
-    }
+    const initialData = await initialResponse.json();
+    console.log('Initial response finish_reason:', initialData.choices[0].finish_reason);
 
-    if (recognizedGame) {
-      const gameResponse = `${recognizedGame.description}\n\n**Skills it helps:** ${recognizedGame.skills}\n**Best for ages:** ${recognizedGame.age}\n\nWould you like to try this game? 🌟`;
+    // Step 2: Handle tool calls if present
+    if (initialData.choices[0].finish_reason === 'tool_calls') {
+      console.log('Tool calls detected, executing tools...');
       
-      console.log(`Game recognized: ${recognizedGame.name}`);
+      const toolCalls = initialData.choices[0].message.tool_calls;
+      const toolResults = [];
+
+      // Execute all tool calls
+      for (const toolCall of toolCalls) {
+        const result = await executeTool(toolCall);
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: toolCall.function.name,
+          content: JSON.stringify(result)
+        });
+      }
+
+      // Add tool call to messages
+      messages.push({
+        role: 'assistant',
+        tool_calls: toolCalls
+      });
+
+      // Add tool results to messages
+      messages.push(...toolResults);
+
+      // Step 3: Final call to GPT-OSS with tool results
+      console.log('Making final call with tool results...');
+      
+      const finalResponse = await fetchWithRetry('https://api.together.xyz/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7
+        })
+      });
+
+      const finalData = await finalResponse.json();
       
       return {
         statusCode: 200,
@@ -335,187 +538,38 @@ async function handleTextGeneration(input_data, token) {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify([{ 
-          generated_text: gameResponse
+        body: JSON.stringify([{
+          generated_text: finalData.choices[0].message.content,
+          tool_calls: toolCalls,
+          tool_results: toolResults
+        }])
+      };
+    } else {
+      // No tool calls, return direct response
+      console.log('No tool calls, returning direct response');
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify([{
+          generated_text: initialData.choices[0].message.content
         }])
       };
     }
 
-    // Step 2.5: Check if user is asking for game recommendations
-    const recommendationKeywords = [
-      'what games', 'which games', 'games to play', 'recommend', 'suggestion', 
-      'what should i play', 'what can i play', 'show me games', 'game options',
-      'que juegos', 'que juegos hay', 'recomienda', 'sugerencia', 'que puedo jugar',
-      'quels jeux', 'quels jeux y a-t-il', 'recommandation', 'suggestion', 'que puis-je jouer',
-      'welche spiele', 'welche spiele gibt es', 'empfehlung', 'vorschlag', 'was kann ich spielen'
-    ];
-
-    const isAskingForRecommendations = recommendationKeywords.some(keyword => 
-      userInputLower.includes(keyword)
-    );
-
-    if (isAskingForRecommendations) {
-      // Get user's played games from the conversation context or default
-      let userPlayedGames = [];
-      if (typeof input_data === 'object' && input_data.messages) {
-        // Try to extract user info from conversation context
-        const userMessages = input_data.messages.filter(msg => msg.role === 'user');
-        // This is a simplified approach - in a real implementation, you'd get this from user profile
-        userPlayedGames = ['memory galaxy', 'berry blaster']; // Default for demo
-      }
-
-      // Get user's age for age-appropriate recommendations
-      let userAge = 8; // Default age
-      
-      // Filter games by age appropriateness and not recently played
-      const ageAppropriateGames = Object.entries(neuraplayGames).filter(([key, game]) => {
-        const ageRange = game.age.split('-');
-        const minAge = parseInt(ageRange[0]);
-        const maxAge = parseInt(ageRange[1]);
-        return userAge >= minAge && userAge <= maxAge && !userPlayedGames.includes(key);
-      });
-
-      // Select 1-2 games to recommend
-      const recommendedGames = ageAppropriateGames.slice(0, 2);
-      
-      if (recommendedGames.length > 0) {
-        let recommendationResponse = "🎮 Here are some great games for you to try:\n\n";
-        
-        recommendedGames.forEach(([key, game], index) => {
-          recommendationResponse += `${index + 1}. **${game.name}** - ${game.description}\n\n`;
-        });
-        
-        recommendationResponse += "These games are perfect for your age and will help you learn new skills! 🌟";
-        
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify([{ 
-            generated_text: recommendationResponse
-          }])
-        };
-      } else {
-        // Fallback if no age-appropriate games found
-        const fallbackGames = Object.entries(neuraplayGames).slice(0, 2);
-        let fallbackResponse = "🎮 Here are some fun games you might enjoy:\n\n";
-        
-        fallbackGames.forEach(([key, game], index) => {
-          fallbackResponse += `${index + 1}. **${game.name}** - ${game.description}\n\n`;
-        });
-        
-        fallbackResponse += "Try these games and see which ones you like best! 🌟";
-        
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify([{ 
-            generated_text: fallbackResponse
-          }])
-        };
-      }
-    }
-
-    // Step 3: Generate response with conversational model
-    console.log('Using model: Qwen/Qwen3-235B-A22B-Instruct-2507-tput');
-    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
-        messages: messages,
-        max_tokens: 100, // Reduced by 50% from 200
-        temperature: 0.7,
-        top_p: 0.9
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Together AI API error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Together AI text result:', result);
-
-    const assistantResponse = result.choices?.[0]?.message?.content || "I'm here to help with your learning journey!";
-
-    // Step 4: Check response safety with Llama Guard
-    const safetyCheck = await fetch('https://api.together.xyz/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/Llama-Guard-4-12B',
-        messages: [
-          { 
-            role: 'user', 
-            content: `Please classify this response for a children's learning platform as either "safe" or "unsafe": ${assistantResponse}` 
-          }
-        ],
-        max_tokens: 5, // Reduced from 10
-        temperature: 0.1
-      })
-    });
-
-    if (safetyCheck.ok) {
-      const safetyResult = await safetyCheck.json();
-      const safetyClassification = safetyResult.choices?.[0]?.message?.content?.toLowerCase() || '';
-      
-      console.log('Safety classification:', safetyClassification);
-      
-      // If unsafe, return a safe alternative
-      if (safetyClassification.includes('unsafe')) {
-        console.log('Content flagged as unsafe, returning safe alternative');
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify([{ 
-            generated_text: "I'm here to help you learn! Let's explore something fun and educational together. 🌟✨" 
-          }])
-        };
-      }
-    }
-
-    // Step 5: Return the safe response
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify([{ 
-        generated_text: assistantResponse
-      }])
-    };
   } catch (error) {
     console.error('Text generation error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      tokenExists: !!token,
-      tokenLength: token ? token.length : 0
-    });
     return {
-      statusCode: 200,
+      statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify([{ 
-        generated_text: "I'm here to help with your learning journey! Please try again in a moment. 🌟" 
+      body: JSON.stringify([{
+        generated_text: "I'm having trouble connecting right now, but I'm here to help! 🌟 Let's try again in a moment. What would you like to learn about today? ✨"
       }])
     };
   }
