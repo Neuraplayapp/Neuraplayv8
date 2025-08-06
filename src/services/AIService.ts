@@ -23,6 +23,11 @@ class AIService {
   private async apiCall(endpoint: string, options: RequestInit = {}) {
     const url = `${this.apiBase}${endpoint}`;
     if (import.meta.env.DEV) {
+      console.log(`🚨 DEBUG: API construction:`, {
+        apiBase: this.apiBase,
+        endpoint: endpoint,
+        finalURL: url
+      });
       console.log(`🌐 Making API call to: ${url}`);
     }
     
@@ -148,8 +153,8 @@ class AIService {
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
 
-    // Determine API endpoint based on platform
-    const apiEndpoint = '/api';
+    // FIXED: Use correct endpoint - server has /api/api route
+    const apiEndpoint = '/api/api';
     
     console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
@@ -234,7 +239,7 @@ class AIService {
     const prompt = this.extractImagePrompt(text);
     
     // Use the correct API endpoint for each platform
-    const apiEndpoint = '/api';
+    const apiEndpoint = '/api/api';
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -444,7 +449,7 @@ Keep responses:
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = '/api';
+    const apiEndpoint = '/api/api';
     
     try {
       const response = await this.apiCall(apiEndpoint, {

@@ -1008,11 +1008,12 @@ async function deleteFromDatabase(client, collection, key) {
   }
 }
 
-// Serve static files
+// Serve static files (AFTER all API routes)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Handle all routes for SPA
+// Handle all routes for SPA (MUST BE LAST!)
 app.get('*', (req, res) => {
+  console.log('🔄 Catch-all route hit for:', req.path);
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
