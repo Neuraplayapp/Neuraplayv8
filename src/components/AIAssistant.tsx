@@ -10,6 +10,7 @@ import { useUser } from '../contexts/UserContext';
 import { base64ToBinary } from '../utils/videoUtils';
 import { elevenLabsService } from '../services/elevenLabsService';
 import { WebSocketService } from '../services/WebSocketService';
+import { dataCollectionService } from '../services/DataCollectionService';
 
 import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
@@ -2449,6 +2450,26 @@ Need help with anything specific? Just ask! 🌟`;
             timestamp: new Date()
         };
 
+        // Check if this is an image generation request
+        if (isImageRequest(inputMessage)) {
+            console.log('🎨 Detected image generation request');
+            const imageResult = await handleImageRequest(inputMessage);
+            if (imageResult) {
+                const assistantMessage: Message = {
+                    text: `I've generated an image for you!`,
+                    isUser: false,
+                    timestamp: new Date(),
+                    image: imageResult
+                };
+                addMessageToConversation(activeConversation, assistantMessage);
+                return {
+                    textResponse: 'Image generated successfully!',
+                    toolCalls: [],
+                    success: true
+                };
+            }
+        }
+
         // Try AI service first (if available), fallback to direct API
         let aiResponse;
         let toolCalls: any[] = [];
@@ -2464,14 +2485,46 @@ Need help with anything specific? Just ask! 🌟`;
             toolCalls = parsed.toolCalls || [];
             
         } catch (error) {
-            console.log('AI Service failed, falling back to direct API');
-            // Fallback to existing sendMessageToSynapse
-            aiResponse = await sendMessageToSynapse(inputMessage);
-            
-            // Parse response for manual tool indicators
-            const parsed = parseManualToolCalls(aiResponse);
-            aiResponse = parsed.text;
-            toolCalls = parsed.toolCalls || [];
+            console.log('AI Service failed, trying basic API test');
+            try {
+                // Try the basic API test first
+                const { aiService } = await import('../services/AIService');
+                aiResponse = await aiService.testBasicAPI(inputMessage);
+                toolCalls = [];
+            } catch (testError) {
+                console.log('Basic API test failed, falling back to direct API');
+                // Fallback to existing sendMessageToSynapse
+                aiResponse = await sendMessageToSynapse(inputMessage);
+                
+                // Parse response for manual tool indicators
+                const parsed = parseManualToolCalls(aiResponse);
+                aiResponse = parsed.text;
+                toolCalls = parsed.toolCalls || [];
+            }
+        }
+
+        // Check if the response contains image generation keywords and handle accordingly
+        if (isImageRequest(inputMessage) && !aiResponse.includes('image') && !aiResponse.includes('picture')) {
+            console.log('🎨 Detected image generation request in fallback, handling separately');
+            try {
+                const imageResult = await handleImageRequest(inputMessage);
+                if (imageResult) {
+                    const assistantMessage: Message = {
+                        text: `I've generated an image for you!`,
+                        isUser: false,
+                        timestamp: new Date(),
+                        image: imageResult
+                    };
+                    addMessageToConversation(activeConversation, assistantMessage);
+                    return {
+                        textResponse: 'Image generated successfully!',
+                        toolCalls: [],
+                        success: true
+                    };
+                }
+            } catch (imageError) {
+                console.error('Image generation failed in fallback:', imageError);
+            }
         }
 
         // Add AI response to conversation
@@ -2650,92 +2703,121 @@ Need help with anything specific? Just ask! 🌟`;
 
     // NEW: Send message to Synapse API
     const sendMessageToSynapse = async (message: string): Promise<string> => {
+        const startTime = Date.now();
+        
         try {
-            const currentMode = modeRef.current;
-            const { maxTokens, systemPrompt } = getResponseParams(message, currentMode);
-            
-            // Platform-aware API endpoint
-            const apiEndpoint = isNetlify() 
-                ? '/.netlify/functions/api'
-                : '/api/api'; // For Render
-            
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    task_type: 'chat',
-                    input_data: {
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: message }
-                        ],
-                        max_tokens: maxTokens,
-                        temperature: currentMode === 'conversing' ? 0.7 : 0.6
-                    }
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`API call failed: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            // Handle new GPT-OSS tool calling response format
-            if (Array.isArray(result) && result[0]) {
-                const responseData = result[0];
-                
-                // Check if this is a tool calling response
-                if (responseData.tool_calls && responseData.tool_results) {
-                    console.log('🔧 Tool calls detected in response:', responseData.tool_calls);
-                    console.log('📊 Tool results:', responseData.tool_results);
+          console.log('🤖 Sending message to Synapse:', message);
+          
+          // Platform-aware API endpoint
+          const apiEndpoint = isNetlify() 
+            ? '/.netlify/functions/api'
+            : '/api/api'; // For Render
+          
+          const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              task_type: 'chat',
+              input_data: {
+                messages: [
+                  { role: 'system', content: getSystemPrompt() },
+                  { role: 'user', content: message }
+                ],
+                max_tokens: 1000,
+                temperature: 0.7
+              }
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`API request failed: ${response.status}`);
+          }
+
+          const result = await response.json();
+          const responseTime = Date.now() - startTime;
+
+          // Handle new GPT-OSS tool calling response format
+          if (Array.isArray(result) && result[0]) {
+            const responseData = result[0];
+            if (responseData.tool_calls && responseData.tool_results) {
+              console.log('🔧 Tool calls detected in response:', responseData.tool_calls);
+              console.log('📊 Tool results:', responseData.tool_results);
+              
+              // 🗄️ DATABASE INTEGRATION: Log AI tool interaction
+              dataCollectionService.logAIInteraction({
+                interactionType: 'tool_call',
+                input: message,
+                output: responseData.generated_text || 'Action completed successfully!',
+                toolsUsed: responseData.tool_calls.map((call: any) => call.function.name),
+                responseTime
+              }).catch(error => {
+                console.error('Failed to log AI interaction to database:', error);
+              });
+              
+              if (toolExecutorService) {
+                for (const toolCall of responseData.tool_calls) {
+                  try {
+                    console.log('🔧 Executing tool call:', toolCall);
+                    const context = {
+                      currentPage: location.pathname,
+                      mode: currentMode,
+                      user: { id: 'demo', name: 'User' },
+                      timestamp: new Date()
+                    };
                     
-                    // Execute tools if tool executor is available
-                    if (toolExecutorService) {
-                        for (const toolCall of responseData.tool_calls) {
-                            try {
-                                console.log('🔧 Executing tool call:', toolCall);
-                                const context = {
-                                    currentPage: location.pathname,
-                                    mode: currentMode,
-                                    user: { id: 'demo', name: 'User' },
-                                    timestamp: new Date()
-                                };
-                                
-                                const result = await toolExecutorService.executeTool(toolCall, context);
-                                
-                                // Add tool execution result to conversation
-                                if (result.success) {
-                                    const toolMessage: Message = {
-                                        text: result.message,
-                                        isUser: false,
-                                        timestamp: new Date(),
-                                        action: toolCall.function.name as any
-                                    };
-                                    addMessageToConversation(activeConversation, toolMessage);
-                                }
-                            } catch (error) {
-                                console.error('Tool execution error:', error);
-                            }
-                        }
+                    const result = await toolExecutorService.executeTool(toolCall, context);
+                    if (result.success) {
+                      const toolMessage: Message = {
+                        text: result.message, isUser: false, timestamp: new Date(),
+                        action: toolCall.function.name as any
+                      };
+                      addMessageToConversation(activeConversation, toolMessage);
                     }
-                    
-                    // Return the final AI response
-                    return responseData.generated_text || 'Action completed successfully!';
+                  } catch (error) { console.error('Tool execution error:', error); }
                 }
-                
-                // Handle original format: [{ generated_text: "..." }]
-                if (responseData.generated_text) {
-                    return responseData.generated_text;
-                }
+              }
+              return responseData.generated_text || 'Action completed successfully!';
             }
-            
-            // Fallback for other formats
-            return result.response || result.message || result.generated_text || 'No response received';
-        } catch (error) {
-            console.error('Synapse API error:', error);
-            return "I'm having trouble processing that right now. Could you try again?";
-        }
+            if (responseData.generated_text) { 
+              // 🗄️ DATABASE INTEGRATION: Log AI conversation
+              dataCollectionService.logAIInteraction({
+                interactionType: 'conversation',
+                input: message,
+                output: responseData.generated_text,
+                toolsUsed: [],
+                responseTime
+              }).catch(error => {
+                console.error('Failed to log AI interaction to database:', error);
+              });
+              
+              return responseData.generated_text; 
+            }
+          }
+          
+          // 🗄️ DATABASE INTEGRATION: Log AI conversation (fallback)
+          dataCollectionService.logAIInteraction({
+            interactionType: 'conversation',
+            input: message,
+            output: result.response || result.message || result.generated_text || 'No response received',
+            toolsUsed: [],
+            responseTime
+          }).catch(error => {
+            console.error('Failed to log AI interaction to database:', error);
+          });
+          
+          return result.response || result.message || result.generated_text || 'No response received';
+                 } catch (error: any) {
+           const responseTime = Date.now() - startTime;
+           
+           // 🗄️ DATABASE INTEGRATION: Log AI error
+           const errorObj = error instanceof Error ? error : new Error(String(error));
+           dataCollectionService.logError(errorObj, 'AI Assistant - sendMessageToSynapse').catch(dbError => {
+             console.error('Failed to log error to database:', dbError);
+           });
+           
+           console.error('❌ Error sending message to Synapse:', error);
+           return `Sorry, I encountered an error: ${errorObj.message}`;
+         }
     };
 
     // NEW: Get system prompt with comprehensive agency
@@ -2895,7 +2977,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                     isUser: false,
                     timestamp: new Date()
                 });
-                return;
+                return null;
             }
             
             // Generate the image
@@ -2908,12 +2990,14 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                     timestamp: new Date(),
                     image: imageUrl
                 });
+                return imageUrl;
             } else {
                 addMessageToConversation(activeConversation, {
                     text: "Sorry, I couldn't generate that image. Please try again! 🎨",
                     isUser: false,
                     timestamp: new Date()
                 });
+                return null;
             }
         } catch (error: any) {
             console.error('Error handling image request:', error);
@@ -2922,6 +3006,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 isUser: false,
                 timestamp: new Date()
             });
+            return null;
         }
     };
 
