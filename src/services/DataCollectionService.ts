@@ -189,7 +189,6 @@ export class DataCollectionService {
         bestScore: 0,
         timesPlayed: 0,
         playTime: 0,
-        lastPlayed: new Date(),
         achievements: [],
         ...existingProgress,
         ...progress,

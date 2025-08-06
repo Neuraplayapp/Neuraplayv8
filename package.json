@@ -6,16 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:netlify": "cross-env VITE_PLATFORM=netlify tsc && cross-env VITE_PLATFORM=netlify vite build && cross-env VITE_PLATFORM=netlify node scripts/post-build.js",
     "build:render": "cross-env VITE_PLATFORM=render tsc && cross-env VITE_PLATFORM=render vite build && cross-env VITE_PLATFORM=render node scripts/post-build.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.js",
     "start:render": "node server.js",
-    "serve": "npx serve -s dist -l $PORT",
-    "render": "node server.js",
-    "dev:netlify": "netlify dev",
-    "clean": "rm -rf .bolt .netlify dist node_modules",
+    "clean": "Remove-Item -Recurse -Force dist, node_modules -ErrorAction SilentlyContinue",
     "postbuild": "node scripts/post-build.js"
   },
   "dependencies": {

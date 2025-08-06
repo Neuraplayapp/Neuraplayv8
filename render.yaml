@@ -19,13 +19,13 @@ services:
         sync: false
       - key: ELEVENLABS_API_KEY
         sync: false
-      - key: together_token
-        sync: false
-      - key: TOGETHER_TOKEN
+      - key: Neuraplay
         sync: false
       - key: ASSEMBLYAI_API_KEY
         sync: false
       - key: ASSEMBLY_API_KEY
+        sync: false
+      - key: hf_token
         sync: false
       - key: ELEVENLABS_AGENT_ID
         value: agent_2201k13zjq5nf9faywz14701hyhb

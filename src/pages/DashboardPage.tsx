@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { dataCollectionService } from '../services/DataCollectionService';
 import { 
   BookOpen, 
   Brain, 
@@ -111,6 +112,13 @@ const DashboardPage: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showDiary, setShowDiary] = useState(false);
   const [showTeachersRoom, setShowTeachersRoom] = useState(false);
+
+  // 🗄️ DATABASE INTEGRATION: Log dashboard page visit
+  useEffect(() => {
+    dataCollectionService.logNavigation('dashboard', location.pathname).catch(error => {
+      console.error('Failed to log dashboard navigation:', error);
+    });
+  }, []);
 
   // Mock data for learning modules
   const learningModules: LearningModule[] = [

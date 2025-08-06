@@ -1,7 +1,0 @@
-server-static.js
-src/components/AIAssistant.tsx
-src/config/elevenlabs.ts
-src/pages/ProfilePage.tsx
-src/services/AIService.ts
-src/services/AblyConversationService.ts
-src/services/StreamingConversationService.ts

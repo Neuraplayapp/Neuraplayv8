@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { dataCollectionService } from '../services/DataCollectionService';
 
 export interface NeuropsychologicalProfile {
   [conceptName: string]: {
@@ -105,16 +106,30 @@ export const useUser = () => {
 };
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Initialize data collection service when user changes
+  useEffect(() => {
+    if (user?.id) {
+      dataCollectionService.setUserId(user.id);
+      console.log('🔗 Data collection service initialized for user:', user.id);
+    }
+  }, [user?.id]);
+
   // Initialize user from localStorage
-  const [user, setUser] = useState<User | null>(() => {
+  useEffect(() => {
     try {
       const savedUser = localStorage.getItem('neuraplay_user');
-      return savedUser ? JSON.parse(savedUser) : null;
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
     } catch (error) {
       console.error('Error loading user from localStorage:', error);
-      return null;
+    } finally {
+      setLoading(false);
     }
-  });
+  }, []);
 
   const ranks = [
     { name: "New Learner", xpThreshold: 0, stars: 1 },
@@ -224,6 +239,21 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       bestScore: Math.max(currentProgress.bestScore, score),
       timesPlayed: currentProgress.timesPlayed + 1,
       playTime: (currentProgress.playTime || 0) + playTime
+    });
+
+    // 🗄️ DATABASE INTEGRATION: Log game session to database
+    dataCollectionService.logGameSession(gameId, {
+      score,
+      level,
+      starsEarned,
+      xpEarned,
+      playTime,
+      success,
+      moves: sessionData.moves || 0,
+      errors: sessionData.errors || 0,
+      completionRate: sessionData.completionRate || (success ? 1 : 0)
+    }).catch(error => {
+      console.error('Failed to log game session to database:', error);
     });
   };
 
@@ -534,6 +564,10 @@ Use professional but accessible language suitable for parents and educators.`;
     
     return { strengths, growthAreas };
   };
+
+  if (loading) {
+    return <div>Loading user data...</div>;
+  }
 
   return (
     <UserContext.Provider value={{ 

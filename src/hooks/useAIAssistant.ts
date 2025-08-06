@@ -100,19 +100,23 @@ export function useAIAssistant(): [AIAssistantState, AIAssistantActions] {
         settings: Object.fromEntries(settingsService.getAllSettings())
       };
 
-      // Send to AI service
-      const response = await aiService.sendMessage(text, context);
+      // Send to AI service with tool calling support
+      const response = await aiService.sendMessage(text, context, true);
+      
+      // Parse response (could be JSON object or string)
+      const responseText = typeof response === 'string' ? response : 
+                          response.response || response.text || response.generated_text || 'No response received';
       
       // Add AI response
       addMessage({
-        text: response,
+        text: responseText,
         isUser: false,
         type: 'text'
       });
 
       // Check if response contains navigation command
-      if (response.includes('🚀 Taking you to')) {
-        const pathMatch = response.match(/to ([^!]+)!/);
+      if (responseText.includes('🚀 Taking you to')) {
+        const pathMatch = responseText.match(/to ([^!]+)!/);
         if (pathMatch) {
           const pageName = pathMatch[1];
           const result = await navigationService.navigateTo(`/${pageName.toLowerCase().replace(' ', '-')}`, user);

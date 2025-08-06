@@ -1,6 +1,7 @@
 import React, { useState, useLayoutEffect, useRef, useMemo, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { dataCollectionService } from '../services/DataCollectionService';
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
 import { Gamepad2, BarChart, Users, Star, Brain, Sparkles, Trophy, Target, FileText, CheckSquare, TrendingUp, Award, Zap, Crown, Target as TargetIcon, Brain as BrainIcon, Heart, Activity } from 'lucide-react';
@@ -41,6 +42,13 @@ const PlaygroundPage: React.FC = () => {
     const [revealedCards, setRevealedCards] = useState<Set<string>>(new Set());
 
     const contentRef = useRef<HTMLDivElement>(null);
+
+    // 🗄️ DATABASE INTEGRATION: Log playground page visit
+    useEffect(() => {
+        dataCollectionService.logNavigation('playground', location.pathname).catch(error => {
+            console.error('Failed to log playground navigation:', error);
+        });
+    }, []);
 
     const games = useMemo(() => [
         // Games with specific images first
@@ -249,6 +257,24 @@ const PlaygroundPage: React.FC = () => {
         setMainView('play');
     };
 
+    const handleGameSelect = (gameId: string) => {
+        setSelectedGame(gameId);
+        
+        // 🗄️ DATABASE INTEGRATION: Log game selection
+        dataCollectionService.logNavigation('game_selection', `playground/${gameId}`).catch((error: any) => {
+            console.error('Failed to log game selection:', error);
+        });
+    };
+
+    const handleCategoryChange = (category: string) => {
+        setPlayCategory(category);
+        
+        // 🗄️ DATABASE INTEGRATION: Log category change
+        dataCollectionService.logNavigation('category_change', `playground/${category}`).catch((error: any) => {
+            console.error('Failed to log category change:', error);
+        });
+    };
+
     const renderGameComponent = (gameId: string) => {
         switch (gameId) {
             case 'crossroad-fun':
@@ -293,7 +319,7 @@ const PlaygroundPage: React.FC = () => {
                     {gameCategories.map(category => (
                         <button
                             key={category}
-                            onClick={() => setPlayCategory(category)}
+                            onClick={() => handleCategoryChange(category)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                 playCategory === category
                                     ? 'bg-violet-600 text-white'
@@ -326,6 +352,7 @@ const PlaygroundPage: React.FC = () => {
                                 if (gameInfo) {
                                     setInfoGame(gameInfo);
                                     setShowInfoModal(true);
+                                    handleGameSelect(game.id);
                                 } else {
                                     console.warn(`No game details found for: ${game.id}`);
                                 }
@@ -556,7 +583,7 @@ const PlaygroundPage: React.FC = () => {
                         <div className="sticky top-32">
                             <nav className={`${glassPanelStyle} p-3 rounded-xl space-y-1`}>
                                 {gameCategories.map(cat => (
-                                    <button key={cat} onClick={() => setPlayCategory(cat)} className={`w-full text-left p-2 rounded-lg font-semibold transition-all text-sm ${
+                                    <button key={cat} onClick={() => handleCategoryChange(cat)} className={`w-full text-left p-2 rounded-lg font-semibold transition-all text-sm ${
                                     playCategory === cat 
                                         ? isDarkMode ? 'bg-white/20 text-white' : 'bg-violet-600 text-white'
                                         : isDarkMode 

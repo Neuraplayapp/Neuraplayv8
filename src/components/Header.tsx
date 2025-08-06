@@ -4,6 +4,7 @@ import { Brain, LogOut } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import SettingsDropdown from './SettingsDropdown';
 import NotificationDropdown from './NotificationDropdown';
+import { dataCollectionService } from '../services/DataCollectionService';
 
 const Header: React.FC = () => {
   const { user, setUser } = useUser();
@@ -22,6 +23,15 @@ const Header: React.FC = () => {
     }
   };
 
+  const handleNavigation = (page: string) => {
+    // 🗄️ DATABASE INTEGRATION: Log navigation
+    dataCollectionService.logNavigation(page, location.pathname).catch(error => {
+      console.error('Failed to log navigation to database:', error);
+    });
+    
+    // Existing navigation logic
+    navigate(page);
+  };
 
 
   return (
