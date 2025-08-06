@@ -634,10 +634,24 @@ Use professional but accessible language suitable for parents and educators.`;
   const canUseAI = () => {
     if (!user) return { allowed: false, remaining: 0, limit: 0 };
     
+    // Initialize usage if missing (safety check)
+    if (!user.usage) {
+      console.log('🔧 User missing usage object, initializing...');
+      const updatedUser = {
+        ...user,
+        usage: {
+          aiPrompts: { count: 0, lastReset: new Date().toISOString(), history: [] },
+          imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
+        }
+      };
+      setUser(updatedUser);
+      return { allowed: true, remaining: 19, limit: 20 }; // Allow with default limits
+    }
+    
     const { aiLimit } = getUsageLimits();
     if (aiLimit === -1) return { allowed: true, remaining: -1, limit: -1 }; // Unlimited
     
-    // Reset usage if expired
+    // Reset usage if expired (now safe to access)
     if (isUsageExpired(user.usage.aiPrompts.lastReset)) {
       resetUsageCounts();
       return { allowed: true, remaining: aiLimit - 1, limit: aiLimit };
@@ -654,10 +668,24 @@ Use professional but accessible language suitable for parents and educators.`;
   const canGenerateImage = () => {
     if (!user) return { allowed: false, remaining: 0, limit: 0 };
     
+    // Initialize usage if missing (safety check)
+    if (!user.usage) {
+      console.log('🔧 User missing usage object for image gen, initializing...');
+      const updatedUser = {
+        ...user,
+        usage: {
+          aiPrompts: { count: 0, lastReset: new Date().toISOString(), history: [] },
+          imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
+        }
+      };
+      setUser(updatedUser);
+      return { allowed: true, remaining: 1, limit: 2 }; // Allow with default limits
+    }
+    
     const { imageLimit } = getUsageLimits();
     if (imageLimit === -1) return { allowed: true, remaining: -1, limit: -1 }; // Unlimited
     
-    // Reset usage if expired
+    // Reset usage if expired (now safe to access)
     if (isUsageExpired(user.usage.imageGeneration.lastReset)) {
       resetUsageCounts();
       return { allowed: true, remaining: imageLimit - 1, limit: imageLimit };
