@@ -639,6 +639,8 @@ app.post('/api/api', async (req, res) => {
 
       // Step 3: Final call to GPT-OSS with tool results
       console.log('Making final call with tool results...');
+      console.log('🔍 DEBUG: Messages to send to final call:', JSON.stringify(input_data.messages, null, 2));
+      console.log('🔍 DEBUG: Number of messages:', input_data.messages.length);
       
       const finalResponse = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
         method: 'POST',
@@ -661,6 +663,7 @@ app.post('/api/api', async (req, res) => {
       }
 
       const finalData = await finalResponse.json();
+      console.log('🔍 DEBUG: Final AI response received:', JSON.stringify(finalData, null, 2));
       
       // Separate client-side tools from server-executed tools
       const clientSideTools = toolCalls.filter(tc => !SERVER_SIDE_TOOLS.includes(tc.function.name));
