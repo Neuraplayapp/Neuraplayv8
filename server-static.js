@@ -603,17 +603,17 @@ app.post('/api/api', async (req, res) => {
     console.log('Input data:', input_data);
 
     // Get environment variables - RESTORE ORIGINAL TOGETHER AI
-    const TOGETHER_TOKEN = process.env.together_token || process.env.TOGETHER_TOKEN;
+    const FIREWORKS_TOKEN = process.env.Neuraplay || process.env.FIREWORKS_TOKEN;
     const HF_TOKEN = process.env.hf_token;
 
-    console.log('Together token exists:', !!TOGETHER_TOKEN);
+    console.log('Fireworks token exists:', !!FIREWORKS_TOKEN);
     console.log('HF token exists:', !!HF_TOKEN);
-    console.log('Together token length:', TOGETHER_TOKEN ? TOGETHER_TOKEN.length : 0);
+    console.log('Fireworks token length:', FIREWORKS_TOKEN ? FIREWORKS_TOKEN.length : 0);
 
     // Handle different task types - Fixed for Express
     switch (task_type) {
       case 'test':
-        const testResult = await handleTestGeneration(TOGETHER_TOKEN);
+        const testResult = await handleTestGeneration(FIREWORKS_TOKEN);
         return res.status(testResult.statusCode).json(JSON.parse(testResult.body));
       case 'summarization':
       case 'text':
@@ -622,11 +622,11 @@ app.post('/api/api', async (req, res) => {
       case 'story':
       case 'report':
         console.log(`Processing ${task_type} request`);
-        const textResult = await handleTextGeneration(input_data, TOGETHER_TOKEN);
+        const textResult = await handleTextGeneration(input_data, FIREWORKS_TOKEN);
         return res.status(textResult.statusCode).json(JSON.parse(textResult.body));
       
       case 'image':
-        const imageResult = await handleImageGeneration(input_data, TOGETHER_TOKEN);
+        const imageResult = await handleImageGeneration(input_data, FIREWORKS_TOKEN);
         return res.status(imageResult.statusCode).json(JSON.parse(imageResult.body));
       
       case 'voice':
@@ -647,7 +647,7 @@ app.post('/api/api', async (req, res) => {
 // RESTORE ORIGINAL TOGETHER AI FUNCTIONS
 async function handleTextGeneration(input_data, token) {
   if (!token) {
-    console.log('No Together AI token provided, using fallback response');
+    console.log('No Fireworks AI token provided, using fallback response');
     return {
       statusCode: 200,
       headers: {
@@ -683,15 +683,15 @@ async function handleTextGeneration(input_data, token) {
     }
 
     // Generate response with ORIGINAL Qwen model
-    console.log('Using model: Qwen/Qwen3-235B-A22B-Instruct-2507-tput');
-    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+    console.log('Using model: accounts/fireworks/models/gpt-oss-120b');
+    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
+        model: 'accounts/fireworks/models/gpt-oss-120b',
         messages: messages,
         max_tokens: 100,
         temperature: 0.7,
@@ -700,11 +700,11 @@ async function handleTextGeneration(input_data, token) {
     });
 
     if (!response.ok) {
-      throw new Error(`Together AI API error: ${response.status}`);
+      throw new Error(`Fireworks AI API error: ${response.status}`);
     }
 
     const result = await response.json();
-    console.log('Together AI text result:', result);
+    console.log('Fireworks AI text result:', result);
 
     const assistantResponse = result.choices?.[0]?.message?.content || "I'm here to help with your learning journey!";
 
@@ -782,7 +782,7 @@ async function handleImageGeneration(input_data, token) {
         const isFastModel = model.includes('schnell') || model.includes('flux');
         const steps = isFastModel ? 4 : 20;
         
-        const response = await fetch('https://api.together.xyz/v1/images/generations', {
+        const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -908,22 +908,22 @@ async function handleTestGeneration(token) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        error: 'No Together AI token configured'
+        error: 'No Fireworks AI token configured'
       })
     };
   }
 
   try {
-    console.log('Testing Together AI...');
+    console.log('Testing Fireworks AI...');
     
-    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
+        model: 'accounts/fireworks/models/gpt-oss-120b',
         messages: [{ role: 'user', content: 'Hello' }],
         max_tokens: 10
       })
@@ -942,7 +942,7 @@ async function handleTestGeneration(token) {
       },
       body: JSON.stringify({ 
         success: true,
-        message: 'Together AI test successful',
+        message: 'Fireworks AI test successful',
         response: result
       })
     };
@@ -1026,33 +1026,33 @@ app.post('/api/openai-compatible', async (req, res) => {
     console.log('🌡️ Temperature:', temperature);
     console.log('📊 Max tokens:', max_tokens);
 
-    // Get Together AI token
-    const TOGETHER_TOKEN = process.env.together_token || process.env.TOGETHER_TOKEN;
+    // Get Fireworks AI token
+    const FIREWORKS_TOKEN = process.env.Neuraplay || process.env.FIREWORKS_TOKEN;
     
-    if (!TOGETHER_TOKEN) {
-      console.error('❌ Together AI token not found');
+    if (!FIREWORKS_TOKEN) {
+      console.error('❌ Fireworks AI token not found');
       return res.status(500).json({
-        error: 'Together AI token not configured'
+        error: 'Fireworks AI token not configured'
       });
     }
 
-    // Convert OpenAI format to Together AI format
+    // Convert OpenAI format to Fireworks AI format
     const systemPrompt = messages?.find(msg => msg.role === 'system')?.content || 
       'You are Synapse, a friendly AI learning assistant for children. ALWAYS introduce yourself as "Synapse" and NEVER mention any other AI model names like "Qwen", "GPT", "Claude", etc. Provide educational guidance, explain concepts clearly, and be encouraging and supportive. Use child-friendly language with emojis and metaphors.';
 
     const userMessages = messages?.filter(msg => msg.role !== 'system') || [];
     
-    console.log('🔄 Calling Together AI API...');
+    console.log('🔄 Calling Fireworks AI API...');
     
-    // Call Together AI with Qwen model
-    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+    // Call Fireworks AI with Qwen model
+    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${TOGETHER_TOKEN}`,
+        'Authorization': `Bearer ${FIREWORKS_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen3-235B-A22B-Instruct-2507-tput',
+        model: 'accounts/fireworks/models/gpt-oss-120b',
         messages: [
           { role: 'system', content: systemPrompt },
           ...userMessages
@@ -1065,15 +1065,15 @@ app.post('/api/openai-compatible', async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Together AI error:', response.status, errorText);
+      console.error('❌ Fireworks AI error:', response.status, errorText);
       
       return res.status(response.status).json({
-        error: `Together AI API error: ${response.status} - ${errorText}`
+        error: `Fireworks AI API error: ${response.status} - ${errorText}`
       });
     }
 
     const result = await response.json();
-    console.log('✅ Together AI response received');
+    console.log('✅ Fireworks AI response received');
 
     // Convert back to OpenAI format
     const openAIResponse = {
@@ -1126,7 +1126,7 @@ app.get('/api/server-info', (req, res) => {
                           !!process.env.ELEVEN_LABS_API_KEY,
       has_assemblyai_key: !!process.env.VITE_ASSEMBLYAI_API_KEY || !!process.env.ASSEMBLYAI_API_KEY,
       has_openai_key: !!process.env.OPENAI_API_KEY,
-      has_together_token: !!process.env.together_token || !!process.env.TOGETHER_TOKEN
+      has_together_token: !!process.env.Neuraplay || !!process.env.FIREWORKS_TOKEN
     }
   });
 });
