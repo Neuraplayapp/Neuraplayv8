@@ -374,14 +374,18 @@ async function executeTool(toolCall) {
 
 async function performWebSearch(query) {
   try {
+    console.log('🔍 DEBUG: performWebSearch called with query:', query);
     const SERPER_API_KEY = process.env.Serper_api;
+    console.log('🔍 DEBUG: Serper API key exists:', !!SERPER_API_KEY);
     if (!SERPER_API_KEY) {
+      console.log('❌ DEBUG: No Serper API key - check Render env var "Serper_api"');
       return {
         success: false,
         message: "Search API not configured"
       };
     }
     
+        console.log('🔍 DEBUG: Making Serper API call...');
     const response = await fetch('https://google.serper.dev/search', {
       method: 'POST',
       headers: {
@@ -390,8 +394,10 @@ async function performWebSearch(query) {
       },
       body: JSON.stringify({ q: query })
     });
-    
+
+    console.log('🔍 DEBUG: Serper response status:', response.status);
     const data = await response.json();
+    console.log('🔍 DEBUG: Serper response data:', JSON.stringify(data, null, 2));
     
     if (data.organic && data.organic.length > 0) {
       const results = data.organic.slice(0, 3).map(result => ({
@@ -400,19 +406,21 @@ async function performWebSearch(query) {
         link: result.link
       }));
       
+      console.log('✅ DEBUG: Web search successful, returning', results.length, 'results');
       return {
         success: true,
         message: `Found ${results.length} search results for "${query}"`,
         data: { query, results }
       };
     } else {
+      console.log('❌ DEBUG: No organic results found in response');
       return {
         success: false,
         message: `No search results found for "${query}"`
       };
     }
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('❌ DEBUG: Search error:', error);
     return {
       success: false,
       message: `Search failed: ${error.message}`
