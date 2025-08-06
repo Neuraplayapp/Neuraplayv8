@@ -8,7 +8,7 @@ class AIService {
     // Detect platform from environment or default to local
     this.platform = import.meta.env.VITE_PLATFORM || 'local';
     this.apiBase = import.meta.env.VITE_API_BASE || 
-                   (this.platform === 'netlify' ? '/.netlify/functions' : '');
+                   (this.platform === 'netlify' ? '/.netlify/functions' : '/api');
     this.wsEnabled = import.meta.env.VITE_WS_ENABLED === 'true' || this.platform === 'render';
     
     // Only log in development mode
@@ -86,7 +86,7 @@ class AIService {
 
   // Generic OpenAI API
   async openAICall(message: string, model: string = 'gpt-3.5-turbo') {
-    return this.apiCall('/api/api', {
+    return this.apiCall('/api', {
       method: 'POST',
       body: JSON.stringify({ message, model }),
     });
@@ -153,8 +153,8 @@ class AIService {
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
 
-    // FIXED: Use correct endpoint - server has /api/api route
-    const apiEndpoint = '/api/api';
+    // Use correct endpoint - server has /api/api route, but apiBase handles /api prefix
+    const apiEndpoint = '/api';
     
     console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
@@ -239,7 +239,7 @@ class AIService {
     const prompt = this.extractImagePrompt(text);
     
     // Use the correct API endpoint for each platform
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -449,7 +449,7 @@ Keep responses:
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
     
     try {
       const response = await this.apiCall(apiEndpoint, {
