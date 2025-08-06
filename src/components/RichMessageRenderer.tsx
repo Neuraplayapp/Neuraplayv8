@@ -1,10 +1,12 @@
 import React from 'react';
 
 interface RichMessageRendererProps {
-  content: string;
+  text: string;
+  isUser?: boolean;
+  isDarkMode?: boolean;
 }
 
-const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({ content }) => {
+const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({ text, isUser, isDarkMode }) => {
   // Enhanced rich text rendering with mathematical formatting
   const formatText = (text: string) => {
     return text
@@ -30,7 +32,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({ content }) =>
   return (
     <div 
       className="rich-message-content prose prose-invert max-w-none"
-      dangerouslySetInnerHTML={{ __html: formatText(content) }}
+      dangerouslySetInnerHTML={{ __html: formatText(text) }}
     />
   );
 };
