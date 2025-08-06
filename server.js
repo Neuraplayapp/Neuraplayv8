@@ -602,6 +602,8 @@ app.post('/api/api', async (req, res) => {
 
     // NEW GPT-OSS TOOL CALLING SYSTEM
     console.log('Making initial call to GPT-OSS with tools...');
+    console.log('🔍 DEBUG: Messages being sent:', JSON.stringify(input_data.messages, null, 2));
+    console.log('🔍 DEBUG: Number of tools available:', tools.length);
     
     // Step 1: Initial call to GPT-OSS with tools
     const initialResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
