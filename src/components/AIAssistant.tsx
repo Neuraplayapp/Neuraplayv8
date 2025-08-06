@@ -1958,8 +1958,8 @@ Need help with anything specific? Just ask! 🌟`;
                 console.log('🔍 API Key length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
                 
                 const sessionConfig = {
-                    agentId: getAgentId()
-                    // connectionType: 'websocket', // Remove this as it might not be needed
+                    agentId: getAgentId(),
+                    connectionType: 'websocket' as const, // Required by ElevenLabs
                     // Optional: add user_id for tracking if needed
                     // user_id: user?.username || 'anonymous'
                 };
@@ -2367,8 +2367,24 @@ Need help with anything specific? Just ask! 🌟`;
             addMessage(activeConversation, assistantMessage);
         } catch (error: any) {
             console.error('Error in conversation mode:', error);
+            
+            // Provide specific error information instead of generic message
+            let errorText = 'I encountered an error processing your request. ';
+            if (error.message?.includes('400')) {
+                errorText += 'There was an API request issue. This might be related to image generation or malformed requests.';
+            } else if (error.message?.includes('401') || error.message?.includes('403')) {
+                errorText += 'Authentication failed. Please check API keys.';
+            } else if (error.message?.includes('timeout')) {
+                errorText += 'The request timed out. Please try again.';
+            } else if (error.message?.includes('network')) {
+                errorText += 'Network connection issue. Please check your connection.';
+            } else {
+                errorText += `Specific error: ${error.message || 'Unknown error'}`;
+            }
+            errorText += ' 🔧';
+            
             const errorMessage: Message = {
-                text: `I'm having trouble with that right now. Could you try again? 🌟`,
+                text: errorText,
                 isUser: false,
                 timestamp: new Date()
             };
@@ -2414,8 +2430,22 @@ Need help with anything specific? Just ask! 🌟`;
             }
         } catch (error: any) {
             console.error('Error in chat mode:', error);
+            
+            // Provide specific error information instead of generic message
+            let errorText = 'I encountered an error in chat mode. ';
+            if (error.message?.includes('400')) {
+                errorText += 'API request failed - this could be due to malformed request or invalid parameters.';
+            } else if (error.message?.includes('aiPrompts')) {
+                errorText += 'Context property missing - this is a system configuration issue.';
+            } else if (error.message?.includes('tool')) {
+                errorText += 'Tool execution failed - there was an issue with AI tool calling.';
+            } else {
+                errorText += `Details: ${error.message || 'Unknown chat error'}`;
+            }
+            errorText += ' 🛠️';
+            
             const errorMessage: Message = {
-                text: `I'm having trouble with that right now. Could you try again? 🌟`,
+                text: errorText,
                 isUser: false,
                 timestamp: new Date()
             };
@@ -2453,6 +2483,25 @@ Need help with anything specific? Just ask! 🌟`;
             language: selectedLanguage !== 'auto' ? SUPPORTED_LANGUAGES[selectedLanguage] : null,
             isVerified: contextUser?.isVerified || false,
             subscription: contextUser?.subscription?.tier || 'free',
+            // Add missing properties that may be expected by the system
+            aiPrompts: [], // Required by some AI context handlers
+            prompts: [], // Alternative name for prompts
+            settings: {
+                theme: 'dark',
+                language: selectedLanguage,
+                accessibility: {}
+            },
+            capabilities: {
+                imageGeneration: canGenerateImage().allowed,
+                toolCalling: true,
+                voiceInput: true,
+                voiceOutput: true
+            },
+            session: {
+                id: `session_${Date.now()}`,
+                startTime: new Date(),
+                messageCount: conversationHistory.length
+            },
             conversationHistory: conversationHistory.map(msg => ({
                 role: msg.isUser ? 'user' : 'assistant',
                 content: msg.text,
@@ -2574,11 +2623,12 @@ Need help with anything specific? Just ask! 🌟`;
             }
         }
 
-        // Add AI response to conversation (tools handle their own specialized responses)
+        // Add AI response to conversation with tool results
         const assistantMessage: Message = {
             text: aiResponse,
             isUser: false,
-            timestamp: new Date()
+            timestamp: new Date(),
+            toolResults: [] // Will be populated with tool execution results
         };
         addMessage(activeConversation, assistantMessage);
 
@@ -2990,7 +3040,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             if (result && typeof result === 'object') {
                 if (result.error) {
                     console.error('API error:', result.error);
-                    return "I'm having trouble processing that right now. Could you try again?";
+                    return `API Error: ${result.error}. Please check the server logs for details. 🚨`;
                 }
                 
                 if (result.response) {
@@ -3023,7 +3073,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             return "I received an unexpected response format. Could you try again?";
         } catch (error) {
             console.error('Error parsing API response:', error);
-            return "I'm having trouble processing the response. Could you try again?";
+            return `Response parsing error: ${error instanceof Error ? error.message : 'Unknown parsing error'}. This indicates a server response format issue. 🔍`;
         }
     };
 
@@ -3671,6 +3721,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                                     text={msg.text} 
                                                     isUser={msg.isUser}
                                                     isDarkMode={theme.isDarkMode}
+                                                    toolResults={msg.toolResults || []}
                                                 />
                                             </div>
                                             {msg.image && (

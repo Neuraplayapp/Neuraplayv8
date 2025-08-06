@@ -6,6 +6,7 @@ export interface Message {
   timestamp: Date;
   image?: string;
   action?: 'navigate_to_page' | 'update_settings' | 'recommend_game' | 'create_content' | 'accessibility_support' | 'read_user_data' | 'generate_image' | 'web_search' | 'get_weather' | 'game';
+  toolResults?: any[]; // Store tool execution results for enhanced rendering
 }
 
 export interface Conversation {
