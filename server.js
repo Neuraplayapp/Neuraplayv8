@@ -352,7 +352,7 @@ async function executeTool(toolCall) {
   const serverToolConfig = TOOL_ROUTING_CONFIG.server[name];
   console.log(`🖥️ Server-side tool ${name} - executing on server`);
   console.log(`📋 Reason: ${serverToolConfig?.reason || 'Unknown server-side tool'}`);
-  console.log(`⚙️ Requirements: ${serverToolConfig?.requires?.join(', ') || 'Unknown'}`);}
+  console.log(`⚙️ Requirements: ${serverToolConfig?.requires?.join(', ') || 'Unknown'}`);
   
   switch (name) {
     case 'web_search':
