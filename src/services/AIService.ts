@@ -154,7 +154,7 @@ class AIService {
     // The GPT-OSS model decides when to call generate_image tool
 
     // FIXED: Use correct endpoint - server has /api/api route
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
     
     console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
@@ -239,7 +239,7 @@ class AIService {
     const prompt = this.extractImagePrompt(text);
     
     // Use the correct API endpoint for each platform
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -449,7 +449,7 @@ Keep responses:
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
     
     try {
       const response = await this.apiCall(apiEndpoint, {
