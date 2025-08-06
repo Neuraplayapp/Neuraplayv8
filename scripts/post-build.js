@@ -37,8 +37,8 @@ const copyPlatformFiles = () => {
     console.log('📁 Netlify: Functions directory preserved');
   } else if (platform === 'render') {
     // Copy server file for Render
-    const serverPath = path.join(__dirname, '..', 'server.js');
-    const serverDest = path.join(distPath, 'server.js');
+    const serverPath = path.join(__dirname, '..', 'server.cjs');
+    const serverDest = path.join(distPath, 'server.cjs');
     fs.copyFileSync(serverPath, serverDest);
     console.log('📁 Render: Server file copied to dist');
   }
