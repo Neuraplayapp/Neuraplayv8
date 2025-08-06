@@ -308,11 +308,11 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             );
           case 'text':
           default:
-            return (
-              <div 
+  return (
+    <div 
                 key={index}
                 dangerouslySetInnerHTML={{ __html: item.content }}
-              />
+    />
             );
         }
       })}
