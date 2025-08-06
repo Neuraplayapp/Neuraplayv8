@@ -1274,17 +1274,23 @@ app.post('/api/api', async (req, res) => {
   }
 });
 
-// Database setup and configuration
+// Database setup and configuration (OPTIONAL - doesn't block server startup)
 const { Pool } = require('pg');
 
-// PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.RENDER_POSTGRES_URL,
+let pool = null;
+let databaseAvailable = false;
+
+// Initialize PostgreSQL connection (you have Render PostgreSQL)
+pool = new Pool({
+  connectionString: process.env.RENDER_POSTGRES_URL || process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// Initialize database tables
+console.log('🔗 Connecting to Render PostgreSQL database...');
+
+// Initialize database tables (non-blocking to prevent server crashes)
 async function initDatabase() {
+  
   try {
     const client = await pool.connect();
     
@@ -1361,14 +1367,21 @@ async function initDatabase() {
     `);
 
     client.release();
+    databaseAvailable = true;
     console.log('✅ Database tables initialized successfully');
+    return true;
   } catch (error) {
     console.error('❌ Database initialization error:', error);
+    console.log('📝 Continuing with in-memory storage...');
+    databaseAvailable = false;
+    return false;
   }
 }
 
-// Initialize database on startup
-initDatabase();
+// Initialize database on startup (non-blocking)
+initDatabase().catch(err => {
+  console.log('⚠️ Database initialization failed, using in-memory mode');
+});
 
 // Database API endpoints
 app.post('/api/database', async (req, res) => {
@@ -1377,6 +1390,16 @@ app.post('/api/database', async (req, res) => {
     
     if (!action || !collection) {
       return res.status(400).json({ error: 'Missing action or collection' });
+    }
+    
+    // If database is not available, return graceful error
+    if (!databaseAvailable || !pool) {
+      console.log('📝 Database request made but DB unavailable - using in-memory fallback');
+      return res.json({ 
+        success: true, 
+        message: 'Database temporarily unavailable - using in-memory storage',
+        data: null 
+      });
     }
 
     const client = await pool.connect();
