@@ -96,7 +96,7 @@ class AIService {
 
     // Use the correct API endpoint for each platform
     const apiEndpoint = this.platform === 'netlify' 
-      ? '/.netlify/functions/api'
+      ? '/api'
       : '/api/api';
     
     // Prepare system prompt with tool calling instructions
@@ -105,11 +105,8 @@ class AIService {
       : this.getStandardSystemPrompt();
 
     try {
-      const result = await fetch(apiEndpoint, {
+      const response = await this.apiCall(apiEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           task_type: 'chat',
           input_data: {
@@ -122,12 +119,6 @@ class AIService {
           }
         })
       });
-
-      if (!result.ok) {
-        throw new Error(`API call failed: ${result.status} ${result.statusText}`);
-      }
-
-      const response = await result.json();
 
       // Handle the response format from the server
       if (Array.isArray(response) && response.length > 0) {
@@ -164,15 +155,12 @@ class AIService {
     
     // Use the correct API endpoint for each platform
     const apiEndpoint = this.platform === 'netlify' 
-      ? '/.netlify/functions/api'
+      ? '/api'
       : '/api/api';
 
     try {
-      const result = await fetch(apiEndpoint, {
+      const response = await this.apiCall(apiEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           task_type: 'image',
           input_data: {
@@ -181,12 +169,6 @@ class AIService {
           }
         })
       });
-
-      if (!result.ok) {
-        throw new Error(`Image generation failed: ${result.status} ${result.statusText}`);
-      }
-
-      const response = await result.json();
 
       // Return the image URL or data URL
       if (response.image_url) {
@@ -385,15 +367,12 @@ Keep responses:
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
     const apiEndpoint = this.platform === 'netlify' 
-      ? '/.netlify/functions/api'
+      ? '/api'
       : '/api/api';
     
     try {
-      const result = await fetch(apiEndpoint, {
+      const response = await this.apiCall(apiEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           task_type: 'chat',
           input_data: {
@@ -407,11 +386,6 @@ Keep responses:
         })
       });
 
-      if (!result.ok) {
-        throw new Error(`API call failed: ${result.status} ${result.statusText}`);
-      }
-
-      const response = await result.json();
       console.log('Test API response:', response);
 
       if (Array.isArray(response) && response.length > 0) {
