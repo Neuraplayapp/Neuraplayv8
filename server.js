@@ -629,7 +629,10 @@ app.post('/api/api', async (req, res) => {
     }
 
     const initialData = await initialResponse.json();
+    console.log('🔍 DEBUG: Full AI response:', JSON.stringify(initialData, null, 2));
     console.log('Initial response finish_reason:', initialData.choices[0].finish_reason);
+    console.log('🔍 DEBUG: Message content:', initialData.choices[0].message.content);
+    console.log('🔍 DEBUG: Tool calls in response:', initialData.choices[0].message.tool_calls);
 
     // Step 2: Handle tool calls if present
     if (initialData.choices[0].finish_reason === 'tool_calls') {
@@ -699,8 +702,12 @@ app.post('/api/api', async (req, res) => {
       
       const aiResponse = initialData.choices[0].message.content || 'I apologize, but I could not generate a response.';
       
-      // Return in the expected format
-      res.json([{ generated_text: aiResponse }]);
+      // Return in the expected format with empty tool arrays
+      res.json([{ 
+        generated_text: aiResponse,
+        tool_calls: [],
+        tool_results: []
+      }]);
     }
 
   } catch (error) {
