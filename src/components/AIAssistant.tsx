@@ -2478,27 +2478,39 @@ Need help with anything specific? Just ask! 🌟`;
         try {
             // Try the enhanced AI service
             const { aiService } = await import('../services/AIService');
-            aiResponse = await aiService.sendMessage(inputMessage, context, enableToolCalling);
+            console.log('🔍 AI Assistant Debug - Calling AI service with tool calling:', enableToolCalling);
+            const response = await aiService.sendMessage(inputMessage, context, enableToolCalling);
+            
+            console.log('🔍 AI Assistant Debug - AI Service Response:', response);
             
             // Handle different response formats
-            if (typeof aiResponse === 'string') {
+            if (typeof response === 'string') {
                 // String response - parse for tool calls
+                console.log('🔧 DEBUG: Processing string response for tool calls');
                 const parsed = parseAIResponse(aiResponse);
                 aiResponse = parsed.text;
                 toolCalls = parsed.toolCalls || [];
+                console.log('🔧 DEBUG: Parsed tool calls from string:', toolCalls);
             } else if (Array.isArray(aiResponse) && aiResponse.length > 0) {
                 // Array response from server with tool calls
+                console.log('🔧 DEBUG: Processing array response with tool calls:', aiResponse[0]);
                 const firstResponse = aiResponse[0];
                 aiResponse = firstResponse.generated_text || 'No response received';
                 toolCalls = firstResponse.tool_calls || [];
+                console.log('🔧 DEBUG: Extracted tool calls from array:', toolCalls);
             } else if (aiResponse && typeof aiResponse === 'object') {
                 // Object response
+                console.log('🔧 DEBUG: Processing object response:', aiResponse);
                 aiResponse = aiResponse.generated_text || aiResponse.text || 'No response received';
                 toolCalls = aiResponse.tool_calls || [];
+                console.log('🔧 DEBUG: Extracted tool calls from object:', toolCalls);
             } else {
+                console.log('🔧 DEBUG: No valid response format found');
                 aiResponse = 'No response received';
                 toolCalls = [];
             }
+            
+            console.log('🔍 AI Assistant Debug - Final parsed response:', { aiResponse, toolCalls: toolCalls.length });
             
         } catch (error) {
             console.log('AI Service failed, trying basic API test');
@@ -2553,13 +2565,19 @@ Need help with anything specific? Just ask! 🌟`;
 
         // Execute tool calls if any
         if (toolCalls.length > 0 && toolExecutorService) {
+            console.log('🔧 DEBUG: Found tool calls to execute:', toolCalls);
             for (const toolCall of toolCalls) {
                 try {
-                    console.log('🔧 Executing tool call:', toolCall);
+                    console.log('🔧 DEBUG: Executing tool call:', toolCall);
+                    console.log('🔧 DEBUG: Tool executor service available:', !!toolExecutorService);
+                    console.log('🔧 DEBUG: Context for tool execution:', context);
+                    
                     const result = await toolExecutorService.executeTool(toolCall, context);
+                    console.log('🔧 DEBUG: Tool execution result:', result);
                     
                     // Add tool execution results to conversation
                     if (result.success) {
+                        console.log('✅ DEBUG: Tool execution successful:', result.message);
                         const toolMessage: Message = {
                             text: result.message,
                             isUser: false,
@@ -2568,12 +2586,16 @@ Need help with anything specific? Just ask! 🌟`;
                         };
                         addMessageToConversation(activeConversation, toolMessage);
                     } else {
-                        console.error('Tool execution failed:', result.message);
+                        console.error('❌ DEBUG: Tool execution failed:', result.message);
                     }
                 } catch (toolError) {
-                    console.error('Error executing tool:', toolError);
+                    console.error('❌ DEBUG: Error executing tool:', toolError);
+                    console.error('❌ DEBUG: Tool call that failed:', toolCall);
                 }
             }
+        } else {
+            console.log('🔧 DEBUG: No tool calls to execute. toolCalls.length:', toolCalls.length);
+            console.log('🔧 DEBUG: toolExecutorService available:', !!toolExecutorService);
         }
 
         return {

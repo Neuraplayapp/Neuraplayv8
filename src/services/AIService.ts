@@ -87,14 +87,67 @@ class AIService {
     });
   }
 
+  // Get tool definitions for the AI model
+  private getToolDefinitions() {
+    return [
+      {
+        "type": "function",
+        "function": {
+          "name": "navigate_to_page",
+          "description": "Navigate the user to a different page within the NeuraPlay application. Use this when users want to go to specific sections like playground, dashboard, forum, or profile.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "string",
+                "enum": ["playground", "dashboard", "forum", "profile", "home", "about"],
+                "description": "The page to navigate to"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Optional reason for navigation"
+              }
+            },
+            "required": ["page"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "update_settings",
+          "description": "Update user settings like theme, accessibility, or preferences. Use this when users want to change their experience.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "setting": {
+                "type": "string",
+                "enum": ["theme", "accessibility", "notifications", "language"],
+                "description": "The setting to update"
+              },
+              "value": {
+                "type": "string",
+                "description": "The new value for the setting"
+              }
+            },
+            "required": ["setting", "value"]
+          }
+        }
+      }
+    ];
+  }
+
   // Enhanced AI Message with Tool Calling Support
   async sendMessage(text: string, context?: any, enableToolCalling: boolean = true): Promise<{
     generated_text: string;
     tool_calls: any[];
     tool_results: any[];
   }> {
+    console.log('🔍 AI Service Debug - Input:', { text, enableToolCalling, context });
+    
     // Check if this is an image generation request
     if (this.isImageRequest(text)) {
+      console.log('🎨 Image generation detected');
       const imageResult = await this.handleImageGeneration(text);
       return {
         generated_text: imageResult,
@@ -103,10 +156,12 @@ class AIService {
       };
     }
 
-    // Use the correct API endpoint for each platform
-    const apiEndpoint = this.platform === 'netlify' 
+    // Determine API endpoint based on platform
+    const apiEndpoint = this.platform === 'netlify'
       ? '/api'
       : '/api/api';
+    
+    console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
     // Prepare system prompt with tool calling instructions and language context
     let systemPrompt = enableToolCalling 
@@ -115,10 +170,13 @@ class AIService {
     
     // Add language context if provided
     if (context?.language) {
+      console.log('🔍 AI Service Debug - Language Context:', context.language);
       systemPrompt += `\n\nIMPORTANT: The user is speaking in ${context.language}. Please respond in the same language unless they specifically ask you to translate or respond in another language.`;
     }
 
     try {
+      console.log('🔍 AI Service Debug - Sending request with tool calling:', enableToolCalling);
+      
       const response = await this.apiCall(apiEndpoint, {
         method: 'POST',
         body: JSON.stringify({
@@ -128,33 +186,43 @@ class AIService {
               { role: 'system', content: systemPrompt },
               { role: 'user', content: text }
             ],
+            tools: enableToolCalling ? this.getToolDefinitions() : undefined,
+            tool_choice: enableToolCalling ? 'auto' : undefined,
             max_tokens: 1000,
             temperature: 0.7
           }
         })
       });
 
+      console.log('🔍 AI Service Debug - Raw Response:', response);
+
       // Handle the response format from the server
       if (Array.isArray(response) && response.length > 0) {
         const firstResponse = response[0];
+        console.log('🔍 AI Service Debug - Tool Calls Found:', firstResponse.tool_calls?.length || 0);
+        console.log('🔍 AI Service Debug - Tool Results Found:', firstResponse.tool_results?.length || 0);
+        
         return {
           generated_text: firstResponse.generated_text || 'No response received',
           tool_calls: firstResponse.tool_calls || [],
           tool_results: firstResponse.tool_results || []
         };
       } else if (typeof response === 'string') {
+        console.log('🔍 AI Service Debug - String response, no tool calls');
         return {
           generated_text: response,
           tool_calls: [],
           tool_results: []
         };
       } else if (response && typeof response === 'object') {
+        console.log('🔍 AI Service Debug - Object response');
         return {
           generated_text: response.generated_text || response.text || 'No response received',
           tool_calls: response.tool_calls || [],
           tool_results: response.tool_results || []
         };
       } else {
+        console.log('🔍 AI Service Debug - No valid response');
         return {
           generated_text: 'No response received',
           tool_calls: [],
@@ -162,7 +230,7 @@ class AIService {
         };
       }
     } catch (error) {
-      console.error('AI Service error:', error);
+      console.error('🔍 AI Service Debug - Error:', error);
       throw error;
     }
   }
@@ -416,12 +484,23 @@ Keep responses:
           }
         })
       });
-
-      console.log('Test API response:', response);
-
+      
+      console.log('🔧 DEBUG: Raw AI service response:', response);
+      console.log('🔧 DEBUG: Response type:', typeof response);
+      console.log('🔧 DEBUG: Is array:', Array.isArray(response));
+      
+      // Handle the response format from the server
       if (Array.isArray(response) && response.length > 0) {
+        console.log('🔧 DEBUG: Processing array response:', response[0]);
         return response[0].generated_text || 'No response received';
+      } else if (typeof response === 'string') {
+        console.log('🔧 DEBUG: Processing string response');
+        return response;
+      } else if (response.response) {
+        console.log('🔧 DEBUG: Processing object response with .response');
+        return response.response;
       } else {
+        console.log('🔧 DEBUG: No valid response format found');
         return 'No response received';
       }
     } catch (error) {

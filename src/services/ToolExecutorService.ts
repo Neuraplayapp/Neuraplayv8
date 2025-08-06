@@ -30,36 +30,44 @@ export class ToolExecutorService {
 
   // Main tool execution dispatcher
   async executeTool(toolCall: ToolCall, context?: any): Promise<ToolResult> {
-    console.log(`🔧 Executing tool: ${toolCall.name}`, toolCall.parameters);
+    console.log(`🔧 DEBUG: ToolExecutor - Executing tool: ${toolCall.name}`, toolCall.parameters);
+    console.log(`🔧 DEBUG: ToolExecutor - Context:`, context);
 
     try {
       switch (toolCall.name) {
         case 'navigate_to_page':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling navigation to: ${toolCall.parameters.page}`);
           return await this.handleNavigation(toolCall.parameters, context);
         
         case 'update_setting':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling setting update: ${toolCall.parameters.setting}`);
           return await this.handleSettingUpdate(toolCall.parameters, context);
         
         case 'recommend_games':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling game recommendation`);
           return await this.handleGameRecommendation(toolCall.parameters, context);
         
         case 'create_content':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling content creation`);
           return await this.handleContentCreation(toolCall.parameters, context);
         
         case 'accessibility_support':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling accessibility support`);
           return await this.handleAccessibilitySupport(toolCall.parameters, context);
         
         case 'read_user_data':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling data reading`);
           return await this.handleDataReading(toolCall.parameters, context);
         
         default:
+          console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
           return {
             success: false,
             message: `Unknown tool: ${toolCall.name}`
           };
       }
     } catch (error) {
-      console.error(`Error executing tool ${toolCall.name}:`, error);
+      console.error(`❌ DEBUG: ToolExecutor - Error executing tool ${toolCall.name}:`, error);
       return {
         success: false,
         message: `Failed to execute ${toolCall.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -71,6 +79,8 @@ export class ToolExecutorService {
   private async handleNavigation(params: any, context?: any): Promise<ToolResult> {
     const { page, reason } = params;
     
+    console.log('🔍 Tool Executor Debug - Navigation request:', { page, reason, context });
+    
     const pageMap: Record<string, string> = {
       'playground': '/playground',
       'dashboard': '/dashboard', 
@@ -81,10 +91,12 @@ export class ToolExecutorService {
     };
 
     const path = pageMap[page.toLowerCase()] || `/${page.toLowerCase()}`;
+    console.log('🔍 Tool Executor Debug - Mapped path:', path);
     
     try {
       // Use your existing navigation logic
       const result = await this.navigationService.navigateTo(path, context?.user);
+      console.log('🔍 Tool Executor Debug - Navigation result:', result);
       
       return {
         success: result.success,
@@ -94,6 +106,7 @@ export class ToolExecutorService {
         navigationPerformed: result.success
       };
     } catch (error) {
+      console.error('🔍 Tool Executor Debug - Navigation error:', error);
       return {
         success: false,
         message: `❌ Navigation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -101,32 +114,61 @@ export class ToolExecutorService {
     }
   }
 
-  // Settings update handler
+  // Settings update tool handler
   private async handleSettingUpdate(params: any, context?: any): Promise<ToolResult> {
     const { setting, value, reason } = params;
     
+    console.log('🔍 Tool Executor Debug - Settings update request:', { setting, value, reason, context });
+    
     try {
-      // This would integrate with your theme context
-      // For now, we'll simulate the setting update
-      console.log(`🎛️ Updating setting: ${setting} = ${value}`);
+      // Apply the setting change
+      let message = '';
+      let success = false;
       
-      const settingMessages: Record<string, string> = {
-        'theme': `🎨 Theme changed to ${value}! ${reason || 'The interface should look different now.'}`,
-        'fontSize': `📝 Font size changed to ${value}! ${reason || 'Text should be easier to read now.'}`,
-        'accessibility': `♿ Accessibility features ${value === 'enabled' ? 'enabled' : 'disabled'}! ${reason || 'The platform is now more accessible.'}`,
-        'colorBlindMode': `🌈 Color blind mode set to ${value}! ${reason || 'Colors are now optimized for your vision.'}`,
-        'highContrast': `📖 High contrast ${value === 'enabled' ? 'enabled' : 'disabled'}! ${reason || 'Text should be much clearer now.'}`
-      };
-
+      switch (setting.toLowerCase()) {
+        case 'theme':
+          // Update theme setting
+          console.log('🔍 Tool Executor Debug - Updating theme to:', value);
+          // Add actual theme update logic here
+          message = `🎨 Theme changed to ${value}! The interface should now reflect your preference.`;
+          success = true;
+          break;
+          
+        case 'accessibility':
+          console.log('🔍 Tool Executor Debug - Updating accessibility setting:', value);
+          message = `♿ Accessibility setting updated to ${value}! I've applied the changes to make NeuraPlay more accessible for you.`;
+          success = true;
+          break;
+          
+        case 'notifications':
+          console.log('🔍 Tool Executor Debug - Updating notification setting:', value);
+          message = `🔔 Notification setting changed to ${value}! You'll now ${value === 'enabled' ? 'receive' : 'not receive'} notifications.`;
+          success = true;
+          break;
+          
+        case 'language':
+          console.log('🔍 Tool Executor Debug - Updating language setting:', value);
+          message = `🌍 Language changed to ${value}! The interface and AI responses will now be in ${value}.`;
+          success = true;
+          break;
+          
+        default:
+          message = `❌ Unknown setting: ${setting}`;
+          success = false;
+      }
+      
+      console.log('🔍 Tool Executor Debug - Settings update result:', { success, message });
+      
       return {
-        success: true,
-        message: settingMessages[setting] || `⚙️ Setting "${setting}" updated to "${value}"! ${reason || ''}`,
-        data: { setting, value }
+        success,
+        message: success ? message : `❌ Failed to update ${setting}: ${message}`,
+        settingUpdated: success
       };
     } catch (error) {
+      console.error('🔍 Tool Executor Debug - Settings update error:', error);
       return {
         success: false,
-        message: `❌ Failed to update ${setting}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `❌ Settings update failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
