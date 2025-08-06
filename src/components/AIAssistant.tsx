@@ -2499,7 +2499,7 @@ Need help with anything specific? Just ask! 🌟`;
                 console.log('🔧 DEBUG: CLIENT-SIDE tool calls to execute:', toolCalls);
                 
                 // SERVER-SIDE TOOL RESULTS: Already executed, add to conversation
-                if (firstResponse.server_tool_calls && firstResponse.tool_results) {
+                if (firstResponse.tool_results && firstResponse.tool_results.length > 0) {
                     console.log('🔧 DEBUG: SERVER-SIDE tool results:', firstResponse.tool_results);
                     // Add server tool results to the conversation immediately
                     for (const toolResult of firstResponse.tool_results) {
