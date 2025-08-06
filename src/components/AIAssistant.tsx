@@ -2504,16 +2504,42 @@ Need help with anything specific? Just ask! 🌟`;
                     // Add server tool results to the conversation immediately
                     for (const toolResult of firstResponse.tool_results) {
                         if (toolResult.content) {
-                            const resultData = JSON.parse(toolResult.content);
-                            if (resultData.success) {
-                                const serverToolMessage: Message = {
-                                    text: resultData.message,
-                                    isUser: false,
-                                    timestamp: new Date(),
-                                    action: toolResult.name as any,
-                                    ...(resultData.data?.image_url && { image: resultData.data.image_url })
-                                };
-                                addMessageToConversation(activeConversation, serverToolMessage);
+                            try {
+                                const resultData = JSON.parse(toolResult.content);
+                                if (resultData.success) {
+                                    const serverToolMessage: Message = {
+                                        text: resultData.message,
+                                        isUser: false,
+                                        timestamp: new Date(),
+                                        action: toolResult.name as any,
+                                        ...(resultData.data?.image_url && { image: resultData.data.image_url })
+                                    };
+                                    addMessageToConversation(activeConversation, serverToolMessage);
+                                }
+                            } catch (jsonError) {
+                                console.error('🔧 DEBUG: Failed to parse tool result JSON:', jsonError);
+                                console.error('🔧 DEBUG: Problematic content:', toolResult.content);
+                                
+                                // Try to handle truncated JSON by looking for patterns
+                                if (toolResult.name === 'generate_image' && toolResult.content.includes('image_url')) {
+                                    // Handle truncated image generation result
+                                    const fallbackMessage: Message = {
+                                        text: '🎨 I generated an image for you, but there was a display issue. Please try again.',
+                                        isUser: false,
+                                        timestamp: new Date(),
+                                        action: toolResult.name as any
+                                    };
+                                    addMessageToConversation(activeConversation, fallbackMessage);
+                                } else {
+                                    // Generic fallback for other truncated results
+                                    const fallbackMessage: Message = {
+                                        text: `⚠️ Tool result received but couldn't be processed properly. Tool: ${toolResult.name}`,
+                                        isUser: false,
+                                        timestamp: new Date(),
+                                        action: toolResult.name as any
+                                    };
+                                    addMessageToConversation(activeConversation, fallbackMessage);
+                                }
                             }
                         }
                     }

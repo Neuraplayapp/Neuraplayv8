@@ -563,6 +563,8 @@ async function handleImageGeneration(input_data, token) {
 app.post('/api/api', async (req, res) => {
   try {
     console.log('🤖 AI API request received');
+    console.log('🔍 DEBUG: Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 DEBUG: Request headers:', JSON.stringify(req.headers, null, 2));
     const { task_type, input_data } = req.body;
     
     // Handle image generation separately
@@ -577,6 +579,8 @@ app.post('/api/api', async (req, res) => {
     }
     
     if (!input_data || !input_data.messages) {
+      console.log('❌ DEBUG: Validation failed - input_data:', !!input_data, 'messages:', !!input_data?.messages);
+      console.log('❌ DEBUG: Full request body for 400 error:', JSON.stringify(req.body, null, 2));
       return res.status(400).json({ error: 'No messages provided' });
     }
 
@@ -628,11 +632,22 @@ app.post('/api/api', async (req, res) => {
       // Execute all tool calls
       for (const toolCall of toolCalls) {
         const result = await executeTool(toolCall);
+        const resultJson = JSON.stringify(result);
+        
+        // Debug logging for tool results
+        console.log(`🔧 Tool ${toolCall.function.name} result size: ${resultJson.length} characters`);
+        if (resultJson.length > 1000) {
+          console.log(`🔧 Large tool result detected for ${toolCall.function.name}`);
+          if (result.data?.image_url) {
+            console.log(`🔧 Image URL length: ${result.data.image_url.length} characters`);
+          }
+        }
+        
         toolResults.push({
           tool_call_id: toolCall.id,
           role: 'tool',
           name: toolCall.function.name,
-          content: JSON.stringify(result)
+          content: resultJson
         });
       }
 
@@ -647,7 +662,35 @@ app.post('/api/api', async (req, res) => {
 
       // Step 3: Final call to GPT-OSS with tool results
       console.log('Making final call with tool results...');
-      console.log('🔍 DEBUG: Messages to send to final call:', JSON.stringify(input_data.messages, null, 2));
+      
+      // Safe logging - truncate large content to avoid console buffer overflow
+      const messagesForLogging = input_data.messages.map(msg => {
+        if (msg.role === 'tool' && msg.content) {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (parsed.data?.image_url && parsed.data.image_url.length > 100) {
+              return {
+                ...msg,
+                content: JSON.stringify({
+                  ...parsed,
+                  data: {
+                    ...parsed.data,
+                    image_url: `[BASE64_IMAGE_${parsed.data.image_url.length}_CHARS]`
+                  }
+                })
+              };
+            }
+          } catch (e) {
+            // If content is too long, truncate it
+            if (msg.content.length > 500) {
+              return { ...msg, content: msg.content.substring(0, 500) + '...[TRUNCATED]' };
+            }
+          }
+        }
+        return msg;
+      });
+      
+      console.log('🔍 DEBUG: Messages to send to final call:', JSON.stringify(messagesForLogging, null, 2));
       console.log('🔍 DEBUG: Number of messages:', input_data.messages.length);
       
       const finalResponse = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
@@ -675,13 +718,38 @@ app.post('/api/api', async (req, res) => {
       
       // Separate client-side tools from server-executed tools
       const clientSideTools = toolCalls.filter(tc => !SERVER_SIDE_TOOLS.includes(tc.function.name));
+      const serverSideTools = toolCalls.filter(tc => SERVER_SIDE_TOOLS.includes(tc.function.name));
+      
+      // Debug the response being sent
+      console.log(`🔍 DEBUG: Sending response with ${toolResults.length} tool results`);
+      console.log(`🔍 DEBUG: Server-side tools executed: ${serverSideTools.map(t => t.function.name).join(', ')}`);
+      console.log(`🔍 DEBUG: Client-side tools to execute: ${clientSideTools.map(t => t.function.name).join(', ')}`);
+      
+      // Validate tool results before sending
+      const validatedToolResults = toolResults.map((tr, index) => {
+        try {
+          // Test if content is valid JSON
+          JSON.parse(tr.content);
+          return tr;
+        } catch (e) {
+          console.error(`🔧 ERROR: Tool result ${index} has invalid JSON:`, e);
+          console.error(`🔧 ERROR: Problematic content length: ${tr.content.length}`);
+          return {
+            ...tr,
+            content: JSON.stringify({
+              success: false,
+              message: `Tool ${tr.name} result was corrupted during processing`
+            })
+          };
+        }
+      });
       
       // Return in the expected format with BOTH server results AND client-side tools to execute
       res.json([{
         generated_text: finalData.choices[0].message.content,
         tool_calls: clientSideTools, // Only client-side tools for client execution
-        tool_results: toolResults,    // Server-executed tool results
-        server_tool_calls: toolCalls.filter(tc => SERVER_SIDE_TOOLS.includes(tc.function.name))
+        tool_results: validatedToolResults,    // Server-executed tool results (validated)
+        server_tool_calls: serverSideTools
       }]);
     } else {
       // No tool calls, return direct response
