@@ -593,7 +593,7 @@ app.post('/.netlify/functions/api', async (req, res) => {
   }
 });
 
-// Also add the /api route for Render compatibility - RESTORE ORIGINAL TOGETHER AI SETUP
+// Also add the /api route for Render compatibility - FIREWORKS AI SETUP
 app.post('/api/api', async (req, res) => {
   try {
     console.log('🌐 API request received via /api');
@@ -602,7 +602,7 @@ app.post('/api/api', async (req, res) => {
     console.log('Task type:', task_type);
     console.log('Input data:', input_data);
 
-    // Get environment variables - RESTORE ORIGINAL TOGETHER AI
+    // Get environment variables - FIREWORKS AI
     const FIREWORKS_TOKEN = process.env.Neuraplay || process.env.FIREWORKS_TOKEN;
     const HF_TOKEN = process.env.hf_token;
 
