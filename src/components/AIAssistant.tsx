@@ -7,6 +7,7 @@ import { AblyConversationService } from '../services/AblyConversationService';
 import { getAgentId, getVoiceId } from '../config/elevenlabs';
 import { useAIAgent } from '../contexts/AIAgentContext';
 import { useUser } from '../contexts/UserContext';
+import { useConversation as useGlobalConversation, type Message } from '../contexts/ConversationContext';
 import { base64ToBinary } from '../utils/videoUtils';
 import { elevenLabsService } from '../services/elevenLabsService';
 import { WebSocketService } from '../services/WebSocketService';
@@ -15,21 +16,7 @@ import { dataCollectionService } from '../services/DataCollectionService';
 import PlasmaBall from './PlasmaBall';
 import './AIAssistant.css';
 
-interface Message {
-    text: string;
-    isUser: boolean;
-    timestamp: Date;
-    image?: string;
-    action?: 'navigation' | 'settings' | 'info' | 'agent' | 'game';
-}
-
-interface Conversation {
-    id: string;
-    title: string;
-    messages: Message[];
-    timestamp: Date;
-    context?: string;
-}
+// Message and Conversation interfaces are now imported from ConversationContext
 
 // Define the assistant modes for cleaner state management
 type AssistantMode = 'idle' | 'text_input' | 'single_recording' | 'conversing';
@@ -87,21 +74,16 @@ const SUPPORTED_LANGUAGES: Record<LanguageCode, string> = {
 const AIAssistant: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [activeConversation, setActiveConversation] = useState<string>('current');
-    const [conversations, setConversations] = useState<{ [key: string]: Conversation }>({
-        current: {
-            id: 'current',
-            title: 'Current Chat',
-            messages: [
-                { 
-                    text: "🌟 Hi there! I'm AI Assistant, your friendly AI teacher! 🚀 I can help you with learning, games, navigation, settings, AI agent control, and accessibility needs. What would you like to explore today? 🎮✨", 
-                    isUser: false, 
-                    timestamp: new Date() 
-                }
-            ],
-            timestamp: new Date()
-        }
-    });
+    // Use global conversation context instead of local state
+    const {
+        conversations,
+        activeConversation,
+        setActiveConversation,
+        addMessage,
+        createConversation,
+        clearConversation,
+        getActiveConversation
+    } = useGlobalConversation();
     
     const menuRef = useRef<HTMLDivElement>(null);
     const [inputMessage, setInputMessage] = useState('');
@@ -122,7 +104,7 @@ const AIAssistant: React.FC = () => {
             console.log('  - Agent ID used:', getAgentId());
             console.log('  - Connection timestamp:', new Date().toISOString());
             console.log('  - Browser info:', navigator.userAgent);
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "🎤 Voice conversation ready! Start speaking anytime! ✨", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -131,7 +113,7 @@ const AIAssistant: React.FC = () => {
         onDisconnect: () => {
             console.log('❌ ElevenLabs Conversation Disconnected');
             console.log('🔍 Disconnection timestamp:', new Date().toISOString());
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "🔌 Voice conversation ended. You can still chat with text or single recordings! 💬", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -147,13 +129,13 @@ const AIAssistant: React.FC = () => {
             
             // Handle different message sources based on ElevenLabs API
             if (message.source === 'ai' && message.message) {
-                addMessageToConversation(activeConversation, { 
+                addMessage(activeConversation, { 
                     text: message.message, 
                     isUser: false, 
                     timestamp: new Date() 
                 });
             } else if (message.source === 'user' && message.message) {
-                addMessageToConversation(activeConversation, { 
+                addMessage(activeConversation, { 
                     text: message.message, 
                     isUser: true, 
                     timestamp: new Date() 
@@ -233,7 +215,7 @@ const AIAssistant: React.FC = () => {
                 testBasicAPI();
             }
             
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "⚠️ Connection error. Please try again or use text chat! 🔄", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -452,7 +434,7 @@ const AIAssistant: React.FC = () => {
     }, []);
 
     // Get current messages based on active conversation
-    const currentMessages = conversations[activeConversation]?.messages || [];
+    const currentMessages = getActiveConversation().messages;
 
     // Available pages and their descriptions - ONLY ACTUAL ROUTES
     const availablePages = {
@@ -627,50 +609,27 @@ const AIAssistant: React.FC = () => {
         setIsFullscreen(!isFullscreen);
     };
 
-    // Create new conversation
+    // Create new conversation using context
     const createNewConversation = () => {
         const newId = `conv_${Date.now()}`;
-        const newConversation: Conversation = {
-            id: newId,
-            title: `Chat ${Object.keys(conversations).length}`,
-            messages: [
-                { 
-                    text: "🌟 Hi there! I'm AI Assistant, your friendly AI teacher! 🚀 What would you like to explore today? 🎮✨", 
-                    isUser: false, 
-                    timestamp: new Date() 
-                }
-            ],
-            timestamp: new Date()
-        };
+        const title = `Chat ${Object.keys(conversations).length}`;
         
-        setConversations(prev => ({
-            ...prev,
-            [newId]: newConversation
-        }));
+        // Create conversation in context
+        createConversation(newId, title);
+        
+        // Add welcome message
+        addMessage(newId, { 
+            text: "🌟 Hi there! I'm AI Assistant, your friendly AI teacher! 🚀 What would you like to explore today? 🎮✨", 
+            isUser: false, 
+            timestamp: new Date() 
+        });
+        
         setActiveConversation(newId);
     };
 
-    // Update conversation title
-    const updateConversationTitle = (conversationId: string, title: string) => {
-        setConversations(prev => ({
-            ...prev,
-            [conversationId]: {
-                ...prev[conversationId],
-                title
-            }
-        }));
-    };
+    // updateConversationTitle function removed - not used in the component
 
-    // Add message to current conversation
-    const addMessageToConversation = (conversationId: string, message: Message) => {
-        setConversations(prev => ({
-            ...prev,
-            [conversationId]: {
-                ...prev[conversationId],
-                messages: [...prev[conversationId].messages, message]
-            }
-        }));
-    };
+    // addMessage helper function removed - now using context method addMessage
 
     useEffect(() => {
         // This effect handles closing the menu if clicked outside
@@ -696,7 +655,7 @@ const AIAssistant: React.FC = () => {
         // Ably (Netlify) event handlers
         service.on('conversation_ready', (data) => {
             console.log('Conversation ready with ElevenLabs');
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "Voice conversation ready! Start speaking! 🎤", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -707,7 +666,7 @@ const AIAssistant: React.FC = () => {
         wsService.on('connected', () => {
             console.log('✅ WebSocket connected for conversation');
             if (modeRef.current === 'conversing') {
-                addMessageToConversation(activeConversation, { 
+                addMessage(activeConversation, { 
                     text: "Voice conversation ready! Start speaking! 🎤", 
                     isUser: false, 
                     timestamp: new Date() 
@@ -718,7 +677,7 @@ const AIAssistant: React.FC = () => {
         wsService.on('message', (data) => {
             console.log('📥 WebSocket message received:', data);
             if (data.type === 'ai_response' && data.text) {
-                addMessageToConversation(activeConversation, { 
+                addMessage(activeConversation, { 
                     text: data.text, 
                     isUser: false, 
                     timestamp: new Date() 
@@ -732,7 +691,7 @@ const AIAssistant: React.FC = () => {
         
         wsService.on('error', (error) => {
             console.error('❌ WebSocket error:', error);
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "Connection error. Please try again. 🔄", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -759,7 +718,7 @@ const AIAssistant: React.FC = () => {
                     isUser: false, 
                     timestamp: new Date() 
                 };
-                addMessageToConversation(activeConversation, aiMessage);
+                addMessage(activeConversation, aiMessage);
                 
                 // Generate TTS if needed
                 if (data.needsTTS) {
@@ -863,7 +822,7 @@ const AIAssistant: React.FC = () => {
         // Handle errors
         service.on('error', (data) => {
             console.error('Conversation error:', data);
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "Connection error. Please try again.", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -1549,7 +1508,7 @@ const AIAssistant: React.FC = () => {
                     // Navigate to a test page or create color tests
                     navigate('/playground');
                     setTimeout(() => {
-                        addMessageToConversation(activeConversation, {
+                        addMessage(activeConversation, {
                             text: `🎨 I've taken you to the playground where we can test your color vision! I'm going to create some color tests for you. 
 
 Let's start: Can you tell me if these colors look the same or different?
@@ -1870,7 +1829,7 @@ Need help with anything specific? Just ask! 🌟`;
 
         // Add user message to UI
         const userMessage: Message = { text, isUser: true, timestamp: new Date() };
-        addMessageToConversation(activeConversation, userMessage);
+        addMessage(activeConversation, userMessage);
         setInputMessage('');
         setIsLoading(true);
 
@@ -1891,7 +1850,7 @@ Need help with anything specific? Just ask! 🌟`;
                 }
                 // Auto-play the response
                 setTimeout(async () => {
-                    const messages = conversations[activeConversation]?.messages || [];
+                    const messages = getActiveConversation().messages;
                     const userMessageTime = userMessage.timestamp;
                     const recentAIMessages = messages
                         .filter(msg => !msg.isUser && msg.timestamp > userMessageTime)
@@ -1909,7 +1868,7 @@ Need help with anything specific? Just ask! 🌟`;
             }
         } catch (error: any) {
             console.error('Error in handleSendMessage:', error);
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: `Oops! Something went wrong: ${error.message}. Let's try again in a moment! 🌟`, 
                 isUser: false, 
                 timestamp: new Date() 
@@ -1934,7 +1893,7 @@ Need help with anything specific? Just ask! 🌟`;
             }
             
             setMode('idle');
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "Conversation mode ended. You can still chat with me via text! 🎤", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -1945,7 +1904,7 @@ Need help with anything specific? Just ask! 🌟`;
             setMode('conversing');
             modeRef.current = 'conversing'; // Set ref immediately
             
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: "Starting conversation mode... 🎤", 
                 isUser: false, 
                 timestamp: new Date() 
@@ -2068,7 +2027,7 @@ Need help with anything specific? Just ask! 🌟`;
                     if (errorMsg.includes('getUserMedia') || errorMsg.includes('permission')) {
                         // Microphone error
                         const errorMessage = "🎤 Microphone access is required for conversation mode. Please allow microphone access and try again! You can still use:\n\n✅ Voice recording (microphone button)\n✅ Chat with text\n✅ All other features! 🌟";
-                        addMessageToConversation(activeConversation, { 
+                        addMessage(activeConversation, { 
                             text: errorMessage, 
                             isUser: false, 
                             timestamp: new Date() 
@@ -2076,7 +2035,7 @@ Need help with anything specific? Just ask! 🌟`;
                     } else if (isAuthError) {
                         // Authorization error
                         const errorMessage = "🚫 Authorization error with voice conversation. This might be due to:\n\n• Agent configuration issues\n• API key permissions\n• Domain restrictions\n\nYou can still use:\n✅ Voice recording (microphone button)\n✅ Chat with text\n✅ All other features! 🌟";
-                        addMessageToConversation(activeConversation, { 
+                        addMessage(activeConversation, { 
                             text: errorMessage, 
                             isUser: false, 
                             timestamp: new Date() 
@@ -2084,14 +2043,14 @@ Need help with anything specific? Just ask! 🌟`;
                     } else if (isConnectionError) {
                         // Connection error
                         const errorMessage = "🔧 Conversation mode is temporarily unavailable. But don't worry - you can still:\n\n✅ Use voice recording (microphone button)\n✅ Chat with text\n✅ Generate images\n✅ Use all other features!\n\nEverything else works perfectly! 🌟";
-                        addMessageToConversation(activeConversation, { 
+                        addMessage(activeConversation, { 
                             text: errorMessage, 
                             isUser: false, 
                             timestamp: new Date() 
                         });
                     } else {
                         // Generic error
-                        addMessageToConversation(activeConversation, { 
+                        addMessage(activeConversation, { 
                             text: "Sorry, I couldn't start conversation mode. Please try the voice recording button or text chat instead! 🌟", 
                             isUser: false, 
                             timestamp: new Date() 
@@ -2179,7 +2138,7 @@ Need help with anything specific? Just ask! 🌟`;
             } else {
                 console.log('No text transcribed');
                 const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || selectedLanguage;
-                addMessageToConversation(activeConversation, { 
+                addMessage(activeConversation, { 
                     text: `I couldn't hear what you said in ${currentLang}. Could you try again? 🎤`, 
                     isUser: false, 
                     timestamp: new Date() 
@@ -2188,7 +2147,7 @@ Need help with anything specific? Just ask! 🌟`;
         } catch (error: any) {
             console.error('Voice processing error:', error);
             const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || selectedLanguage;
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: `Sorry, I couldn't process that voice input in ${currentLang}. Please try again! 🌟`, 
                 isUser: false, 
                 timestamp: new Date() 
@@ -2344,7 +2303,7 @@ Need help with anything specific? Just ask! 🌟`;
             }
         } catch (error: any) {
             console.error('Voice message processing error:', error);
-            addMessageToConversation(activeConversation, { 
+            addMessage(activeConversation, { 
                 text: `Sorry, I couldn't process that voice input. Please try again! 🌟`, 
                 isUser: false, 
                 timestamp: new Date() 
@@ -2395,7 +2354,7 @@ Need help with anything specific? Just ask! 🌟`;
                 timestamp: new Date()
             };
             
-            addMessageToConversation(activeConversation, assistantMessage);
+            addMessage(activeConversation, assistantMessage);
         } catch (error: any) {
             console.error('Error in conversation mode:', error);
             const errorMessage: Message = {
@@ -2403,7 +2362,7 @@ Need help with anything specific? Just ask! 🌟`;
                 isUser: false,
                 timestamp: new Date()
             };
-            addMessageToConversation(activeConversation, errorMessage);
+            addMessage(activeConversation, errorMessage);
         }
     };
 
@@ -2450,7 +2409,7 @@ Need help with anything specific? Just ask! 🌟`;
                 isUser: false,
                 timestamp: new Date()
             };
-            addMessageToConversation(activeConversation, errorMessage);
+            addMessage(activeConversation, errorMessage);
         }
     };
 
@@ -2514,7 +2473,7 @@ Need help with anything specific? Just ask! 🌟`;
                                         action: toolResult.name as any,
                                         ...(resultData.data?.image_url && { image: resultData.data.image_url })
                                     };
-                                    addMessageToConversation(activeConversation, serverToolMessage);
+                                    addMessage(activeConversation, serverToolMessage);
                                 }
                             } catch (jsonError) {
                                 console.error('🔧 DEBUG: Failed to parse tool result JSON:', jsonError);
@@ -2529,7 +2488,7 @@ Need help with anything specific? Just ask! 🌟`;
                                         timestamp: new Date(),
                                         action: toolResult.name as any
                                     };
-                                    addMessageToConversation(activeConversation, fallbackMessage);
+                                    addMessage(activeConversation, fallbackMessage);
                                 } else {
                                     // Generic fallback for other truncated results
                                     const fallbackMessage: Message = {
@@ -2538,7 +2497,7 @@ Need help with anything specific? Just ask! 🌟`;
                                         timestamp: new Date(),
                                         action: toolResult.name as any
                                     };
-                                    addMessageToConversation(activeConversation, fallbackMessage);
+                                    addMessage(activeConversation, fallbackMessage);
                                 }
                             }
                         }
@@ -2584,7 +2543,7 @@ Need help with anything specific? Just ask! 🌟`;
             isUser: false,
             timestamp: new Date()
         };
-        addMessageToConversation(activeConversation, assistantMessage);
+        addMessage(activeConversation, assistantMessage);
 
                         // Execute CLIENT-SIDE tool calls if any
         if (toolCalls.length > 0 && toolExecutorService) {
@@ -2614,7 +2573,7 @@ Need help with anything specific? Just ask! 🌟`;
                             // Handle image generation results
                             ...(result.data?.image_url && { image: result.data.image_url })
                         };
-                        addMessageToConversation(activeConversation, toolMessage);
+                        addMessage(activeConversation, toolMessage);
                     } else {
                         console.error('❌ DEBUG: Tool execution failed:', result.message);
                     }
@@ -2853,7 +2812,7 @@ Need help with anything specific? Just ask! 🌟`;
                         text: result.message, isUser: false, timestamp: new Date(),
                         action: toolCall.function.name as any
                       };
-                      addMessageToConversation(activeConversation, toolMessage);
+                      addMessage(activeConversation, toolMessage);
                     }
                   } catch (error) { console.error('Tool execution error:', error); }
                 }
@@ -3054,7 +3013,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             const imagePrompt = prompt.replace(/^(generate|create|make|draw|show)\s+(an\s+)?(image|picture|photo|art)\s+of?\s*/i, '');
             
             if (!imagePrompt.trim()) {
-                addMessageToConversation(activeConversation, {
+                addMessage(activeConversation, {
                     text: "Please tell me what kind of image you'd like me to create! 🎨",
                     isUser: false,
                     timestamp: new Date()
@@ -3066,7 +3025,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             const imageUrl = await generateImage(imagePrompt);
             
             if (imageUrl) {
-                addMessageToConversation(activeConversation, {
+                addMessage(activeConversation, {
                     text: `Here's your image: "${imagePrompt}" 🎨`,
                     isUser: false,
                     timestamp: new Date(),
@@ -3074,7 +3033,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 });
                 return imageUrl;
             } else {
-                addMessageToConversation(activeConversation, {
+                addMessage(activeConversation, {
                     text: "Sorry, I couldn't generate that image. Please try again! 🎨",
                     isUser: false,
                     timestamp: new Date()
@@ -3083,7 +3042,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             }
         } catch (error: any) {
             console.error('Error handling image request:', error);
-            addMessageToConversation(activeConversation, {
+            addMessage(activeConversation, {
                 text: `Sorry, I couldn't generate that image: ${error.message} 🎨`,
                 isUser: false,
                 timestamp: new Date()
