@@ -14,6 +14,220 @@ const wss = new WebSocket.Server({ server });
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// In-memory user storage (replace with database in production)
+const users = new Map();
+const verificationCodes = new Map();
+
+// Helper function to generate verification code
+const generateVerificationCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Authentication Routes
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and password are required' 
+      });
+    }
+    
+    // In production, hash passwords and use a database
+    const user = Array.from(users.values()).find(u => u.email === email.toLowerCase());
+    
+    if (!user || user.password !== password) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid email or password' 
+      });
+    }
+    
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.json({ 
+      success: true, 
+      user: userWithoutPassword,
+      message: 'Login successful' 
+    });
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
+app.post('/api/auth/send-verification', async (req, res) => {
+  try {
+    const { userId, email, method } = req.body;
+    
+    if (!userId || !email || !method) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User ID, email, and method are required' 
+      });
+    }
+    
+    const user = users.get(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+    
+    const verificationCode = generateVerificationCode();
+    const token = `${userId}_${Date.now()}`;
+    
+    // Store verification code (expires in 10 minutes)
+    verificationCodes.set(token, {
+      code: verificationCode,
+      userId,
+      email,
+      method,
+      expiresAt: Date.now() + (10 * 60 * 1000)
+    });
+    
+    // In production, send actual email/SMS
+    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
+    
+    res.json({ 
+      success: true, 
+      token,
+      message: `Verification code sent to your ${method}`,
+      // For development only - remove in production
+      devCode: verificationCode
+    });
+    
+  } catch (error) {
+    console.error('Send verification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
+app.post('/api/auth/verify', async (req, res) => {
+  try {
+    const { userId, token, code } = req.body;
+    
+    if (!userId || !token || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User ID, token, and code are required' 
+      });
+    }
+    
+    const verification = verificationCodes.get(token);
+    
+    if (!verification || verification.userId !== userId) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Invalid verification token' 
+      });
+    }
+    
+    if (Date.now() > verification.expiresAt) {
+      verificationCodes.delete(token);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Verification code has expired' 
+      });
+    }
+    
+    if (verification.code !== code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid verification code' 
+      });
+    }
+    
+    // Mark user as verified
+    const user = users.get(userId);
+    if (user) {
+      user.isVerified = true;
+      user.verifiedAt = new Date().toISOString();
+      user.verificationMethod = verification.method;
+      users.set(userId, user);
+    }
+    
+    // Clean up verification code
+    verificationCodes.delete(token);
+    
+    res.json({ 
+      success: true, 
+      message: 'Email verified successfully!' 
+    });
+    
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const userData = req.body;
+    
+    if (!userData.email || !userData.username) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and username are required' 
+      });
+    }
+    
+    // Check if user already exists
+    const existingUser = Array.from(users.values()).find(
+      u => u.email === userData.email.toLowerCase() || u.username === userData.username
+    );
+    
+    if (existingUser) {
+      return res.status(409).json({ 
+        success: false, 
+        message: 'User with this email or username already exists' 
+      });
+    }
+    
+    // Store user (in production, hash password and use database)
+    const userId = userData.id || Date.now().toString();
+    const user = {
+      ...userData,
+      id: userId,
+      email: userData.email.toLowerCase(),
+      password: userData.password || 'temp123', // In production, hash this
+      createdAt: new Date().toISOString()
+    };
+    
+    users.set(userId, user);
+    
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.json({ 
+      success: true, 
+      user: userWithoutPassword,
+      message: 'User registered successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
 // API Routes
 app.post('/api/assemblyai-transcribe', async (req, res) => {
   try {
@@ -280,6 +494,38 @@ const tools = [
         "required": ["prompt"]
       }
     }
+  },
+
+  {
+    "type": "function", 
+    "function": {
+      "name": "create_math_diagram",
+      "description": "Create beautiful, pedagogical mathematical diagrams and visualizations. Use for distance calculations, geometric concepts, data visualization, and educational illustrations.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "concept": {
+            "type": "string",
+            "description": "The mathematical concept to illustrate (e.g., 'distance to moon', 'histogram', 'orbital mechanics', 'scale comparison')"
+          },
+          "data": {
+            "type": "object",
+            "description": "Relevant data for the diagram (numbers, labels, values, etc.)",
+            "additionalProperties": true
+          },
+          "title": {
+            "type": "string", 
+            "description": "Title for the diagram"
+          },
+          "style": {
+            "type": "string",
+            "enum": ["clean", "colorful", "scientific", "child-friendly"],
+            "description": "Visual style of the diagram"
+          }
+        },
+        "required": ["concept", "title"]
+      }
+    }
   }
 ];
 
@@ -298,6 +544,10 @@ const TOOL_ROUTING_CONFIG = {
     'generate_image': {
       reason: 'Requires Together AI API key for external API access',
       requires: ['api_key', 'external_api']
+    },
+    'create_math_diagram': {
+      reason: 'Requires server-side SVG generation and mathematical processing',
+      requires: ['server_processing', 'svg_generation']
     }
   },
   
@@ -363,6 +613,9 @@ async function executeTool(toolCall) {
       
     case 'generate_image':
       return await handleImageGenerationTool(parsedArgs);
+      
+    case 'create_math_diagram':
+      return await createMathDiagram(parsedArgs);
       
     default:
       return {
@@ -469,6 +722,256 @@ async function getWeatherData(location) {
       message: `Weather data unavailable: ${error.message}`
     };
   }
+}
+
+// Mathematical diagram creation tool (for pedagogical visualizations)
+async function createMathDiagram(params) {
+  try {
+    const { concept, data = {}, title, style = 'colorful' } = params;
+    
+    console.log('📊 Creating math diagram:', { concept, title, style });
+    
+    let svgContent = '';
+    
+    // Generate different types of mathematical diagrams
+    switch (concept.toLowerCase()) {
+      case 'distance to moon':
+      case 'moon distance':
+      case 'orbital distance':
+        svgContent = createMoonDistanceDiagram(data, title, style);
+        break;
+        
+      case 'histogram':
+      case 'bar chart':
+        svgContent = createHistogram(data, title, style);
+        break;
+        
+      case 'spending chart':
+      case 'monthly spending':
+        svgContent = createSpendingChart(data, title, style);
+        break;
+        
+      case 'scale comparison':
+      case 'size comparison':
+        svgContent = createScaleComparison(data, title, style);
+        break;
+        
+      default:
+        svgContent = createGenericMathDiagram(concept, data, title, style);
+        break;
+    }
+    
+    // Convert SVG to base64 data URL
+    const svgBase64 = Buffer.from(svgContent).toString('base64');
+    const dataUrl = `data:image/svg+xml;base64,${svgBase64}`;
+    
+    return {
+      success: true,
+      message: `📊 Created beautiful ${concept} diagram: "${title}"`,
+      data: {
+        image_url: dataUrl,
+        diagram_type: concept,
+        title,
+        style
+      }
+    };
+    
+  } catch (error) {
+    console.error('Math diagram creation failed:', error);
+    return {
+      success: false,
+      message: `Sorry, I couldn't create that mathematical diagram: ${error.message}`
+    };
+  }
+}
+
+// Create moon distance visualization
+function createMoonDistanceDiagram(data, title, style) {
+  const moonDistance = 384400; // km
+  const earthRadius = 6371; // km
+  
+  return `<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="earthGrad" cx="0.3" cy="0.3">
+        <stop offset="0%" style="stop-color:#87CEEB"/>
+        <stop offset="70%" style="stop-color:#4169E1"/>
+        <stop offset="100%" style="stop-color:#191970"/>
+      </radialGradient>
+      <radialGradient id="moonGrad" cx="0.4" cy="0.3">
+        <stop offset="0%" style="stop-color:#F5F5DC"/>
+        <stop offset="100%" style="stop-color:#C0C0C0"/>
+      </radialGradient>
+    </defs>
+    
+    <!-- Background -->
+    <rect width="800" height="500" fill="#000014"/>
+    
+    <!-- Stars -->
+    <circle cx="100" cy="80" r="1" fill="white"/>
+    <circle cx="200" cy="60" r="1" fill="white"/>
+    <circle cx="650" cy="100" r="1" fill="white"/>
+    <circle cx="720" cy="180" r="1" fill="white"/>
+    
+    <!-- Title -->
+    <text x="400" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    
+    <!-- Earth -->
+    <circle cx="120" cy="250" r="60" fill="url(#earthGrad)" stroke="#4169E1" stroke-width="2"/>
+    <text x="120" y="330" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">Earth</text>
+    <text x="120" y="345" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Radius: 6,371 km</text>
+    
+    <!-- Moon -->
+    <circle cx="650" cy="250" r="25" fill="url(#moonGrad)" stroke="#C0C0C0" stroke-width="2"/>
+    <text x="650" y="295" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">Moon</text>
+    <text x="650" y="310" text-anchor="middle" fill="white" font-family="Arial" font-size="12">Radius: 1,737 km</text>
+    
+    <!-- Distance line -->
+    <line x1="180" y1="250" x2="625" y2="250" stroke="#FFD700" stroke-width="3" stroke-dasharray="5,5"/>
+    
+    <!-- Distance label -->
+    <rect x="350" y="235" width="120" height="30" fill="#FFD700" rx="5"/>
+    <text x="410" y="255" text-anchor="middle" fill="black" font-family="Arial" font-size="14" font-weight="bold">384,400 km</text>
+    
+    <!-- Scale information -->
+    <text x="400" y="400" text-anchor="middle" fill="#FFD700" font-family="Arial" font-size="16" font-weight="bold">📏 Scale Comparison:</text>
+    <text x="400" y="420" text-anchor="middle" fill="white" font-family="Arial" font-size="14">Moon distance = ~60 Earth radii</text>
+    <text x="400" y="440" text-anchor="middle" fill="white" font-family="Arial" font-size="14">Light travels this distance in ~1.3 seconds</text>
+    <text x="400" y="460" text-anchor="middle" fill="white" font-family="Arial" font-size="14">≈ 959,000,000 football fields!</text>
+  </svg>`;
+}
+
+// Create histogram visualization
+function createHistogram(data, title, style) {
+  const values = data.values || [20, 45, 70, 55, 30];
+  const labels = data.labels || ['A', 'B', 'C', 'D', 'E'];
+  const maxValue = Math.max(...values);
+  
+  const barWidth = 80;
+  const barSpacing = 100;
+  const chartHeight = 300;
+  const startX = 80;
+  
+  let bars = '';
+  let xLabels = '';
+  
+  values.forEach((value, i) => {
+    const barHeight = (value / maxValue) * chartHeight;
+    const x = startX + (i * barSpacing);
+    const y = 400 - barHeight;
+    
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+    const color = colors[i % colors.length];
+    
+    bars += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" rx="4"/>`;
+    bars += `<text x="${x + barWidth/2}" y="${y - 5}" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">${value}</text>`;
+    xLabels += `<text x="${x + barWidth/2}" y="430" text-anchor="middle" fill="white" font-family="Arial" font-size="14">${labels[i]}</text>`;
+  });
+  
+  return `<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="800" height="500" fill="#1a1a2e"/>
+    
+    <!-- Title -->
+    <text x="400" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    
+    <!-- Y-axis -->
+    <line x1="60" y1="80" x2="60" y2="400" stroke="white" stroke-width="2"/>
+    
+    <!-- X-axis -->
+    <line x1="60" y1="400" x2="700" y2="400" stroke="white" stroke-width="2"/>
+    
+    <!-- Y-axis labels -->
+    <text x="45" y="405" text-anchor="end" fill="white" font-family="Arial" font-size="12">0</text>
+    <text x="45" y="325" text-anchor="end" fill="white" font-family="Arial" font-size="12">${Math.round(maxValue * 0.25)}</text>
+    <text x="45" y="245" text-anchor="end" fill="white" font-family="Arial" font-size="12">${Math.round(maxValue * 0.5)}</text>
+    <text x="45" y="165" text-anchor="end" fill="white" font-family="Arial" font-size="12">${Math.round(maxValue * 0.75)}</text>
+    <text x="45" y="85" text-anchor="end" fill="white" font-family="Arial" font-size="12">${maxValue}</text>
+    
+    <!-- Bars -->
+    ${bars}
+    
+    <!-- X-axis labels -->
+    ${xLabels}
+    
+    <!-- Axis titles -->
+    <text x="400" y="470" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">Categories</text>
+    <text x="25" y="250" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold" transform="rotate(-90 25 250)">Frequency</text>
+  </svg>`;
+}
+
+// Create spending chart
+function createSpendingChart(data, title, style) {
+  const spending = [200, 300, 550, 800, 1050, 1300, 1550, 1800, 2050, 2300, 2550, 2800];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const maxSpending = Math.max(...spending);
+  const chartWidth = 600;
+  const chartHeight = 300;
+  const startX = 80;
+  const startY = 350;
+  
+  let points = '';
+  let labels = '';
+  
+  spending.forEach((amount, i) => {
+    const x = startX + (i * (chartWidth / 11));
+    const y = startY - ((amount / maxSpending) * chartHeight);
+    
+    points += `${x},${y} `;
+    labels += `<text x="${x}" y="${startY + 20}" text-anchor="middle" fill="white" font-family="Arial" font-size="10">${months[i]}</text>`;
+  });
+  
+  return `<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="800" height="450" fill="#0f172a"/>
+    
+    <!-- Title -->
+    <text x="400" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    
+    <!-- Grid lines -->
+    <defs><pattern id="grid" width="50" height="25" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 25" fill="none" stroke="#374151" stroke-width="0.5"/></pattern></defs>
+    <rect x="80" y="50" width="600" height="300" fill="url(#grid)"/>
+    
+    <!-- Axes -->
+    <line x1="80" y1="50" x2="80" y2="350" stroke="white" stroke-width="2"/>
+    <line x1="80" y1="350" x2="680" y2="350" stroke="white" stroke-width="2"/>
+    
+    <!-- Line chart -->
+    <polyline points="${points}" fill="none" stroke="#06B6D4" stroke-width="3"/>
+    
+    <!-- Data points -->
+    ${spending.map((amount, i) => {
+      const x = startX + (i * (chartWidth / 11));
+      const y = startY - ((amount / maxSpending) * chartHeight);
+      return `<circle cx="${x}" cy="${y}" r="4" fill="#06B6D4"/>`;
+    }).join('')}
+    
+    <!-- Labels -->
+    ${labels}
+    
+    <!-- Y-axis labels -->
+    <text x="70" y="355" text-anchor="end" fill="white" font-family="Arial" font-size="12">$0</text>
+    <text x="70" y="280" text-anchor="end" fill="white" font-family="Arial" font-size="12">$${Math.round(maxSpending * 0.25)}</text>
+    <text x="70" y="205" text-anchor="end" fill="white" font-family="Arial" font-size="12">$${Math.round(maxSpending * 0.5)}</text>
+    <text x="70" y="130" text-anchor="end" fill="white" font-family="Arial" font-size="12">$${Math.round(maxSpending * 0.75)}</text>
+    <text x="70" y="55" text-anchor="end" fill="white" font-family="Arial" font-size="12">$${maxSpending}</text>
+    
+    <!-- Axis titles -->
+    <text x="380" y="400" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">Month</text>
+    <text x="25" y="200" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold" transform="rotate(-90 25 200)">Spending ($)</text>
+  </svg>`;
+}
+
+// Generic math diagram creator
+function createGenericMathDiagram(concept, data, title, style) {
+  return `<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+    <rect width="600" height="400" fill="#1e293b"/>
+    <text x="300" y="50" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    <text x="300" y="200" text-anchor="middle" fill="#60A5FA" font-family="Arial" font-size="18">📊 Mathematical Concept: ${concept}</text>
+    <text x="300" y="250" text-anchor="middle" fill="white" font-family="Arial" font-size="14">Visual diagram for: ${concept}</text>
+    <rect x="200" y="300" width="200" height="80" fill="#3B82F6" rx="10"/>
+    <text x="300" y="350" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">Educational Visualization</text>
+  </svg>`;
 }
 
 // Image generation tool handler (for agentic system)

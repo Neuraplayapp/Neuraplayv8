@@ -112,14 +112,39 @@ const RegistrationPage: React.FC = () => {
   };
 
   const handleComplete = () => {
+    const now = new Date().toISOString();
     const newUser = {
       id: Date.now().toString(),
       username: formData.username,
       email: formData.email,
       role: formData.role as 'learner' | 'parent',
       age: formData.role === 'learner' ? formData.age : undefined,
-      subscription: selectedSubscription,
-      plan: selectedPlan,
+      
+      // Authentication & Verification (new users start unverified)
+      isVerified: false,
+      verificationMethod: undefined,
+      verificationToken: undefined,
+      verifiedAt: undefined,
+      subscription: {
+        tier: 'free' as const,
+        startDate: now,
+        status: 'active' as const
+      },
+      
+      // Usage Tracking (initialize with zero usage)
+      usage: {
+        aiPrompts: {
+          count: 0,
+          lastReset: now,
+          history: []
+        },
+        imageGeneration: {
+          count: 0,
+          lastReset: now,
+          history: []
+        }
+      },
+      
       profile: {
         avatar: formData.avatar,
         rank: 'New Learner',

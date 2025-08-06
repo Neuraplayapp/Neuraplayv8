@@ -39,6 +39,39 @@ export interface User {
   email: string;
   role: 'learner' | 'parent';
   age?: number;
+  
+  // Authentication & Verification
+  isVerified: boolean;
+  verificationMethod?: 'email' | 'phone' | 'manual';
+  verificationToken?: string;
+  verifiedAt?: string;
+  subscription?: {
+    tier: 'free' | 'premium' | 'premium_plus';
+    startDate: string;
+    endDate?: string;
+    status: 'active' | 'expired' | 'cancelled';
+  };
+  
+  // Usage Tracking
+  usage: {
+    aiPrompts: {
+      count: number;
+      lastReset: string; // Reset daily/monthly based on subscription
+      history: Array<{
+        date: string;
+        count: number;
+      }>;
+    };
+    imageGeneration: {
+      count: number;
+      lastReset: string;
+      history: Array<{
+        date: string;
+        count: number;
+      }>;
+    };
+  };
+  
   profile: {
     avatar: string;
     rank: string;
@@ -80,6 +113,18 @@ interface UserContextType {
   updateGameProgress: (gameId: string, progress: Partial<User['profile']['gameProgress'][string]>) => void;
   updateFriends: (friends: string[]) => void;
   updateFriendRequests: (friendRequests: { sent: string[]; received: string[] }) => void;
+  
+  // Usage Tracking & Limits
+  canUseAI: () => { allowed: boolean; remaining: number; limit: number };
+  canGenerateImage: () => { allowed: boolean; remaining: number; limit: number };
+  recordAIUsage: () => void;
+  recordImageGeneration: () => void;
+  resetUsageCounts: () => void;
+  
+  // Verification Functions
+  sendVerificationCode: (method: 'email' | 'phone') => Promise<{ success: boolean; message: string }>;
+  verifyUser: (code: string) => Promise<{ success: boolean; message: string }>;
+  
   // New standardized analytics function
   recordGameSession: (gameId: string, sessionData: {
     score: number;
@@ -89,6 +134,7 @@ interface UserContextType {
     playTime?: number;
     success?: boolean;
   }) => void;
+  
   // AI Assessment functions
   updateAIAssessment: (gameId: string, neuropsychConcepts: string[], choiceData: any[]) => Promise<void>;
   generateAIReport: () => Promise<string>;
@@ -565,6 +611,215 @@ Use professional but accessible language suitable for parents and educators.`;
     return { strengths, growthAreas };
   };
 
+  // Usage Tracking Functions
+  const getUsageLimits = () => {
+    if (!user) return { aiLimit: 0, imageLimit: 0 };
+    
+    if (user.isVerified && user.subscription?.tier === 'premium_plus') {
+      return { aiLimit: -1, imageLimit: -1 }; // Unlimited
+    } else if (user.isVerified && user.subscription?.tier === 'premium') {
+      return { aiLimit: 100, imageLimit: 20 }; // Premium limits
+    } else {
+      return { aiLimit: 20, imageLimit: 2 }; // Free/unverified limits
+    }
+  };
+
+  const isUsageExpired = (lastReset: string): boolean => {
+    const lastResetDate = new Date(lastReset);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - lastResetDate.getTime()) / (1000 * 60 * 60);
+    return hoursDiff >= 24; // Reset daily
+  };
+
+  const canUseAI = () => {
+    if (!user) return { allowed: false, remaining: 0, limit: 0 };
+    
+    const { aiLimit } = getUsageLimits();
+    if (aiLimit === -1) return { allowed: true, remaining: -1, limit: -1 }; // Unlimited
+    
+    // Reset usage if expired
+    if (isUsageExpired(user.usage.aiPrompts.lastReset)) {
+      resetUsageCounts();
+      return { allowed: true, remaining: aiLimit - 1, limit: aiLimit };
+    }
+    
+    const remaining = aiLimit - user.usage.aiPrompts.count;
+    return {
+      allowed: remaining > 0,
+      remaining: Math.max(0, remaining),
+      limit: aiLimit
+    };
+  };
+
+  const canGenerateImage = () => {
+    if (!user) return { allowed: false, remaining: 0, limit: 0 };
+    
+    const { imageLimit } = getUsageLimits();
+    if (imageLimit === -1) return { allowed: true, remaining: -1, limit: -1 }; // Unlimited
+    
+    // Reset usage if expired
+    if (isUsageExpired(user.usage.imageGeneration.lastReset)) {
+      resetUsageCounts();
+      return { allowed: true, remaining: imageLimit - 1, limit: imageLimit };
+    }
+    
+    const remaining = imageLimit - user.usage.imageGeneration.count;
+    return {
+      allowed: remaining > 0,
+      remaining: Math.max(0, remaining),
+      limit: imageLimit
+    };
+  };
+
+  const recordAIUsage = () => {
+    if (!user) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const updatedUser = { ...user };
+    
+    // Reset if needed
+    if (isUsageExpired(user.usage.aiPrompts.lastReset)) {
+      updatedUser.usage.aiPrompts.count = 1;
+      updatedUser.usage.aiPrompts.lastReset = new Date().toISOString();
+    } else {
+      updatedUser.usage.aiPrompts.count += 1;
+    }
+    
+    // Update history
+    const todayEntry = updatedUser.usage.aiPrompts.history.find(h => h.date === today);
+    if (todayEntry) {
+      todayEntry.count += 1;
+    } else {
+      updatedUser.usage.aiPrompts.history.push({ date: today, count: 1 });
+    }
+    
+    // Keep only last 30 days of history
+    updatedUser.usage.aiPrompts.history = updatedUser.usage.aiPrompts.history
+      .slice(-30);
+    
+    setUserWithPersistence(updatedUser);
+  };
+
+  const recordImageGeneration = () => {
+    if (!user) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const updatedUser = { ...user };
+    
+    // Reset if needed
+    if (isUsageExpired(user.usage.imageGeneration.lastReset)) {
+      updatedUser.usage.imageGeneration.count = 1;
+      updatedUser.usage.imageGeneration.lastReset = new Date().toISOString();
+    } else {
+      updatedUser.usage.imageGeneration.count += 1;
+    }
+    
+    // Update history
+    const todayEntry = updatedUser.usage.imageGeneration.history.find(h => h.date === today);
+    if (todayEntry) {
+      todayEntry.count += 1;
+    } else {
+      updatedUser.usage.imageGeneration.history.push({ date: today, count: 1 });
+    }
+    
+    // Keep only last 30 days of history
+    updatedUser.usage.imageGeneration.history = updatedUser.usage.imageGeneration.history
+      .slice(-30);
+    
+    setUserWithPersistence(updatedUser);
+  };
+
+  const resetUsageCounts = () => {
+    if (!user) return;
+    
+    const now = new Date().toISOString();
+    const updatedUser = { ...user };
+    
+    updatedUser.usage.aiPrompts.count = 0;
+    updatedUser.usage.aiPrompts.lastReset = now;
+    updatedUser.usage.imageGeneration.count = 0;
+    updatedUser.usage.imageGeneration.lastReset = now;
+    
+    setUserWithPersistence(updatedUser);
+  };
+
+  // Verification Functions
+  const sendVerificationCode = async (method: 'email' | 'phone'): Promise<{ success: boolean; message: string }> => {
+    if (!user) return { success: false, message: 'No user found' };
+    
+    try {
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          method
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Store verification token locally (temporary)
+        const updatedUser = { ...user };
+        updatedUser.verificationToken = result.token;
+        updatedUser.verificationMethod = method;
+        setUserWithPersistence(updatedUser);
+        
+        return { success: true, message: `Verification code sent to your ${method}` };
+      } else {
+        return { success: false, message: result.message || 'Failed to send verification code' };
+      }
+    } catch (error) {
+      console.error('Verification send error:', error);
+      return { success: false, message: 'Network error. Please try again.' };
+    }
+  };
+
+  const verifyUser = async (code: string): Promise<{ success: boolean; message: string }> => {
+    if (!user) return { success: false, message: 'No user found' };
+    
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          token: user.verificationToken,
+          code
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Mark user as verified
+        const updatedUser = { ...user };
+        updatedUser.isVerified = true;
+        updatedUser.verifiedAt = new Date().toISOString();
+        updatedUser.verificationToken = undefined;
+        
+        // Give them a free premium trial for 7 days
+        updatedUser.subscription = {
+          tier: 'premium',
+          startDate: new Date().toISOString(),
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active'
+        };
+        
+        setUserWithPersistence(updatedUser);
+        
+        return { success: true, message: 'Email verified! You now have premium access for 7 days.' };
+      } else {
+        return { success: false, message: result.message || 'Invalid verification code' };
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      return { success: false, message: 'Network error. Please try again.' };
+    }
+  };
+
   if (loading) {
     return <div>Loading user data...</div>;
   }
@@ -581,7 +836,16 @@ Use professional but accessible language suitable for parents and educators.`;
       recordGameSession,
       updateAIAssessment,
       generateAIReport,
-      getStrengthsAndGrowthAreas
+      getStrengthsAndGrowthAreas,
+      // Usage tracking functions
+      canUseAI,
+      canGenerateImage,
+      recordAIUsage,
+      recordImageGeneration,
+      resetUsageCounts,
+      // Verification functions
+      sendVerificationCode,
+      verifyUser
     }}>
       {children}
     </UserContext.Provider>

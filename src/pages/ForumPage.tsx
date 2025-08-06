@@ -1,7 +1,7 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { usePost } from '../contexts/PostContext';
-import { MessageCircle, ThumbsUp, ThumbsDown, Reply, Send, Plus, Users, Star, TrendingUp, Heart, Share2, Bookmark, MoreHorizontal, Sparkles, Bot } from 'lucide-react';
+import { MessageCircle, ThumbsUp, ThumbsDown, Reply, Send, Plus, Users, Star, TrendingUp, Heart, Share2, Bookmark, MoreHorizontal, Sparkles, Bot, Mail } from 'lucide-react';
 // Use the globally loaded GSAP from CDN
 declare const gsap: any;
 import { Link } from 'react-router-dom';
@@ -136,46 +136,7 @@ const ForumPage: React.FC = () => {
         return date.toLocaleDateString();
     };
 
-    if (!user) {
-      return (
-        <div className={`min-h-screen ${forumBackground} text-white flex items-center justify-center`}>
-          <div className="text-center max-w-md mx-auto px-6">
-            <div className="flex items-center justify-center mb-8">
-              <img 
-                src="/assets/images/Mascot.png" 
-                alt="NeuraPlay Mascot" 
-                className="w-32 h-32 object-contain"
-              />
-            </div>
-            <h1 className="text-3xl font-bold mb-4">Welcome to NeuraPlay!</h1>
-            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-8`}>
-              Please log in to join the community forum and share your learning journey.
-            </p>
-            <div className="space-y-4">
-              <Link 
-                to="/forum-registration" 
-                className="inline-block w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-full hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
-                Create Account
-              </Link>
-              <Link 
-                to="/login" 
-                                            className={`inline-block w-full bg-transparent border-2 font-bold px-8 py-4 rounded-full transition-all duration-300 ${
-                                isDarkMode 
-                                    ? 'border-white/20 text-white hover:bg-white/10' 
-                                    : 'border-gray-300 text-gray-900 hover:bg-gray-100/50'
-                            }`}
-              >
-                Log In
-              </Link>
-            </div>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-6`}>
-              Join thousands of learners discovering the joy of cognitive development!
-            </p>
-          </div>
-        </div>
-      );
-    }
+    // Forum is now accessible to everyone, but posting requires verification
 
     return (
         <div className={`min-h-screen pt-24 pb-12 relative ${forumBackground}`}>
@@ -208,15 +169,15 @@ const ForumPage: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <div className="text-center">
-                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{user.profile?.xp || 0}</div>
+                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{user?.profile?.xp || 0}</div>
                                         <div className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>XP</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{user.profile?.stars || 0}</div>
+                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{user?.profile?.stars || 0}</div>
                                         <div className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Stars</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{posts.filter(p => p.author === user.username).length}</div>
+                                        <div className="text-purple-600 dark:text-yellow-400 font-bold">{posts.filter(p => p.author === (user?.username || '')).length}</div>
                                         <div className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>Posts</div>
                                     </div>
                                 </div>
@@ -272,20 +233,51 @@ const ForumPage: React.FC = () => {
                                 <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                     Share in <span className="text-purple-600 dark:text-yellow-400">{selectedChannel}</span>
                                 </h2>
-                                <button
-                                    onClick={() => setShowNewPostForm(!showNewPostForm)}
-                                    className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                                        showNewPostForm 
-                                            ? 'bg-red-500/20 text-red-300 border border-red-400/30' 
-                                            : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
-                                    }`}
-                                >
-                                    {showNewPostForm ? 'Cancel' : <Plus size={16} />}
-                                    {showNewPostForm ? 'Cancel' : 'New Post'}
-                                </button>
+                                {!user ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                                            ✉️ Please create an account to post
+                                        </span>
+                                        <Link 
+                                            to="/forum-registration"
+                                            className="px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 transition-all flex items-center gap-2"
+                                        >
+                                            <Plus size={16} />
+                                            Sign Up
+                                        </Link>
+                                    </div>
+                                ) : !user.isVerified ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                                            ✉️ Please verify your email to post
+                                        </span>
+                                        <button 
+                                            onClick={() => {
+                                                // Trigger verification flow
+                                                alert('Verification email sent! Check your inbox.');
+                                            }}
+                                            className="px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 transition-all flex items-center gap-2"
+                                        >
+                                            <Mail size={16} />
+                                            Verify Email
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowNewPostForm(!showNewPostForm)}
+                                        className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                                            showNewPostForm 
+                                                ? 'bg-red-500/20 text-red-300 border border-red-400/30' 
+                                                : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
+                                        }`}
+                                    >
+                                        {showNewPostForm ? 'Cancel' : <Plus size={16} />}
+                                        {showNewPostForm ? 'Cancel' : 'New Post'}
+                                    </button>
+                                )}
                             </div>
 
-                            {showNewPostForm && (
+                            {showNewPostForm && user?.isVerified && (
                                 <div className="space-y-4">
                                     {/* AI Assistant Prompt Section */}
                                     <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-black/30 border border-white/20' : 'bg-blue-50 border border-blue-200'}`}>

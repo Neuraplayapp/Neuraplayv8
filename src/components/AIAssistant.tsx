@@ -86,6 +86,15 @@ const AIAssistant: React.FC = () => {
         getActiveConversation
     } = useGlobalConversation();
     
+    // Use user context for usage limits and verification
+    const { 
+        user: contextUser, 
+        canUseAI, 
+        canGenerateImage, 
+        recordAIUsage, 
+        recordImageGeneration 
+    } = useUser();
+    
     const menuRef = useRef<HTMLDivElement>(null);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -254,10 +263,10 @@ const AIAssistant: React.FC = () => {
     const location = useLocation();
     const theme = useTheme();
     const { triggerAgent, showAgent, hideAgent, currentContext, updateContext } = useAIAgent();
-    const { user } = useUser();
+    const { user: currentUser } = useUser();
     
     // Remove limits for DemoUser
-    const isDemoUser = user?.username === 'DemoUser';
+    const isDemoUser = currentUser?.username === 'DemoUser';
 
     // Load ElevenLabs widget script and custom styling (only once)
     useEffect(() => {
@@ -2414,15 +2423,42 @@ Need help with anything specific? Just ask! 🌟`;
         }
     };
 
-    // Enhanced AI handler with tool calling support
+    // Enhanced AI handler with tool calling support and usage limits
     const handleAIWithToolCalling = async (inputMessage: string, enableToolCalling: boolean = true) => {
-        // Get current context for AI
+        // Check AI usage limits before proceeding
+        const aiUsage = canUseAI();
+        if (!aiUsage.allowed) {
+            const verificationMessage = contextUser?.isVerified 
+                ? `You've reached your AI chat limit (${aiUsage.limit} prompts/day). Upgrade to Premium for more access!` 
+                : `You've used your free AI chat limit (${aiUsage.limit} prompts/day). Verify your email for more access or upgrade to Premium!`;
+                
+            addMessage(activeConversation, {
+                text: `🚫 ${verificationMessage}`,
+                isUser: false,
+                timestamp: new Date()
+            });
+            return;
+        }
+        
+        // Record AI usage at the start of the request
+        recordAIUsage();
+        
+        // Get current context for AI with conversation history
+        const conversationHistory = getActiveConversation().messages.slice(-10); // Last 10 messages for context
         const context = {
             currentPage: location.pathname,
             mode: mode,
-            user: { id: 'demo', name: 'User' }, // This would come from your user context
+            user: contextUser ? { id: contextUser.id, name: contextUser.username } : { id: 'anonymous', name: 'User' },
             timestamp: new Date(),
-            language: selectedLanguage !== 'auto' ? SUPPORTED_LANGUAGES[selectedLanguage] : null
+            language: selectedLanguage !== 'auto' ? SUPPORTED_LANGUAGES[selectedLanguage] : null,
+            isVerified: contextUser?.isVerified || false,
+            subscription: contextUser?.subscription?.tier || 'free',
+            conversationHistory: conversationHistory.map(msg => ({
+                role: msg.isUser ? 'user' : 'assistant',
+                content: msg.text,
+                timestamp: msg.timestamp,
+                hasImage: !!msg.image
+            }))
         };
 
         // RESTORED: Image generation now works through the advanced agentic tool-calling system
@@ -3005,10 +3041,25 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
         return imageKeywords.some(keyword => lowerText.includes(keyword));
     };
 
-    // NEW: Handle image generation requests
+    // NEW: Handle image generation requests with usage limits
     const handleImageRequest = async (prompt: string) => {
         try {
             console.log('Handling image request:', prompt);
+            
+            // Check usage limits before proceeding
+            const imageUsage = canGenerateImage();
+            if (!imageUsage.allowed) {
+                const verificationMessage = contextUser?.isVerified 
+                    ? `You've reached your image generation limit (${imageUsage.limit}/day). Upgrade to Premium Plus for unlimited image generation!` 
+                    : `You've used your free image generation limit (${imageUsage.limit}/day). Verify your email for more access or upgrade to Premium!`;
+                    
+                addMessage(activeConversation, {
+                    text: `🚫 ${verificationMessage}`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                return null;
+            }
             
             // Extract the image prompt from the user's message
             const imagePrompt = prompt.replace(/^(generate|create|make|draw|show)\s+(an\s+)?(image|picture|photo|art)\s+of?\s*/i, '');
@@ -3022,12 +3073,22 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 return null;
             }
             
+            // Record usage before generating
+            recordImageGeneration();
+            
             // Generate the image
             const imageUrl = await generateImage(imagePrompt);
             
             if (imageUrl) {
+                const remaining = imageUsage.remaining - 1;
+                const usageText = imageUsage.limit === -1 
+                    ? "✨ Unlimited" 
+                    : remaining > 0 
+                        ? `📊 ${remaining} remaining today` 
+                        : "📊 Daily limit reached";
+                        
                 addMessage(activeConversation, {
-                    text: `Here's your image: "${imagePrompt}" 🎨`,
+                    text: `🎨 Here's your image: "${imagePrompt}"\n\n${usageText}`,
                     isUser: false,
                     timestamp: new Date(),
                     image: imageUrl
@@ -3057,61 +3118,32 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
         try {
             console.log('Generating image for prompt:', prompt);
             
-            // Platform-aware API endpoint and payload
-            const apiEndpoint = isNetlify() 
-                ? '/.netlify/functions/api'
-                : '/api/api'; // For Render
+            // Use the enhanced AI service with tool calling
+            const { aiService } = await import('../services/AIService');
             
-            // Use ORIGINAL format for both platforms - Together AI works on both
-            const requestBody = JSON.stringify({
-                task_type: 'image',
-                input_data: {
-                    prompt: prompt,
-                    size: '512x512'
+            // Check if this is a request for mathematical/educational graphs
+            const isGraphRequest = /\b(graph|chart|plot|histogram|diagram|visualization|visualize)\b/i.test(prompt);
+            
+            if (isGraphRequest) {
+                // Generate specialized educational graph
+                const enhancedPrompt = `Create a clear, educational ${prompt}. Professional style with: clean white background, bold labels, bright colors (blue, green, orange), grid lines, clear axes, legible fonts, child-friendly design. Mathematical accuracy is essential. Include all requested data points and proper scaling.`;
+                
+                const result = await aiService.handleImageGeneration(enhancedPrompt);
+                
+                if (result && typeof result === 'object') {
+                    return result.image_url || (result.data ? `data:${result.contentType || 'image/jpeg'};base64,${result.data}` : null);
                 }
-            });
-            
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: requestBody
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Image generation failed: ${response.status}`);
+            } else {
+                // Regular image generation through tool system
+                const result = await aiService.handleImageGeneration(prompt);
+                
+                if (result && typeof result === 'object') {
+                    return result.image_url || (result.data ? `data:${result.contentType || 'image/jpeg'};base64,${result.data}` : null);
+                }
             }
             
-            const result = await response.json();
+            throw new Error('No image data received from service');
             
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            
-            // Handle different response formats
-            if (result.image_url) {
-                return result.image_url;
-            }
-            
-            if (result.url) {
-                return result.url;
-            }
-            
-            // Handle base64 data URL format
-            if (result.data && result.contentType) {
-                // Convert base64 to data URL
-                const dataUrl = `data:${result.contentType};base64,${result.data}`;
-                return dataUrl;
-            }
-            
-            // Handle direct base64 data
-            if (result.data && typeof result.data === 'string' && result.data.startsWith('/9j/')) {
-                // This is a base64 JPEG image
-                const dataUrl = `data:image/jpeg;base64,${result.data}`;
-                return dataUrl;
-            }
-            
-            console.warn('Unexpected image generation response format:', result);
-            return null;
         } catch (error: any) {
             console.error('Image generation error:', error);
             
@@ -3630,9 +3662,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         <div className="flex-1">
                                             <div className={`${msg.isUser ? 'text-white' : theme.isDarkMode ? 'text-white' : 'text-black'}`} style={{ zIndex: 9999, position: 'relative' }}>
                                                 <RichMessageRenderer 
-                                                    text={msg.text} 
-                                                    isUser={msg.isUser}
-                                                    isDarkMode={theme.isDarkMode}
+                                                    content={msg.text}
                                                 />
                                             </div>
                                             {msg.image && (

@@ -29,110 +29,44 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Mock user credentials for demo purposes
-  const mockUsers = [
-    {
-      email: 'demo@neuraplay.com',
-      password: 'demo123',
-      user: {
-        id: '1',
-        username: 'DemoUser',
-        email: 'demo@neuraplay.com',
-        role: 'learner' as const,
-        age: 8,
-        profile: {
-          avatar: '/assets/images/Mascot.png',
-          rank: 'Advanced Learner',
-          xp: 1250,
-          xpToNextLevel: 2000,
-          stars: 45,
-          about: 'Learning and growing with NeuraPlay!',
-          gameProgress: {
-            'the-cube': { completed: true, score: 95 },
-            'counting-adventure': { completed: true, score: 88 },
-            'memory-sequence': { completed: false, score: 0 }
-          }
-        },
-        journeyLog: [
-          { date: '2024-01-15', activity: 'Completed The Cube', xp: 100 },
-          { date: '2024-01-14', activity: 'Finished Counting Adventure', xp: 75 },
-          { date: '2024-01-13', activity: 'Started Memory Training', xp: 50 }
-        ],
-        hasPosted: true,
-        friends: ['user2', 'user3'],
-        friendRequests: []
-      }
-    },
-    {
-      email: 'parent@neuraplay.com',
-      password: 'parent123',
-      user: {
-        id: '2',
-        username: 'ParentUser',
-        email: 'parent@neuraplay.com',
-        role: 'parent' as const,
-        profile: {
-          avatar: '/assets/images/Mascot.png',
-          rank: 'Supportive Parent',
-          xp: 800,
-          xpToNextLevel: 1000,
-          stars: 30,
-          about: 'Supporting my child\'s learning journey',
-          gameProgress: {}
-        },
-        journeyLog: [
-          { date: '2024-01-15', activity: 'Reviewed child\'s progress', xp: 50 },
-          { date: '2024-01-14', activity: 'Set learning goals', xp: 75 },
-          { date: '2024-01-13', activity: 'Joined community', xp: 25 }
-        ],
-        hasPosted: false,
-        friends: [],
-        friendRequests: []
-      }
-    }
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Call authentication API
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase(),
+          password: formData.password
+        })
+      });
 
-    const user = mockUsers.find(u => 
-      u.email === formData.email && u.password === formData.password
-    );
+      const result = await response.json();
 
-    if (user) {
-      setUser(user.user);
-      onSuccess?.();
-      navigate(redirectTo);
-      onClose();
-    } else {
-      setError('Invalid email or password. Please try again.');
+      if (response.ok && result.user) {
+        // Check if user needs to verify their email
+        if (!result.user.isVerified) {
+          setError('Please verify your email address before logging in. Check your inbox for a verification link.');
+          return;
+        }
+
+        setUser(result.user);
+        onSuccess?.();
+        onClose();
+        navigate(redirectTo);
+      } else {
+        setError(result.message || 'Invalid email or password. Please check your credentials or create a new account.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  };
-
-  const handleDemoLogin = async () => {
-    setFormData({ email: 'demo@neuraplay.com', password: 'demo123' });
-    setError('');
-    setIsLoading(true);
-
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const demoUser = mockUsers.find(u => u.email === 'demo@neuraplay.com');
-    if (demoUser) {
-      setUser(demoUser.user);
-      onSuccess?.();
-      navigate(redirectTo);
-      onClose();
-    }
-
-    setIsLoading(false);
   };
 
   return (
@@ -165,38 +99,23 @@ const LoginModal: React.FC<LoginModalProps> = ({
           }`}>Continue your learning journey with NeuraPlay</p>
         </div>
 
-        {/* Demo Login Button */}
+        {/* Important Notice */}
         <div className={`rounded-xl p-4 border ${
           isDarkMode 
-            ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 border-violet-400/30'
-            : 'bg-gradient-to-r from-violet-100 to-purple-100 border-violet-300/50'
+            ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-400/30'
+            : 'bg-gradient-to-r from-amber-100 to-orange-100 border-amber-300/50'
         }`}>
           <div className="text-center">
-            <p className={`text-sm mb-3 ${
-              isDarkMode ? 'text-white/80' : 'text-gray-700'
-            }`}>Try the demo experience</p>
-            <button
-              onClick={handleDemoLogin}
-              disabled={isLoading}
-              className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
-            >
-              {isLoading ? 'Signing In...' : 'Demo Login'}
-            </button>
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className={`w-full border-t ${
-              isDarkMode ? 'border-white/20' : 'border-gray-300'
-            }`}></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className={`px-2 ${
-              isDarkMode 
-                ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white/60'
-                : 'bg-white text-gray-600'
-            }`}>Or sign in manually</span>
+            <p className={`text-sm font-medium ${
+              isDarkMode ? 'text-amber-200' : 'text-amber-800'
+            }`}>
+              ✉️ Email verification is now required
+            </p>
+            <p className={`text-xs mt-1 ${
+              isDarkMode ? 'text-amber-300/80' : 'text-amber-700'
+            }`}>
+              Please verify your email address after signing up to access all features.
+            </p>
           </div>
         </div>
 
