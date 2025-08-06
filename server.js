@@ -253,55 +253,121 @@ const tools = [
         "required": ["type"]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_image",
+      "description": "Generate creative, educational, or artistic images based on user descriptions. Use this when users want to create, make, draw, or generate visual content.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Detailed description of the image to generate, including style, colors, objects, mood, etc."
+          },
+          "style": {
+            "type": "string",
+            "enum": ["realistic", "cartoon", "artistic", "educational", "child-friendly"],
+            "description": "The visual style for the image"
+          },
+          "size": {
+            "type": "string",
+            "enum": ["512x512", "768x768", "1024x1024"],
+            "description": "The size of the generated image"
+          }
+        },
+        "required": ["prompt"]
+      }
+    }
   }
 ];
 
-// Tool execution functions
+// INTELLIGENT TOOL ROUTING SYSTEM
+const TOOL_ROUTING_CONFIG = {
+  // Server-side tools (require server resources)
+  server: {
+    'web_search': {
+      reason: 'Requires Serper API key and external API access',
+      requires: ['api_key', 'external_api']
+    },
+    'get_weather': {
+      reason: 'Requires Weather API key and external API access', 
+      requires: ['api_key', 'external_api']
+    },
+    'generate_image': {
+      reason: 'Requires Together AI API key for external API access',
+      requires: ['api_key', 'external_api']
+    }
+  },
+  
+  // Client-side tools (require browser/UI access)
+  client: {
+    'navigate_to_page': {
+      reason: 'Requires React Router and browser navigation',
+      requires: ['react_router', 'browser_api', 'ui_manipulation']
+    },
+    'update_settings': {
+      reason: 'Requires local state management and UI updates',
+      requires: ['local_storage', 'react_state', 'ui_manipulation']
+    },
+    'recommend_game': {
+      reason: 'Requires user context and UI interaction',
+      requires: ['user_context', 'ui_manipulation']
+    },
+    'accessibility_support': {
+      reason: 'Requires CSS/DOM manipulation and browser APIs',
+      requires: ['dom_manipulation', 'css_changes', 'browser_api']
+    }
+  }
+};
+
+// Extract server-side tool names for quick lookup
+const SERVER_SIDE_TOOLS = Object.keys(TOOL_ROUTING_CONFIG.server);
+
+// Tool execution functions (SERVER-SIDE ONLY)
 async function executeTool(toolCall) {
   const { name, arguments: args } = toolCall;
   const parsedArgs = JSON.parse(args);
   
-  console.log(`Executing tool: ${name} with args:`, parsedArgs);
+  console.log(`🔧 Server executing tool: ${name} with args:`, parsedArgs);
+  
+  // Only execute server-side tools here
+  if (!SERVER_SIDE_TOOLS.includes(name)) {
+    const clientToolConfig = TOOL_ROUTING_CONFIG.client[name];
+    console.log(`📤 Client-side tool ${name} - delegating to client`);
+    console.log(`📋 Reason: ${clientToolConfig?.reason || 'Unknown client-side tool'}`);
+    
+    return {
+      success: true,
+      message: `Tool ${name} will be executed on client (${clientToolConfig?.reason || 'UI/browser functionality required'})`,
+      data: { 
+        delegatedToClient: true,
+        toolConfig: clientToolConfig,
+        executionLocation: 'client'
+      }
+    };
+  }
+  
+  const serverToolConfig = TOOL_ROUTING_CONFIG.server[name];
+  console.log(`🖥️ Server-side tool ${name} - executing on server`);
+  console.log(`📋 Reason: ${serverToolConfig?.reason || 'Unknown server-side tool'}`);
+  console.log(`⚙️ Requirements: ${serverToolConfig?.requires?.join(', ') || 'Unknown'}`);}
   
   switch (name) {
-    case 'navigate_to_page':
-      return {
-        success: true,
-        message: `Navigating to ${parsedArgs.page} page`,
-        data: { page: parsedArgs.page, reason: parsedArgs.reason }
-      };
-      
-    case 'update_settings':
-      return {
-        success: true,
-        message: `Updated ${parsedArgs.setting} to ${parsedArgs.value}`,
-        data: { setting: parsedArgs.setting, value: parsedArgs.value }
-      };
-      
-    case 'recommend_game':
-      return {
-        success: true,
-        message: `Recommended games for ${parsedArgs.topic}`,
-        data: { topic: parsedArgs.topic, age_group: parsedArgs.age_group, difficulty: parsedArgs.difficulty }
-      };
-      
     case 'web_search':
       return await performWebSearch(parsedArgs.query);
       
     case 'get_weather':
       return await getWeatherData(parsedArgs.location);
       
-    case 'accessibility_support':
-      return {
-        success: true,
-        message: `Applied ${parsedArgs.type} accessibility support`,
-        data: { type: parsedArgs.type, subtype: parsedArgs.subtype }
-      };
+    case 'generate_image':
+      return await handleImageGenerationTool(parsedArgs);
       
     default:
       return {
         success: false,
-        message: `Unknown tool: ${name}`
+        message: `Unknown server-side tool: ${name}`
       };
   }
 }
@@ -397,7 +463,35 @@ async function getWeatherData(location) {
   }
 }
 
-// Image generation function
+// Image generation tool handler (for agentic system)
+async function handleImageGenerationTool(params) {
+  try {
+    const { prompt, style = 'child-friendly', size = '512x512' } = params;
+    
+    console.log('🎨 Agentic image generation request:', { prompt, style, size });
+    
+    const imageResult = await handleImageGeneration({ prompt, size }, process.env.together_token);
+    
+    return {
+      success: true,
+      message: `🎨 I've created a beautiful ${style} image for you: "${prompt}"`,
+      data: { 
+        image_url: imageResult.image_url,
+        prompt,
+        style,
+        size
+      }
+    };
+  } catch (error) {
+    console.error('Agentic image generation failed:', error);
+    return {
+      success: false,
+      message: `Sorry, I couldn't generate that image: ${error.message}`
+    };
+  }
+}
+
+// Core image generation function (used by both direct calls and tool calls)
 async function handleImageGeneration(input_data, token) {
   try {
     const { prompt, size = '512x512' } = input_data;
@@ -587,11 +681,15 @@ app.post('/api/api', async (req, res) => {
 
       const finalData = await finalResponse.json();
       
-      // Return in the expected format with tool calls
+      // Separate client-side tools from server-executed tools
+      const clientSideTools = toolCalls.filter(tc => !SERVER_SIDE_TOOLS.includes(tc.function.name));
+      
+      // Return in the expected format with BOTH server results AND client-side tools to execute
       res.json([{
         generated_text: finalData.choices[0].message.content,
-        tool_calls: toolCalls,
-        tool_results: toolResults
+        tool_calls: clientSideTools, // Only client-side tools for client execution
+        tool_results: toolResults,    // Server-executed tool results
+        server_tool_calls: toolCalls.filter(tc => SERVER_SIDE_TOOLS.includes(tc.function.name))
       }]);
     } else {
       // No tool calls, return direct response
@@ -1284,6 +1382,9 @@ process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully');
   server.close(() => {
     console.log('✅ Server closed');
+    process.exit(0);
+  });
+}); 
     process.exit(0);
   });
 }); 

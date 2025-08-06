@@ -2370,12 +2370,8 @@ Need help with anything specific? Just ask! 🌟`;
         try {
             console.log('Handling conversation mode message:', inputMessage);
             
-            // Check for image requests first
-            if (isImageRequest(inputMessage)) {
-                console.log('Image request detected in conversation mode, calling handleImageRequest');
-                await handleImageRequest(inputMessage);
-                return;
-            }
+            // RESTORED: All AI processing now goes through the advanced agentic system
+            // The AI model will intelligently choose to call generate_image tool when appropriate
             
             // Send to Synapse API for conversation
             const response = await sendMessageToSynapse(inputMessage);
@@ -2410,7 +2406,7 @@ Need help with anything specific? Just ask! 🌟`;
             // Initialize navigation service with navigate function
             const { NavigationService } = await import('../services/NavigationService');
             const navService = NavigationService.getInstance();
-            navService.setNavigate(navigate);
+            navService.setNavigate(navigate); // Set the navigate function
         };
         initToolExecutor();
     }, [navigate]);
@@ -2456,25 +2452,8 @@ Need help with anything specific? Just ask! 🌟`;
             language: selectedLanguage !== 'auto' ? SUPPORTED_LANGUAGES[selectedLanguage] : null
         };
 
-        // Check if this is an image generation request
-        if (isImageRequest(inputMessage)) {
-            console.log('🎨 Detected image generation request');
-            const imageResult = await handleImageRequest(inputMessage);
-            if (imageResult) {
-                const assistantMessage: Message = {
-                    text: `I've generated an image for you!`,
-                    isUser: false,
-                    timestamp: new Date(),
-                    image: imageResult
-                };
-                addMessageToConversation(activeConversation, assistantMessage);
-                return {
-                    textResponse: 'Image generated successfully!',
-                    toolCalls: [],
-                    success: true
-                };
-            }
-        }
+        // RESTORED: Image generation now works through the advanced agentic tool-calling system
+        // The AI model intelligently decides when to call the generate_image tool
 
         // Try AI service first (if available), fallback to direct API
         let aiResponse;
@@ -2488,26 +2467,49 @@ Need help with anything specific? Just ask! 🌟`;
             
             console.log('🔍 AI Assistant Debug - AI Service Response:', response);
             
-            // Handle different response formats
+            // Handle different response formats from the enhanced agentic system
             if (typeof response === 'string') {
                 // String response - parse for tool calls
                 console.log('🔧 DEBUG: Processing string response for tool calls');
-                const parsed = parseAIResponse(aiResponse);
+                const parsed = parseAIResponse(response);
                 aiResponse = parsed.text;
                 toolCalls = parsed.toolCalls || [];
                 console.log('🔧 DEBUG: Parsed tool calls from string:', toolCalls);
-            } else if (Array.isArray(aiResponse) && aiResponse.length > 0) {
-                // Array response from server with tool calls
-                console.log('🔧 DEBUG: Processing array response with tool calls:', aiResponse[0]);
-                const firstResponse = aiResponse[0];
+            } else if (Array.isArray(response) && response.length > 0) {
+                // Array response from server with tool calls (NEW AGENTIC FORMAT)
+                console.log('🔧 DEBUG: Processing agentic array response:', response[0]);
+                const firstResponse = response[0];
                 aiResponse = firstResponse.generated_text || 'No response received';
+                
+                // CLIENT-SIDE TOOLS: These need to be executed by ToolExecutorService
                 toolCalls = firstResponse.tool_calls || [];
-                console.log('🔧 DEBUG: Extracted tool calls from array:', toolCalls);
-            } else if (aiResponse && typeof aiResponse === 'object') {
+                console.log('🔧 DEBUG: CLIENT-SIDE tool calls to execute:', toolCalls);
+                
+                // SERVER-SIDE TOOL RESULTS: Already executed, add to conversation
+                if (firstResponse.server_tool_calls && firstResponse.tool_results) {
+                    console.log('🔧 DEBUG: SERVER-SIDE tool results:', firstResponse.tool_results);
+                    // Add server tool results to the conversation immediately
+                    for (const toolResult of firstResponse.tool_results) {
+                        if (toolResult.content) {
+                            const resultData = JSON.parse(toolResult.content);
+                            if (resultData.success) {
+                                const serverToolMessage: Message = {
+                                    text: resultData.message,
+                                    isUser: false,
+                                    timestamp: new Date(),
+                                    action: toolResult.name as any,
+                                    ...(resultData.data?.image_url && { image: resultData.data.image_url })
+                                };
+                                addMessageToConversation(activeConversation, serverToolMessage);
+                            }
+                        }
+                    }
+                }
+            } else if (response && typeof response === 'object') {
                 // Object response
-                console.log('🔧 DEBUG: Processing object response:', aiResponse);
-                aiResponse = aiResponse.generated_text || aiResponse.text || 'No response received';
-                toolCalls = aiResponse.tool_calls || [];
+                console.log('🔧 DEBUG: Processing object response:', response);
+                aiResponse = response.generated_text || response.text || 'No response received';
+                toolCalls = response.tool_calls || [];
                 console.log('🔧 DEBUG: Extracted tool calls from object:', toolCalls);
             } else {
                 console.log('🔧 DEBUG: No valid response format found');
@@ -2536,31 +2538,7 @@ Need help with anything specific? Just ask! 🌟`;
             }
         }
 
-        // Check if the response contains image generation keywords and handle accordingly
-        if (isImageRequest(inputMessage) && !aiResponse.includes('image') && !aiResponse.includes('picture')) {
-            console.log('🎨 Detected image generation request in fallback, handling separately');
-            try {
-                const imageResult = await handleImageRequest(inputMessage);
-                if (imageResult) {
-                    const assistantMessage: Message = {
-                        text: `I've generated an image for you!`,
-                        isUser: false,
-                        timestamp: new Date(),
-                        image: imageResult
-                    };
-                    addMessageToConversation(activeConversation, assistantMessage);
-                    return {
-                        textResponse: 'Image generated successfully!',
-                        toolCalls: [],
-                        success: true
-                    };
-                }
-            } catch (imageError) {
-                console.error('Image generation failed in fallback:', imageError);
-            }
-        }
-
-        // Add AI response to conversation
+        // Add AI response to conversation (tools handle their own specialized responses)
         const assistantMessage: Message = {
             text: aiResponse,
             isUser: false,
@@ -2568,16 +2546,21 @@ Need help with anything specific? Just ask! 🌟`;
         };
         addMessageToConversation(activeConversation, assistantMessage);
 
-        // Execute tool calls if any
+                        // Execute CLIENT-SIDE tool calls if any
         if (toolCalls.length > 0 && toolExecutorService) {
-            console.log('🔧 DEBUG: Found tool calls to execute:', toolCalls);
+            console.log('🔧 DEBUG: Found CLIENT-SIDE tool calls to execute:', toolCalls);
             for (const toolCall of toolCalls) {
                 try {
-                    console.log('🔧 DEBUG: Executing tool call:', toolCall);
-                    console.log('🔧 DEBUG: Tool executor service available:', !!toolExecutorService);
-                    console.log('🔧 DEBUG: Context for tool execution:', context);
+                    console.log('🔧 DEBUG: Executing CLIENT-SIDE tool call:', toolCall);
                     
-                    const result = await toolExecutorService.executeTool(toolCall, context);
+                    // Convert GPT-OSS tool call format to ToolExecutor format
+                    const toolExecutorCall = {
+                        name: toolCall.function?.name || toolCall.name,
+                        parameters: JSON.parse(toolCall.function?.arguments || toolCall.arguments || '{}')
+                    };
+                    
+                    console.log('🔧 DEBUG: Converted tool call format:', toolExecutorCall);
+                    const result = await toolExecutorService.executeTool(toolExecutorCall, context);
                     console.log('🔧 DEBUG: Tool execution result:', result);
                     
                     // Add tool execution results to conversation
@@ -2587,7 +2570,9 @@ Need help with anything specific? Just ask! 🌟`;
                             text: result.message,
                             isUser: false,
                             timestamp: new Date(),
-                            action: toolCall.name as any
+                            action: toolCall.name as any,
+                            // Handle image generation results
+                            ...(result.data?.image_url && { image: result.data.image_url })
                         };
                         addMessageToConversation(activeConversation, toolMessage);
                     } else {
@@ -2610,9 +2595,23 @@ Need help with anything specific? Just ask! 🌟`;
         };
     };
 
-    // Parse AI response for tool calls (enhanced format)
+    // Parse AI response for tool calls and image generation (enhanced format)
     const parseAIResponse = (response: string) => {
         try {
+            // Check for image generation response format
+            if (response.startsWith('IMAGE_GENERATED:')) {
+                const parts = response.split(':');
+                if (parts.length >= 3) {
+                    const imageUrl = parts[1];
+                    const message = parts.slice(2).join(':');
+                    return { 
+                        text: message, 
+                        toolCalls: [], 
+                        image: imageUrl 
+                    };
+                }
+            }
+            
             // Check if response contains tool calls in JSON format
             const toolCallRegex = /\[TOOL_CALL\](.*?)\[\/TOOL_CALL\]/gs;
             const matches = [...response.matchAll(toolCallRegex)];

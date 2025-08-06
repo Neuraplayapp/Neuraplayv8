@@ -145,21 +145,11 @@ class AIService {
   }> {
     console.log('🔍 AI Service Debug - Input:', { text, enableToolCalling, context });
     
-    // Check if this is an image generation request
-    if (this.isImageRequest(text)) {
-      console.log('🎨 Image generation detected');
-      const imageResult = await this.handleImageGeneration(text);
-      return {
-        generated_text: imageResult,
-        tool_calls: [],
-        tool_results: []
-      };
-    }
+    // Image generation is now handled by the intelligent agentic tool-calling system
+    // The GPT-OSS model decides when to call generate_image tool
 
     // Determine API endpoint based on platform
-    const apiEndpoint = this.platform === 'netlify'
-      ? '/api'
-      : '/api/api';
+    const apiEndpoint = '/api';
     
     console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
@@ -235,17 +225,8 @@ class AIService {
     }
   }
 
-  // Check if the request is for image generation
-  private isImageRequest(text: string): boolean {
-    const imageKeywords = [
-      'generate', 'create', 'make', 'draw', 'show', 'picture', 'image', 'photo', 'art',
-      'generate an image', 'create an image', 'make an image', 'draw a picture',
-      'show me a picture', 'create a picture', 'generate a picture'
-    ];
-    
-    const lowerText = text.toLowerCase();
-    return imageKeywords.some(keyword => lowerText.includes(keyword));
-  }
+  // REMOVED: Image detection is now handled by the intelligent agentic system
+  // The GPT-OSS model will decide when to call the generate_image tool
 
   // Handle image generation
   private async handleImageGeneration(text: string): Promise<string> {
@@ -253,9 +234,7 @@ class AIService {
     const prompt = this.extractImagePrompt(text);
     
     // Use the correct API endpoint for each platform
-    const apiEndpoint = this.platform === 'netlify' 
-      ? '/api'
-      : '/api/api';
+    const apiEndpoint = '/api';
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -269,11 +248,11 @@ class AIService {
         })
       });
 
-      // Return the image URL or data URL
+      // Return structured response with image data
       if (response.image_url) {
-        return `Here's your generated image: ${response.image_url}`;
+        return `IMAGE_GENERATED:${response.image_url}:Here's your generated image!`;
       } else if (response.url) {
-        return `Here's your generated image: ${response.url}`;
+        return `IMAGE_GENERATED:${response.url}:Here's your generated image!`;
       } else {
         return 'I generated an image for you, but there was an issue displaying it.';
       }
@@ -465,9 +444,7 @@ Keep responses:
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = this.platform === 'netlify' 
-      ? '/api'
-      : '/api/api';
+    const apiEndpoint = '/api';
     
     try {
       const response = await this.apiCall(apiEndpoint, {
