@@ -1024,7 +1024,7 @@ async function handleImageGeneration(input_data, token) {
     console.log('Image generation prompt:', enhancedPrompt);
     console.log('Generating image with FLUX model via Fireworks AI...');
 
-    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image', {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/text_to_image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1032,7 +1032,10 @@ async function handleImageGeneration(input_data, token) {
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        prompt: enhancedPrompt
+        model: 'accounts/fireworks/models/flux-1-schnell-fp8',
+        prompt: enhancedPrompt,
+        n: 1,
+        size: "1024x1024"
       })
     });
 
