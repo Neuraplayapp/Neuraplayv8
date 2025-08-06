@@ -470,7 +470,7 @@ async function handleImageGenerationTool(params) {
     
     console.log('🎨 Agentic image generation request:', { prompt, style, size });
     
-    const imageResult = await handleImageGeneration({ prompt, size }, process.env.together_token);
+            const imageResult = await handleImageGeneration({ prompt, size }, process.env.Neuraplay);
     
     return {
       success: true,
@@ -500,76 +500,52 @@ async function handleImageGeneration(input_data, token) {
       throw new Error('No prompt provided for image generation');
     }
 
-    console.log('Starting image generation with token:', !!token);
+    console.log('Starting image generation with Fireworks AI token:', !!token);
     console.log('Extracted prompt for image generation:', prompt);
 
     if (!token) {
-      throw new Error('No Together AI token provided for image generation');
+      throw new Error('No Fireworks AI token provided for image generation');
     }
 
     // Enhanced prompt for better image generation
     const enhancedPrompt = `Create a beautiful, high-quality image: ${prompt}. Style: vibrant colors, detailed, professional, child-friendly, educational.`;
 
     console.log('Image generation prompt:', enhancedPrompt);
+    console.log('Generating image with FLUX model via Fireworks AI...');
 
-    // Try different image generation models
-    const models = [
-      'stability-ai/stable-diffusion-xl-base-1.0',
-      'stability-ai/stable-diffusion-2-1',
-      'runwayml/stable-diffusion-v1-5'
-    ];
+    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'image/jpeg',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        prompt: enhancedPrompt
+      })
+    });
 
-    let lastError = null;
-
-    for (const model of models) {
-      try {
-        console.log(`Trying image generation with model: ${model}`);
-        
-        const response = await fetch('https://api.together.xyz/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: model,
-            prompt: enhancedPrompt,
-            n: 1,
-            size: size,
-            response_format: 'b64_json'
-          })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Image generation failed with model ${model}:`, errorText);
-          lastError = new Error(`Image generation failed: ${errorText}`);
-          continue;
-        }
-
-        const result = await response.json();
-        
-        if (result.data && result.data.length > 0) {
-          const imageData = result.data[0];
-          
-          if (imageData.b64_json) {
-            // Convert base64 to data URL
-            const dataUrl = `data:image/png;base64,${imageData.b64_json}`;
-            return {
-              image_url: dataUrl,
-              contentType: 'image/png',
-              data: imageData.b64_json
-            };
-          }
-        }
-      } catch (error) {
-        console.error(`Error with model ${model}:`, error);
-        lastError = error;
-        continue;
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Fireworks image generation failed:', errorText);
+      throw new Error(`Image generation failed: ${errorText}`);
     }
 
-    throw lastError || new Error('All image generation models failed');
+    // Get image data as buffer
+    const imageBuffer = await response.buffer();
+    
+    // Convert to base64 for consistent API response
+    const base64Image = imageBuffer.toString('base64');
+    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+    
+    console.log('✅ Image generation successful');
+    
+    return {
+      image_url: dataUrl,
+      contentType: 'image/jpeg',
+      data: base64Image
+    };
+
   } catch (error) {
     console.error('Image generation error:', error);
     throw error;
@@ -584,7 +560,7 @@ app.post('/api/api', async (req, res) => {
     // Handle image generation separately
     if (task_type === 'image') {
       try {
-        const imageResult = await handleImageGeneration(input_data, process.env.together_token);
+        const imageResult = await handleImageGeneration(input_data, process.env.Neuraplay);
         return res.json(imageResult);
       } catch (error) {
         console.error('Image generation error:', error);
@@ -606,14 +582,14 @@ app.post('/api/api', async (req, res) => {
     console.log('🔍 DEBUG: Number of tools available:', tools.length);
     
     // Step 1: Initial call to GPT-OSS with tools
-    const initialResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
+    const initialResponse = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.together_token}`,
+        'Authorization': `Bearer ${process.env.Neuraplay}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
+        model: 'accounts/fireworks/models/gpt-oss-120b',
         messages: input_data.messages,
         tools: tools,
         tool_choice: 'auto',
@@ -624,7 +600,7 @@ app.post('/api/api', async (req, res) => {
 
     if (!initialResponse.ok) {
       const error = await initialResponse.text();
-      console.error('Together AI API error:', error);
+      console.error('Fireworks AI API error:', error);
       return res.status(initialResponse.status).json({ error: `AI API failed: ${error}` });
     }
 
@@ -664,14 +640,14 @@ app.post('/api/api', async (req, res) => {
       // Step 3: Final call to GPT-OSS with tool results
       console.log('Making final call with tool results...');
       
-      const finalResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
+      const finalResponse = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.together_token}`,
+          'Authorization': `Bearer ${process.env.Neuraplay}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'openai/gpt-oss-120b',
+          model: 'accounts/fireworks/models/gpt-oss-120b',
           messages: input_data.messages,
           max_tokens: maxTokens,
           temperature: temperature
@@ -680,7 +656,7 @@ app.post('/api/api', async (req, res) => {
 
       if (!finalResponse.ok) {
         const error = await finalResponse.text();
-        console.error('Final Together AI API error:', error);
+        console.error('Final Fireworks AI API error:', error);
         return res.status(finalResponse.status).json({ error: `AI API failed: ${error}` });
       }
 
@@ -1266,14 +1242,14 @@ async function handleFallbackConversation(clientWs, audioBase64) {
     if (!finalResult.text) return;
 
     // Step 2: Generate AI response with conversation-appropriate length
-    const aiResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
+    const aiResponse = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.together_token}`,
+        'Authorization': `Bearer ${process.env.Neuraplay}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
+        model: 'accounts/fireworks/models/gpt-oss-120b',
         messages: [
           { 
             role: 'system', 
