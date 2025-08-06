@@ -20,7 +20,7 @@ class AIService {
   }
 
   // Generic API call method
-  private async apiCall(endpoint: string, options: RequestInit = {}) {
+  async apiCall(endpoint: string, options: RequestInit = {}) {
     const url = `${this.apiBase}${endpoint}`;
     if (import.meta.env.DEV) {
       console.log(`🚨 DEBUG: API construction:`, {

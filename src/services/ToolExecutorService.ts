@@ -60,8 +60,11 @@ export class ToolExecutorService {
           return await this.handleDataReading(toolCall.parameters, context);
         
         case 'generate_image':
-          console.log(`🔧 DEBUG: ToolExecutor - Handling image generation`);
-          return await this.handleImageGeneration(toolCall.parameters, context);
+          console.log(`🔧 DEBUG: ToolExecutor - Image generation should be handled server-side, not client-side!`);
+          return {
+            success: false,
+            message: `🚫 Image generation should be processed server-side, not by client ToolExecutor`
+          };
         
         default:
           console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
@@ -290,53 +293,7 @@ export class ToolExecutorService {
     };
   }
 
-  // Advanced image generation handler (integrated with agentic system)
-  private async handleImageGeneration(params: any, context?: any): Promise<ToolResult> {
-    const { prompt, style = 'child-friendly', size = '512x512' } = params;
-    
-    console.log('🔍 Tool Executor Debug - Image generation request:', { prompt, style, size, context });
-    
-    try {
-      // Call the AIService for actual image generation
-      const { aiService } = await import('./AIService');
-      const response = await fetch('/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task_type: 'image',
-          input_data: { prompt, size }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Image generation API failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.image_url) {
-        return {
-          success: true,
-          message: `🎨 I've created a beautiful ${style} image for you!`,
-          data: { 
-            image_url: result.image_url,
-            prompt,
-            style,
-            size
-          },
-          imageGenerated: true
-        };
-      } else {
-        throw new Error('No image URL returned from generation service');
-      }
-    } catch (error) {
-      console.error('🔍 Tool Executor Debug - Image generation error:', error);
-      return {
-        success: false,
-        message: `❌ Sorry, I couldn't generate that image: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
-  }
+  // Image generation handler removed - now handled server-side only
 }
 
 // Export singleton instance
