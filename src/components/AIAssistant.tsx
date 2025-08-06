@@ -10,6 +10,7 @@ import { useUser } from '../contexts/UserContext';
 import { useConversation as useGlobalConversation, type Message } from '../contexts/ConversationContext';
 import { base64ToBinary } from '../utils/videoUtils';
 import { elevenLabsService } from '../services/elevenLabsService';
+import RichMessageRenderer from './RichMessageRenderer';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
 
@@ -3627,9 +3628,13 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <div className={`max-w-[80%] ${msg.isUser ? 'ai-message-user' : 'ai-message-assistant'}`}>
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1">
-                                            <p className={`text-sm leading-relaxed ${msg.isUser ? 'text-white' : theme.isDarkMode ? 'text-white' : 'text-black'}`} style={{ zIndex: 9999, position: 'relative' }}>
-                                                {msg.text.replace(/Synapse/gi, 'Neural AI').replace(/synapse/gi, 'Neural AI')}
-                                            </p>
+                                            <div className={`${msg.isUser ? 'text-white' : theme.isDarkMode ? 'text-white' : 'text-black'}`} style={{ zIndex: 9999, position: 'relative' }}>
+                                                <RichMessageRenderer 
+                                                    text={msg.text} 
+                                                    isUser={msg.isUser}
+                                                    isDarkMode={theme.isDarkMode}
+                                                />
+                                            </div>
                                             {msg.image && (
                                                 <div className="mt-2">
                                                     <img 
