@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { X, Mic, MicOff, Volume2, VolumeX, Settings, MessageSquare, Users, BookOpen, Brain, Zap } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, VolumeX, Settings, MessageSquare, Users, BookOpen, Brain, Zap, GraduationCap } from 'lucide-react';
 import { getAgentId } from '../config/elevenlabs';
 
 interface TeachersRoomProps {

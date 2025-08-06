@@ -121,6 +121,279 @@ app.post('/api/elevenlabs-tts', async (req, res) => {
   }
 });
 
+// Tool Schema Definition for GPT-OSS
+const tools = [
+  {
+    "type": "function",
+    "function": {
+      "name": "navigate_to_page",
+      "description": "Navigate the user to a different page within the NeuraPlay application. Use this when users want to go to specific sections like playground, dashboard, forum, or profile.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string",
+            "enum": ["playground", "dashboard", "forum", "profile", "home", "about"],
+            "description": "The page to navigate to"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Optional reason for navigation"
+          }
+        },
+        "required": ["page"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_settings",
+      "description": "Update user settings like theme, accessibility, or preferences. Use this when users want to change their experience.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "setting": {
+            "type": "string",
+            "enum": ["theme", "accessibility", "notifications", "language"],
+            "description": "The setting to update"
+          },
+          "value": {
+            "type": "string",
+            "description": "The new value for the setting"
+          }
+        },
+        "required": ["setting", "value"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_game",
+      "description": "Recommend educational games based on user interests, age, or learning goals. Use this when users want to play games or learn specific topics.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The learning topic or subject area"
+          },
+          "age_group": {
+            "type": "string",
+            "enum": ["3-5", "6-8", "9-12", "13+"],
+            "description": "The age group for game recommendations"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard"],
+            "description": "The difficulty level"
+          }
+        },
+        "required": ["topic"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "web_search",
+      "description": "Searches the live internet for up-to-date information, news, current events, or topics beyond its 2023 knowledge cutoff.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A concise search query, like one you would type into Google."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "Retrieves the current weather for a specific location.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and country, e.g., 'Taraz, Kazakhstan'."
+          }
+        },
+        "required": ["location"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "accessibility_support",
+      "description": "Apply accessibility settings for users with disabilities like color blindness, visual impairments, or other accessibility needs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["color_blindness_support", "high_contrast", "large_text", "screen_reader"],
+            "description": "The type of accessibility support needed"
+          },
+          "subtype": {
+            "type": "string",
+            "enum": ["protanopia", "deuteranopia", "tritanopia"],
+            "description": "For color blindness, the specific type"
+          }
+        },
+        "required": ["type"]
+      }
+    }
+  }
+];
+
+// Tool execution functions
+async function executeTool(toolCall) {
+  const { name, arguments: args } = toolCall;
+  const parsedArgs = JSON.parse(args);
+  
+  console.log(`Executing tool: ${name} with args:`, parsedArgs);
+  
+  switch (name) {
+    case 'navigate_to_page':
+      return {
+        success: true,
+        message: `Navigating to ${parsedArgs.page} page`,
+        data: { page: parsedArgs.page, reason: parsedArgs.reason }
+      };
+      
+    case 'update_settings':
+      return {
+        success: true,
+        message: `Updated ${parsedArgs.setting} to ${parsedArgs.value}`,
+        data: { setting: parsedArgs.setting, value: parsedArgs.value }
+      };
+      
+    case 'recommend_game':
+      return {
+        success: true,
+        message: `Recommended games for ${parsedArgs.topic}`,
+        data: { topic: parsedArgs.topic, age_group: parsedArgs.age_group, difficulty: parsedArgs.difficulty }
+      };
+      
+    case 'web_search':
+      return await performWebSearch(parsedArgs.query);
+      
+    case 'get_weather':
+      return await getWeatherData(parsedArgs.location);
+      
+    case 'accessibility_support':
+      return {
+        success: true,
+        message: `Applied ${parsedArgs.type} accessibility support`,
+        data: { type: parsedArgs.type, subtype: parsedArgs.subtype }
+      };
+      
+    default:
+      return {
+        success: false,
+        message: `Unknown tool: ${name}`
+      };
+  }
+}
+
+async function performWebSearch(query) {
+  try {
+    const SERPER_API_KEY = process.env.Serper_api;
+    if (!SERPER_API_KEY) {
+      return {
+        success: false,
+        message: "Search API not configured"
+      };
+    }
+    
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ q: query })
+    });
+    
+    const data = await response.json();
+    
+    if (data.organic && data.organic.length > 0) {
+      const results = data.organic.slice(0, 3).map(result => ({
+        title: result.title,
+        snippet: result.snippet,
+        link: result.link
+      }));
+      
+      return {
+        success: true,
+        message: `Found ${results.length} search results for "${query}"`,
+        data: { query, results }
+      };
+    } else {
+      return {
+        success: false,
+        message: `No search results found for "${query}"`
+      };
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    return {
+      success: false,
+      message: `Search failed: ${error.message}`
+    };
+  }
+}
+
+async function getWeatherData(location) {
+  try {
+    const WEATHER_API_KEY = process.env.WEATHER_API;
+    if (!WEATHER_API_KEY) {
+      return {
+        success: false,
+        message: "Weather API not configured"
+      };
+    }
+    
+    const response = await fetch(`http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(location)}&aqi=no`);
+    const data = await response.json();
+    
+    if (data.error) {
+      return {
+        success: false,
+        message: `Weather data not available for ${location}`
+      };
+    }
+    
+    return {
+      success: true,
+      message: `Current weather for ${location}`,
+      data: {
+        location: data.location.name,
+        country: data.location.country,
+        temperature_c: data.current.temp_c,
+        temperature_f: data.current.temp_f,
+        condition: data.current.condition.text,
+        humidity: data.current.humidity,
+        wind_kph: data.current.wind_kph,
+        feels_like_c: data.current.feelslike_c
+      }
+    };
+  } catch (error) {
+    console.error('Weather error:', error);
+    return {
+      success: false,
+      message: `Weather data unavailable: ${error.message}`
+    };
+  }
+}
+
 app.post('/api/api', async (req, res) => {
   try {
     console.log('🤖 AI API request received');
@@ -131,36 +404,105 @@ app.post('/api/api', async (req, res) => {
     }
 
     // Extract parameters with defaults
-    const maxTokens = input_data.max_tokens || 512;
+    const maxTokens = input_data.max_tokens || 1000;
     const temperature = input_data.temperature || 0.7;
 
-    // Use Together AI API for chat completion
-    const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+    // NEW GPT-OSS TOOL CALLING SYSTEM
+    console.log('Making initial call to GPT-OSS with tools...');
+    
+    // Step 1: Initial call to GPT-OSS with tools
+    const initialResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.together_token}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
+        model: 'openai/gpt-oss-120b',
         messages: input_data.messages,
+        tools: tools,
+        tool_choice: 'auto',
         max_tokens: maxTokens,
-        temperature: temperature,
-        stream: false
+        temperature: temperature
       })
     });
 
-    if (!response.ok) {
-      const error = await response.text();
+    if (!initialResponse.ok) {
+      const error = await initialResponse.text();
       console.error('Together AI API error:', error);
-      return res.status(response.status).json({ error: `AI API failed: ${error}` });
+      return res.status(initialResponse.status).json({ error: `AI API failed: ${error}` });
     }
 
-    const result = await response.json();
-    const aiResponse = result.choices?.[0]?.message?.content || 'I apologize, but I could not generate a response.';
-    
-    // Return in the expected format
-    res.json([{ generated_text: aiResponse }]);
+    const initialData = await initialResponse.json();
+    console.log('Initial response finish_reason:', initialData.choices[0].finish_reason);
+
+    // Step 2: Handle tool calls if present
+    if (initialData.choices[0].finish_reason === 'tool_calls') {
+      console.log('Tool calls detected, executing tools...');
+      
+      const toolCalls = initialData.choices[0].message.tool_calls;
+      const toolResults = [];
+
+      // Execute all tool calls
+      for (const toolCall of toolCalls) {
+        const result = await executeTool(toolCall);
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: toolCall.function.name,
+          content: JSON.stringify(result)
+        });
+      }
+
+      // Add tool call to messages
+      input_data.messages.push({
+        role: 'assistant',
+        tool_calls: toolCalls
+      });
+
+      // Add tool results to messages
+      input_data.messages.push(...toolResults);
+
+      // Step 3: Final call to GPT-OSS with tool results
+      console.log('Making final call with tool results...');
+      
+      const finalResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.together_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: input_data.messages,
+          max_tokens: maxTokens,
+          temperature: temperature
+        })
+      });
+
+      if (!finalResponse.ok) {
+        const error = await finalResponse.text();
+        console.error('Final Together AI API error:', error);
+        return res.status(finalResponse.status).json({ error: `AI API failed: ${error}` });
+      }
+
+      const finalData = await finalResponse.json();
+      
+      // Return in the expected format with tool calls
+      res.json([{
+        generated_text: finalData.choices[0].message.content,
+        tool_calls: toolCalls,
+        tool_results: toolResults
+      }]);
+    } else {
+      // No tool calls, return direct response
+      console.log('No tool calls, returning direct response');
+      
+      const aiResponse = initialData.choices[0].message.content || 'I apologize, but I could not generate a response.';
+      
+      // Return in the expected format
+      res.json([{ generated_text: aiResponse }]);
+    }
 
   } catch (error) {
     console.error('AI API error:', error);
