@@ -1028,4 +1028,26 @@ button[title="Exit Fullscreen"] svg {
   100% {
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
   }
+}
+
+/* Teachers Room widget styling */
+.elevenlabs-widget-teachers-room {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.elevenlabs-widget-teachers-room elevenlabs-convai {
+  min-height: 200px !important;
+  max-height: 300px !important;
+  height: auto !important;
+  overflow: visible !important;
+  z-index: 10 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+  position: relative !important;
+  font-size: 18px !important;
 } 

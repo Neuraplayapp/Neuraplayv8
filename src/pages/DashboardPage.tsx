@@ -62,6 +62,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import TaskManager from '../components/TaskManager';
 import StudyCalendar from '../components/StudyCalendar';
 import Diary from '../components/Diary';
+import TeachersRoom from '../components/TeachersRoom';
 
 
 
@@ -109,6 +110,7 @@ const DashboardPage: React.FC = () => {
   const [showTaskManager, setShowTaskManager] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showDiary, setShowDiary] = useState(false);
+  const [showTeachersRoom, setShowTeachersRoom] = useState(false);
 
   // Mock data for learning modules
   const learningModules: LearningModule[] = [
@@ -432,7 +434,8 @@ const DashboardPage: React.FC = () => {
                   { id: 'diary', label: 'Diary', icon: <BookOpen className="w-5 h-5" /> },
                   { id: 'calendar', label: 'Calendar', icon: <Calendar className="w-5 h-5" /> },
                   { id: 'stats', label: 'Statistics', icon: <BarChart3 className="w-5 h-5" /> },
-                  { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> }
+                  { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
+                  { id: 'teachers-room', label: 'Teachers Room', icon: <GraduationCap className="w-5 h-5" /> }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -451,12 +454,15 @@ const DashboardPage: React.FC = () => {
                       } else if (tab.id === 'diary') {
                         setShowDiary(true);
                         setActiveTab('diary');
+                      } else if (tab.id === 'teachers-room') {
+                        setShowTeachersRoom(true);
+                        setActiveTab('teachers-room');
                       } else {
                         setActiveTab(tab.id);
                       }
                     }}
                     className={`w-full flex items-center space-x-3 p-3 rounded-xl text-left transition-all ${
-                      (activeTab === tab.id || (tab.id === 'tasks' && showTaskManager) || (tab.id === 'calendar' && showCalendar) || (tab.id === 'diary' && showDiary))
+                      (activeTab === tab.id || (tab.id === 'tasks' && showTaskManager) || (tab.id === 'calendar' && showCalendar) || (tab.id === 'diary' && showDiary) || (tab.id === 'teachers-room' && showTeachersRoom))
                         ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white' 
                         : `${isDarkMode || isDarkGradient ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`
                     }`}
@@ -496,6 +502,8 @@ const DashboardPage: React.FC = () => {
               <StudyCalendar onClose={() => setShowCalendar(false)} />
             ) : showDiary ? (
               <Diary onClose={() => setShowDiary(false)} />
+            ) : showTeachersRoom ? (
+              <TeachersRoom onClose={() => setShowTeachersRoom(false)} />
             ) : activeTab === 'library' && (
               <div className="space-y-6">
                 {/* Search and Filters */}

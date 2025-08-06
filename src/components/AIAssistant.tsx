@@ -12,7 +12,6 @@ import { elevenLabsService } from '../services/elevenLabsService';
 import { WebSocketService } from '../services/WebSocketService';
 
 import PlasmaBall from './PlasmaBall';
-import AudioVisualizer from './AudioVisualizer';
 import './AIAssistant.css';
 
 interface Message {
@@ -3227,6 +3226,38 @@ This two-step process is mandatory. Do not deviate.`;
         }
     };
 
+    // Would be called via OpenAI-compatible tool schemas
+    const tools = [
+      {
+        "type": "function",
+        "function": {
+          "name": "navigate_to_page",
+          "description": "Navigate to different pages in the app",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "page": { "type": "string", "enum": ["playground", "dashboard", "forum", "profile", "home", "about"] }
+            },
+            "required": ["page"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Searches for current weather information for a specific location using web search.",
+          "parameters": {
+            "location": {
+              "type": "string",
+              "description": "The city and country to search weather for"
+            }
+          }
+        }
+      }
+      // ... more tools
+    ];
+
     return (
         <>
             {/* Chat Button */}
@@ -3258,67 +3289,11 @@ This two-step process is mandatory. Do not deviate.`;
                 <span className="glow glow-bottom"></span>
 
                 <div className="inner">
-                    {/* Fullscreen Header with ElevenLabs Widget in Middle Top */}
+                    {/* Fullscreen Header */}
                     {isFullscreen && (
-                        <div className="ai-fullscreen-header flex items-center justify-between px-4 py-3">
-                            <div className="flex items-center gap-4">
-                                <h3 className="text-xl font-bold text-black" style={{ color: 'black !important' }}>
-                                    Neural AI
-                                </h3>
-                                <div className="elevenlabs-widget-fullscreen-container">
-                                    <elevenlabs-convai
-                                        key="elevenlabs-widget-fullscreen-v1"
-                                        agent-id={getAgentId()}
-                                        variant="expanded"
-                                        action-text="🎤 Voice Chat"
-                                        start-call-text="Start Voice"
-                                        end-call-text="End Voice"
-                                        avatar-orb-color-1="#8b5cf6"
-                                        avatar-orb-color-2="#a855f7"
-                                        data-public="true"
-                                        data-no-auth="true" 
-                                        disable-auth="true"
-                                        no-authentication="true"
-                                        public-agent="true"
-                                        enable-weather="true"
-                                        enable-tools="true"
-                                        enable-web-search="true"
-                                        onCall={() => {
-                                            console.log('🎤 ElevenLabs fullscreen widget call started');
-                                            handleToggleConversationMode();
-                                        }}
-                                        onEnd={() => {
-                                            console.log('🎤 ElevenLabs fullscreen widget call ended');
-                                            handleToggleConversationMode();
-                                        }}
-                                        onConnect={() => {
-                                            console.log('🎤 ElevenLabs fullscreen widget connected');
-                                        }}
-                                        onDisconnect={() => {
-                                            console.log('🎤 ElevenLabs fullscreen widget disconnected');
-                                        }}
-                                        onMessage={(message: any) => {
-                                            console.log('🎤 ElevenLabs fullscreen widget message:', message);
-                                        }}
-                                        onError={(error: any) => {
-                                            console.error('🚫 ElevenLabs Fullscreen Widget Error:', error);
-                                        }}
-                                        style={{
-                                            '--primary-color': '#8b5cf6',
-                                            '--secondary-color': '#a855f7',
-                                            '--background-color': 'rgba(139, 92, 246, 0.1)',
-                                            '--text-color': '#333333',
-                                            '--border-radius': '12px',
-                                            width: '100%',
-                                            maxWidth: '300px',
-                                            minHeight: '60px',
-                                            maxHeight: '80px',
-                                            fontSize: '16px',
-                                            overflow: 'visible',
-                                            zIndex: '10'
-                                        }}
-                                    />
-                                </div>
+                        <div className="ai-fullscreen-header">
+                            <div className="ai-fullscreen-title flex items-center gap-2">
+                                <span>AI Assistant - Fullscreen Mode</span>
                             </div>
                             <div className="ai-fullscreen-controls">
                                 <button
@@ -3390,163 +3365,13 @@ This two-step process is mandatory. Do not deviate.`;
                         </div>
                     )}
 
-                    {/* Regular Header with ElevenLabs Widget */}
+                    {/* Regular Header */}
                     {!isFullscreen && (
-                        <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between min-h-[80px] auto-h">
+                        <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <h3 className="font-bold text-black flex items-center gap-2 flex-shrink-0" style={{ color: 'black !important', zIndex: 9999 }}>
                                     Neural AI
                                 </h3>
-                                {/* ElevenLabs Voice Widget positioned next to Neural AI */}
-                                <div 
-                                    className={`elevenlabs-widget-container ${mode === 'conversing' ? 'conversation-active' : ''}`}
-                                    title={mode === 'conversing' ? "Voice Conversation Active - Click to End" : "AI Voice Conversation - Click to Start"}
-                                    onClick={() => {
-                                        console.log('🎤 Widget container clicked - triggering conversation mode');
-                                        handleToggleConversationMode();
-                                    }}
-                                    style={{
-                                        display: 'flex', 
-                                        justifyContent: 'center', 
-                                        alignItems: 'center',
-                                        minHeight: '80px',
-                                        maxHeight: '120px',
-                                        width: 'auto',
-                                        maxWidth: '350px',
-                                        overflow: 'visible',
-                                        position: 'relative',
-                                        zIndex: 10,
-                                        cursor: 'pointer',
-                                        border: mode === 'conversing' ? '2px solid #10b981' : '2px solid transparent',
-                                        borderRadius: '12px',
-                                        backgroundColor: mode === 'conversing' ? 'rgba(16, 185, 129, 0.1)' : 'transparent'
-                                    }}
-                                >
-                                    <elevenlabs-convai 
-                                        key="elevenlabs-widget-header-expanded-v3"
-                                        agent-id={getAgentId()}
-                                        variant="expanded"
-                                        action-text="🎤 Voice Chat"
-                                        start-call-text="Start Voice"
-                                        end-call-text="End Voice"
-                                        avatar-orb-color-1="#8b5cf6"
-                                        avatar-orb-color-2="#a855f7"
-                                        data-public="true"
-                                        data-no-auth="true" 
-                                        disable-auth="true"
-                                        no-authentication="true"
-                                        public-agent="true"
-                                        enable-weather="true"
-                                        enable-tools="true"
-                                        enable-web-search="true"
-                                        onCall={() => {
-                                            console.log('🎤 ElevenLabs widget call started');
-                                            handleToggleConversationMode();
-                                        }}
-                                        onEnd={() => {
-                                            console.log('🎤 ElevenLabs widget call ended');
-                                            handleToggleConversationMode();
-                                        }}
-                                        onConnect={() => {
-                                            console.log('🎤 ElevenLabs widget connected');
-                                        }}
-                                        onDisconnect={() => {
-                                            console.log('🎤 ElevenLabs widget disconnected');
-                                        }}
-                                        onMessage={(message: any) => {
-                                            console.log('🎤 ElevenLabs widget message:', message);
-                                        }}
-                                        onError={(error: any) => {
-                                            console.error('🚫 ElevenLabs Widget Header Error:', error);
-                                            console.error('🚫 Error type:', typeof error);
-                                            console.error('🚫 Error keys:', Object.keys(error || {}));
-                                            console.error('🚫 Error message:', error?.message || 'No message');
-                                            console.error('🚫 Error stack:', error?.stack || 'No stack');
-                                            console.error('🚫 Full error object:', JSON.stringify(error, null, 2));
-                                            
-                                            // Check if this is an authorization error
-                                            if (error?.message?.includes('authorize') || error?.message?.includes('authorization') || 
-                                                error?.toString?.()?.includes('authorize') || error?.toString?.()?.includes('authorization')) {
-                                                console.error('🚫 WIDGET AUTHORIZATION ERROR DETECTED');
-                                                console.error('🔍 Debugging authorization issue...');
-                                                console.error('🔍 Agent ID:', getAgentId());
-                                                console.error('🔍 Agent ID length:', getAgentId()?.length);
-                                                console.error('🔍 Agent ID type:', typeof getAgentId());
-                                                console.error('🔍 Environment check:');
-                                                console.error('  - NODE_ENV:', import.meta.env.NODE_ENV);
-                                                console.error('  - MODE:', import.meta.env.MODE);
-                                                console.error('  - DEV:', import.meta.env.DEV);
-                                                console.error('  - PROD:', import.meta.env.PROD);
-                                                console.error('  - VITE_ELEVENLABS_API_KEY exists:', !!import.meta.env.VITE_ELEVENLABS_API_KEY);
-                                                console.error('  - VITE_ELEVENLABS_API_KEY length:', import.meta.env.VITE_ELEVENLABS_API_KEY?.length || 0);
-                                                
-                                                // Check if running on localhost vs production
-                                                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                                                const isNetlifyDev = window.location.hostname.includes('localhost') && window.location.port;
-                                                const isNetlifyProd = window.location.hostname.includes('netlify.app') || window.location.hostname.includes('neuraplay');
-                                                
-                                                console.error('🔍 Environment detection:');
-                                                console.error('  - Is localhost:', isLocalhost);
-                                                console.error('  - Is Netlify dev:', isNetlifyDev);
-                                                console.error('  - Is Netlify prod:', isNetlifyProd);
-                                                console.error('  - Current origin:', window.location.origin);
-                                                console.error('  - Current hostname:', window.location.hostname);
-                                                
-                                                // Test if agent ID is reachable
-                                                console.error('🔍 Testing agent configuration...');
-                                                const testAgentConfig = async () => {
-                                                    try {
-                                                        const agentId = getAgentId();
-                                                        console.error('🔍 Testing agent ID:', agentId);
-                                                        
-                                                        // Try to make a simple request to ElevenLabs to test the agent
-                                                        const testUrl = `https://api.elevenlabs.io/v1/convai/agents/${agentId}`;
-                                                        console.error('🔍 Testing agent URL:', testUrl);
-                                                        
-                                                        const response = await fetch(testUrl, {
-                                                            method: 'GET',
-                                                            headers: {
-                                                                'Authorization': `Bearer ${import.meta.env.VITE_ELEVENLABS_API_KEY}`,
-                                                                'Content-Type': 'application/json'
-                                                            }
-                                                        });
-                                                        
-                                                        console.error('🔍 Agent test response status:', response.status);
-                                                        console.error('🔍 Agent test response headers:', Object.fromEntries(response.headers.entries()));
-                                                        
-                                                        if (!response.ok) {
-                                                            const errorText = await response.text();
-                                                            console.error('🔍 Agent test error response:', errorText);
-                                                        } else {
-                                                            const agentData = await response.json();
-                                                            console.error('🔍 Agent test success:', agentData);
-                                                        }
-                                                    } catch (testError) {
-                                                        console.error('🔍 Agent test failed:', testError);
-                                                    }
-                                                };
-                                                
-                                                testAgentConfig();
-                                            }
-                                            
-                                            console.log('💡 Widget expanded in header with auto-height support');
-                                        }}
-                                        style={{
-                                            '--primary-color': '#8b5cf6',
-                                            '--secondary-color': '#a855f7',
-                                            '--background-color': 'rgba(139, 92, 246, 0.1)',
-                                            '--text-color': '#333333',
-                                            '--border-radius': '12px',
-                                            width: '100%',
-                                            maxWidth: '350px',
-                                            minHeight: '80px',
-                                            maxHeight: '120px',
-                                            fontSize: '16px',
-                                            overflow: 'visible',
-                                            zIndex: '10'
-                                        }}
-                                    ></elevenlabs-convai>
-                                </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 {/* Fullscreen Toggle */}
@@ -3728,13 +3553,17 @@ This two-step process is mandatory. Do not deviate.`;
                             </div>
                         )}
                         
-                        {/* Conversation Mode Indicator with Audio Visualizer */}
+                        {/* Conversation Mode Indicator */}
                         {mode === 'conversing' && (
                             <div className="mb-2 p-2 bg-green-500/20 border border-green-400/30 rounded-lg">
                                 <div className="flex items-center gap-2 text-green-300 text-sm">
                                     <PlasmaBall size={20} />
                                     <span className="font-semibold">Conversation Mode Active</span>
-                                    <AudioVisualizer isActive={true} intensity={0.8} className="ml-auto" />
+                                    <div className="flex gap-1">
+                                        <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+                                        <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                        <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -3772,17 +3601,6 @@ This two-step process is mandatory. Do not deviate.`;
                                     />
                                 </label>
                             </div>
-                            
-                            {/* Custom Plasma Ball Conversation Button - Between Input and Record */}
-                            <button
-                                onClick={handleToggleConversationMode}
-                                className={`ai-mode-button flex-shrink-0 ${mode === 'conversing' ? 'conversation-active' : ''}`}
-                                title={mode === 'conversing' ? 'Stop Conversation Mode' : 'Start Conversation Mode'}
-                                disabled={isLoading}
-                            >
-                                <PlasmaBall size={20} />
-                                <span>{mode === 'conversing' ? 'Stop' : 'Chat'}</span>
-                            </button>
                             
                             {/* Record Button - Right */}
                             <button
