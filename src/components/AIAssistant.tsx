@@ -165,14 +165,21 @@ const AIAssistant: React.FC = () => {
             console.error('❌ Error details:', JSON.stringify(error, null, 2));
             console.error('❌ Error type:', typeof error);
             console.error('❌ Error properties:', Object.keys(error || {}));
-            console.error('❌ Error message:', error?.message || 'No message');
-            console.error('❌ Error stack:', error?.stack || 'No stack');
+            
+            // Safe error property access
+            const errorObj = typeof error === 'object' && error !== null ? error as any : {};
+            const errorStr = typeof error === 'string' ? error : error?.toString?.() || 'Unknown error';
+            
+            console.error('❌ Error message:', errorObj?.message || errorStr);
+            console.error('❌ Error stack:', errorObj?.stack || 'No stack');
             console.error('❌ Error timestamp:', new Date().toISOString());
             
             // Enhanced authorization error debugging for the hook
-            if (error?.message?.includes('authorize') || error?.message?.includes('authorization') ||
-                error?.toString?.()?.includes('authorize') || error?.toString?.()?.includes('authorization') ||
-                error?.name?.includes('Authorization') || error?.code?.includes('auth')) {
+            if ((errorObj?.message && errorObj.message.includes('authorize')) || 
+                (errorObj?.message && errorObj.message.includes('authorization')) ||
+                (errorStr.includes('authorize')) || (errorStr.includes('authorization')) ||
+                (errorObj?.name && errorObj.name.includes('Authorization')) || 
+                (errorObj?.code && errorObj.code.includes('auth'))) {
                 console.error('🚫 CONVERSATION HOOK AUTHORIZATION ERROR DETECTED');
                 console.error('🔍 Detailed authorization debugging:');
                 console.error('  - Agent ID:', getAgentId());
@@ -306,22 +313,24 @@ const AIAssistant: React.FC = () => {
                         
                         // Add all possible event listeners for debugging
                         widget.addEventListener('elevenlabs-convai:call', (event) => {
-                            console.log('🎤 Widget call started:', event.detail);
+                            const customEvent = event as CustomEvent;
+                            console.log('🎤 Widget call started:', customEvent.detail);
                         });
                         
                         widget.addEventListener('elevenlabs-convai:error', (event) => {
-                            console.error('❌ Widget error event:', event.detail);
-                            console.error('❌ Error type:', typeof event.detail);
-                            console.error('❌ Error keys:', Object.keys(event.detail || {}));
-                            if (event.detail?.message) {
-                                console.error('❌ Error message:', event.detail.message);
+                            const customEvent = event as CustomEvent;
+                            console.error('❌ Widget error event:', customEvent.detail);
+                            console.error('❌ Error type:', typeof customEvent.detail);
+                            console.error('❌ Error keys:', Object.keys(customEvent.detail || {}));
+                            if (customEvent.detail?.message) {
+                                console.error('❌ Error message:', customEvent.detail.message);
                             }
-                            if (event.detail?.error) {
-                                console.error('❌ Error object:', event.detail.error);
+                            if (customEvent.detail?.error) {
+                                console.error('❌ Error object:', customEvent.detail.error);
                             }
                             
                             // Specific authorization error debugging
-                            if (event.detail?.message?.includes('authorize') || event.detail?.message?.includes('authorization')) {
+                            if (customEvent.detail?.message?.includes('authorize') || customEvent.detail?.message?.includes('authorization')) {
                                 console.error('🚫 AUTHORIZATION ERROR DETECTED');
                                 console.error('🔍 Agent ID being used:', getAgentId());
                                 console.error('🔍 Is agent ID valid?', !!getAgentId() && getAgentId().length > 0);
@@ -338,19 +347,23 @@ const AIAssistant: React.FC = () => {
                         });
                         
                         widget.addEventListener('elevenlabs-convai:end', (event) => {
-                            console.log('🔚 Widget call ended:', event.detail);
+                            const customEvent = event as CustomEvent;
+                            console.log('🔚 Widget call ended:', customEvent.detail);
                         });
                         
                         widget.addEventListener('elevenlabs-convai:connect', (event) => {
-                            console.log('🔗 Widget connected:', event.detail);
+                            const customEvent = event as CustomEvent;
+                            console.log('🔗 Widget connected:', customEvent.detail);
                         });
                         
                         widget.addEventListener('elevenlabs-convai:disconnect', (event) => {
-                            console.log('🔌 Widget disconnected:', event.detail);
+                            const customEvent = event as CustomEvent;
+                            console.log('🔌 Widget disconnected:', customEvent.detail);
                         });
                         
                         widget.addEventListener('elevenlabs-convai:message', (event) => {
-                            console.log('💬 Widget message:', event.detail);
+                            const customEvent = event as CustomEvent;
+                            console.log('💬 Widget message:', customEvent.detail);
                         });
                         
                         // Add generic error event listener
@@ -2508,7 +2521,8 @@ Need help with anything specific? Just ask! 🌟`;
             } else if (response && typeof response === 'object') {
                 // Object response
                 console.log('🔧 DEBUG: Processing object response:', response);
-                aiResponse = response.generated_text || response.text || 'No response received';
+                const responseObj = response as any; // Cast for flexible property access
+                aiResponse = responseObj.generated_text || responseObj.text || 'No response received';
                 toolCalls = response.tool_calls || [];
                 console.log('🔧 DEBUG: Extracted tool calls from object:', toolCalls);
             } else {
@@ -2802,7 +2816,7 @@ Need help with anything specific? Just ask! 🌟`;
                     console.log('🔧 Executing tool call:', toolCall);
                     const context = {
                       currentPage: location.pathname,
-                      mode: currentMode,
+                      mode: modeRef.current,
                       user: { id: 'demo', name: 'User' },
                       timestamp: new Date()
                     };
