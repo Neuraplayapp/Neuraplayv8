@@ -2050,11 +2050,14 @@ async function handleTTSRequest(clientWs, text, voiceId = '8LVfoRdkh4zgjr8v5ObE'
 }
 
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0'; // CRITICAL: Bind to 0.0.0.0 for Render deployment
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on ${HOST}:${PORT}`);
   console.log(`🌐 Static files served from: ${path.join(__dirname, 'dist')}`);
-  console.log(`🔗 WebSocket server ready on ws://localhost:${PORT}`);
+  console.log(`🔗 WebSocket server ready`);
+  console.log(`🔍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔍 Platform: ${process.env.RENDER ? 'Render' : 'Local'}`);
 });
 
 // Graceful shutdown
