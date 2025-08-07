@@ -254,20 +254,23 @@ router.post('/api', async (req, res) => {
       console.log('Tool calls detected, executing tools...');
       
       const toolCalls = initialData.choices[0].message.tool_calls;
-      const toolResults = [];
 
       // Execute all tool calls
+      const toolResultsForAI = [];      // Summarized for AI context
+      const toolResultsForClient = [];  // Full data for frontend display
+      
       for (const toolCall of toolCalls) {
         const result = await executeTool(toolCall);
         let contentForAI = JSON.stringify(result);
         
         // Check if the result is from an image/diagram tool that produces large data
         if (result.success && result.data?.image_url) {
-          console.log(`🔧 Summarizing large tool result for ${toolCall.function.name}`);
-          const summary = {
+          console.log(`🔧 Separating AI context from client data for ${toolCall.function.name}`);
+          
+          // SUMMARIZED version for AI (prevents context overflow)
+          const summaryForAI = {
             success: true,
             message: `Tool ${toolCall.function.name} executed successfully.`,
-            // Summarize for AI context while preserving image data for client
             data: {
               image_was_generated: true,
               title: result.data.title || 'Generated content',
@@ -276,13 +279,21 @@ router.post('/api', async (req, res) => {
               style: result.data.style || 'default'
             }
           };
-          contentForAI = JSON.stringify(summary);
+          contentForAI = JSON.stringify(summaryForAI);
+          
+          // FULL version for client (includes image_url)
+          console.log(`🔧 Preserving full image data for client: ${result.data.image_url.length} chars`);
+          toolResultsForClient.push(result); // Full data with image_url
+        } else {
+          // Non-image tools: same data for both AI and client
+          toolResultsForClient.push(result);
         }
         
         // Debug logging for tool results
-        console.log(`🔧 Tool ${toolCall.function.name} result size: ${contentForAI.length} characters`);
+        console.log(`🔧 Tool ${toolCall.function.name} AI context size: ${contentForAI.length} characters`);
         
-        toolResults.push({
+        // AI context (summarized)
+        toolResultsForAI.push({
           tool_call_id: toolCall.id,
           role: 'tool',
           name: toolCall.function.name,
@@ -296,8 +307,8 @@ router.post('/api', async (req, res) => {
         tool_calls: toolCalls
       });
 
-      // Add tool results to messages
-      input_data.messages.push(...toolResults);
+      // Add SUMMARIZED tool results to messages for AI context
+      input_data.messages.push(...toolResultsForAI);
 
       // Step 3: Final call to GPT-OSS with tool results
       console.log('Making final call with tool results...');
@@ -330,34 +341,18 @@ router.post('/api', async (req, res) => {
       const serverSideTools = toolCalls.filter(tc => SERVER_SIDE_TOOLS.includes(tc.function.name));
       
       // Debug the response being sent
-      console.log(`🔍 DEBUG: Sending response with ${toolResults.length} tool results`);
+      console.log(`🔍 DEBUG: Sending response with ${toolResultsForClient.length} tool results`);
       console.log(`🔍 DEBUG: Server-side tools executed: ${serverSideTools.map(t => t.function.name).join(', ')}`);
       console.log(`🔍 DEBUG: Client-side tools to execute: ${clientSideTools.map(t => t.function.name).join(', ')}`);
       
-      // Validate tool results before sending
-      const validatedToolResults = toolResults.map((tr, index) => {
-        try {
-          // Test if content is valid JSON
-          JSON.parse(tr.content);
-          return tr;
-        } catch (e) {
-          console.error(`🔧 ERROR: Tool result ${index} has invalid JSON:`, e);
-          console.error(`🔧 ERROR: Problematic content length: ${tr.content.length}`);
-          return {
-            ...tr,
-            content: JSON.stringify({
-              success: false,
-              message: `Tool ${tr.name} result was corrupted during processing`
-            })
-          };
-        }
-      });
+      // Send FULL tool results to client (no validation needed, already structured)
+      console.log('🔧 Sending FULL tool results to client (with image data)');
       
       // Return in the expected format with BOTH server results AND client-side tools to execute
       res.json([{
         generated_text: finalData.choices[0].message.content,
         tool_calls: clientSideTools, // Only client-side tools for client execution
-        tool_results: validatedToolResults,    // Server-executed tool results (validated)
+        tool_results: toolResultsForClient,    // FULL server-executed tool results (with image data)
         server_tool_calls: serverSideTools
       }]);
     } else {

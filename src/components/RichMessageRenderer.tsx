@@ -27,6 +27,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     
     // Handle tool results (server-generated diagrams and data)
     toolResults.forEach((result, index) => {
+      // Handle math diagrams (specific type)
       if (result.data?.image_url && result.data.diagram_type) {
         content.push({
           type: 'math_diagram',
@@ -37,7 +38,21 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             style: result.data.style || 'colorful'
           }
         });
-      } else if (result.success && result.data) {
+      }
+      // Handle general images (from generate_image tool)
+      else if (result.data?.image_url) {
+        content.push({
+          type: 'image',
+          content: result.data.image_url,
+          metadata: {
+            title: result.data.title || 'Generated Image',
+            caption: result.message || 'Image generated successfully',
+            style: result.data.style || 'default'
+          }
+        });
+      }
+      // Handle other successful tool results
+      else if (result.success && result.data) {
         content.push({
           type: 'tool_result',
           content: result.message || 'Tool executed successfully',
