@@ -19,38 +19,72 @@ class AIService {
     }
   }
 
-  // Generic API call method
-  async apiCall(endpoint: string, options: RequestInit = {}) {
+  // Enhanced API call method with streaming and cancellation support
+  async apiCall(endpoint: string, options: RequestInit & { 
+    streaming?: boolean; 
+    abortController?: AbortController;
+  } = {}): Promise<any | Response> {
+    const { streaming = false, abortController, ...fetchOptions } = options;
     const url = `${this.apiBase}${endpoint}`;
+    
     if (import.meta.env.DEV) {
       console.log(`🚨 DEBUG: API construction:`, {
         apiBase: this.apiBase,
         endpoint: endpoint,
-        finalURL: url
+        finalURL: url,
+        streaming,
+        hasAbortController: !!abortController
       });
       console.log(`🌐 Making API call to: ${url}`);
     }
     
     try {
       const response = await fetch(url, {
-        ...options,
+        ...fetchOptions,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
+          ...fetchOptions.headers,
         },
+        signal: abortController?.signal, // Add abort signal
       });
 
       if (!response.ok) {
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
+      // For streaming responses, return the Response object directly
+      if (streaming) {
+        return response;
+      }
+
+      // For regular responses, parse JSON as before
       return await response.json();
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        if (import.meta.env.DEV) {
+          console.log(`⚠️ API call cancelled for ${endpoint}`);
+        }
+        throw new Error('Request was cancelled');
+      }
+      
       if (import.meta.env.DEV) {
         console.error(`❌ API call error for ${endpoint}:`, error);
       }
       throw error;
     }
+  }
+
+  // Utility method to create abort controller for request cancellation
+  createAbortController(timeoutMs?: number): AbortController {
+    const controller = new AbortController();
+    
+    if (timeoutMs) {
+      setTimeout(() => {
+        controller.abort();
+      }, timeoutMs);
+    }
+    
+    return controller;
   }
 
   // ElevenLabs TTS
@@ -61,12 +95,34 @@ class AIService {
     });
   }
 
-  // ElevenLabs Streaming TTS
-  async streamingTextToSpeech(text: string, voiceId: string = '8LVfoRdkh4zgjr8v5ObE') {
+  // ElevenLabs Streaming TTS with enhanced streaming support
+  async streamingTextToSpeech(
+    text: string, 
+    voiceId: string = '8LVfoRdkh4zgjr8v5ObE',
+    abortController?: AbortController
+  ): Promise<Response> {
     return this.apiCall('/elevenlabs-streaming-tts', {
       method: 'POST',
       body: JSON.stringify({ text, voiceId }),
-    });
+      streaming: true, // Enable streaming mode
+      abortController, // Allow request cancellation
+    }) as Promise<Response>;
+  }
+
+  // Cancellable streaming TTS with timeout
+  async streamingTextToSpeechWithTimeout(
+    text: string, 
+    voiceId: string = '8LVfoRdkh4zgjr8v5ObE',
+    timeoutMs: number = 30000
+  ): Promise<{ response: Response; cancel: () => void }> {
+    const controller = this.createAbortController(timeoutMs);
+    
+    const response = await this.streamingTextToSpeech(text, voiceId, controller);
+    
+    return {
+      response,
+      cancel: () => controller.abort()
+    };
   }
 
   // AssemblyAI Transcription
@@ -229,17 +285,33 @@ class AIService {
   // Enhanced AI Message with Tool Calling Support
   // ⚠️ IMPORTANT: This service requires Render environment with Fireworks API key (Neuraplay env var)
   // Local testing will fail with "unauthorized" - this is expected and normal
-  async sendMessage(text: string, context?: any, enableToolCalling: boolean = true): Promise<{
+  async sendMessage(
+    text: string, 
+    context?: any, 
+    enableToolCalling: boolean = true,
+    options?: {
+      streaming?: boolean;
+      abortController?: AbortController;
+      timeout?: number;
+    }
+  ): Promise<{
     generated_text: string;
     tool_calls: any[];
     tool_results: any[];
-  }> {
-    console.log('🔍 AI Service Debug - Input:', { text, enableToolCalling, context });
+  } | Response> {
+    const { streaming = false, abortController, timeout } = options || {};
+    
+    console.log('🔍 AI Service Debug - Input:', { 
+      text, enableToolCalling, context, streaming, hasAbortController: !!abortController, timeout 
+    });
     
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
 
     console.log('🔍 AI Service Debug - Will call apiBase + /api = /api/api');
+    
+    // Create timeout controller if specified
+    const controller = abortController || (timeout ? this.createAbortController(timeout) : undefined);
     
     // Prepare system prompt with tool calling instructions and language context
     let systemPrompt = enableToolCalling 
@@ -253,7 +325,7 @@ class AIService {
     }
 
     try {
-      console.log('🔍 AI Service Debug - Sending request with tool calling:', enableToolCalling);
+      console.log('🔍 AI Service Debug - Sending request with tool calling:', enableToolCalling, 'streaming:', streaming);
       
       // Construct message history with conversation context
       const messages: any[] = [
@@ -294,10 +366,18 @@ class AIService {
             max_tokens: 1500, // Increased for better responses with context
             temperature: 0.7
           }
-        })
+        }),
+        streaming, // Pass streaming option
+        abortController: controller // Pass abort controller
       });
 
       console.log('🔍 AI Service Debug - Raw Response:', response);
+
+      // For streaming responses, return the Response object directly
+      if (streaming && response instanceof Response) {
+        console.log('🔍 AI Service Debug - Returning streaming response');
+        return response;
+      }
 
       // Handle the response format from the server
       if (Array.isArray(response) && response.length > 0) {
@@ -338,90 +418,28 @@ class AIService {
     }
   }
 
+  // Streaming sendMessage with timeout and cancellation
+  async streamingMessageWithTimeout(
+    text: string,
+    context?: any,
+    enableToolCalling: boolean = true,
+    timeoutMs: number = 30000
+  ): Promise<{ response: Response; cancel: () => void }> {
+    const controller = this.createAbortController(timeoutMs);
+    
+    const response = await this.sendMessage(text, context, enableToolCalling, {
+      streaming: true,
+      abortController: controller
+    }) as Response;
+    
+    return {
+      response,
+      cancel: () => controller.abort()
+    };
+  }
+
   // Image generation is now handled by the intelligent agentic tool-calling system
   // The GPT-OSS model will decide when to call the generate_image tool and the server handles execution
-
-  // REMOVED: Duplicate method - using getToolDefinitions() instead
-  /*private getAvailableTools() {
-    return [
-      {
-        name: 'navigate_to_page',
-        description: 'Navigate to a specific page in the application',
-        parameters: {
-          type: 'object',
-          properties: {
-            page: { type: 'string', description: 'The page to navigate to (playground, dashboard, forum, etc.)' },
-            reason: { type: 'string', description: 'Why you are navigating to this page' }
-          },
-          required: ['page']
-        }
-      },
-      {
-        name: 'update_setting',
-        description: 'Update a user setting or preference',
-        parameters: {
-          type: 'object',
-          properties: {
-            setting: { type: 'string', description: 'The setting to update (theme, fontSize, accessibility, etc.)' },
-            value: { type: 'string', description: 'The new value for the setting' },
-            reason: { type: 'string', description: 'Why you are updating this setting' }
-          },
-          required: ['setting', 'value']
-        }
-      },
-      {
-        name: 'recommend_games',
-        description: 'Recommend games based on learning goals or skills',
-        parameters: {
-          type: 'object',
-          properties: {
-            skill: { type: 'string', description: 'The skill to target (math, reading, memory, coordination, etc.)' },
-            difficulty: { type: 'string', description: 'Preferred difficulty level' },
-            reason: { type: 'string', description: 'Why you are recommending these games' }
-          },
-          required: ['skill']
-        }
-      },
-      {
-        name: 'create_content',
-        description: 'Create personalized content like diary prompts or calendar entries',
-        parameters: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', description: 'Type of content (diary_prompt, calendar_entry, forum_post)' },
-            content: { type: 'string', description: 'The content to create' },
-            personalization: { type: 'string', description: 'How this is personalized for the user' }
-          },
-          required: ['type', 'content']
-        }
-      },
-      {
-        name: 'accessibility_support',
-        description: 'Provide accessibility support and accommodations',
-        parameters: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', description: 'Type of accessibility need (color_blindness, dyslexia, motor_skills, etc.)' },
-            action: { type: 'string', description: 'The action to take (test, configure, enable, disable)' },
-            details: { type: 'string', description: 'Additional details about the accessibility need' }
-          },
-          required: ['type', 'action']
-        }
-      },
-      {
-        name: 'read_user_data',
-        description: 'Read user data like notifications, progress, or activity',
-        parameters: {
-          type: 'object',
-          properties: {
-            data_type: { type: 'string', description: 'Type of data to read (notifications, progress, forum_posts, diary_entries)' },
-            filter: { type: 'string', description: 'Optional filter for the data' }
-          },
-          required: ['data_type']
-        }
-      }
-    ];
-  }*/
 
   // Enhanced pedagogical system prompt with tool calling instructions
   private getToolCallingSystemPrompt(context?: any): string {
