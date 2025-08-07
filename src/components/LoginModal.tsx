@@ -35,6 +35,49 @@ const LoginModal: React.FC<LoginModalProps> = ({
     setIsLoading(true);
 
     try {
+      // Clear any existing user data before authentication attempt
+      setUser(null);
+      localStorage.removeItem('neuraplay_user');
+
+      // Secret Admin Access
+      if (formData.email.toLowerCase() === 'smt@neuraplay.com' && formData.password === 'GH2300!') {
+        const adminUser = {
+          id: 'admin_2025',
+          username: 'NeuraPlay Admin',
+          email: 'smt@neuraplay.com',
+          role: 'admin' as const,
+          isVerified: true,
+          subscription: {
+            tier: 'unlimited' as const,
+            startDate: new Date().toISOString(),
+            status: 'active' as const
+          },
+          usage: {
+            aiPrompts: { count: 0, lastReset: new Date().toISOString(), history: [] },
+            imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
+          },
+          profile: {
+            avatar: '/assets/images/Mascot.png',
+            rank: 'System Administrator',
+            xp: 999999,
+            xpToNextLevel: 0,
+            stars: 999999,
+            about: 'NeuraPlay System Administrator',
+            gameProgress: {}
+          },
+          journeyLog: [],
+          hasPosted: true,
+          friends: [],
+          friendRequests: { sent: [], received: [] }
+        };
+        
+        setUser(adminUser);
+        onSuccess?.();
+        onClose();
+        navigate(redirectTo);
+        return;
+      }
+
       // Call authentication API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -218,19 +261,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
             </button>
           </p>
           
-          <div className={`rounded-xl p-4 ${
-            isDarkMode ? 'bg-white/5' : 'bg-gray-50'
-          }`}>
-            <h4 className={`font-semibold mb-2 ${
-              isDarkMode ? 'text-white' : 'text-gray-900'
-            }`}>Demo Credentials</h4>
-            <div className={`space-y-1 text-sm ${
-              isDarkMode ? 'text-white/70' : 'text-gray-600'
-            }`}>
-              <p><strong>Learner:</strong> demo@neuraplay.com / demo123</p>
-              <p><strong>Parent:</strong> parent@neuraplay.com / parent123</p>
-            </div>
-          </div>
+
         </div>
       </div>
     </ModalReveal>

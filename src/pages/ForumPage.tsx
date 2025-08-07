@@ -101,7 +101,7 @@ const ForumPage: React.FC = () => {
             title: newPostTitle,
             content: newPostContent,
             author: user.username,
-            authorAvatar: user.profile?.avatar || '/assets/placeholder.png',
+            authorAvatar: user?.profile?.avatar || '/assets/placeholder.png',
             channel: selectedChannel,
             votes: 0
         });
@@ -118,7 +118,7 @@ const ForumPage: React.FC = () => {
         addReply(postId, {
             content: content,
             author: user.username,
-            authorAvatar: user.profile?.avatar || '/assets/placeholder.png',
+            authorAvatar: user?.profile?.avatar || '/assets/placeholder.png',
             votes: 0
         });
         

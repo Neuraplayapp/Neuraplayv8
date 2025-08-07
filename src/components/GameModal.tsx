@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Maximize2, Minimize2, RotateCcw, Settings, Trophy, Brain, Target, Volume2, VolumeX, Volume1, Volume, Speaker, Play, Pause, SkipBack, SkipForward, ChevronRight } from 'lucide-react';
+import { X, Maximize2, Minimize2, RotateCcw, Settings, Trophy, Brain, Target, Volume2, VolumeX, Volume1, Volume, Speaker, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 
 interface GameModalProps {
   isOpen: boolean;
@@ -78,6 +78,13 @@ const GameModal: React.FC<GameModalProps> = ({
   const [showVolumeControl, setShowVolumeControl] = useState(false);
   const [localVolume, setLocalVolume] = useState(volume);
   const [showControlsModal, setShowControlsModal] = useState(false);
+
+  // Auto-open controls modal when showControls is true
+  useEffect(() => {
+    if (showControls) {
+      setShowControlsModal(true);
+    }
+  }, [showControls]);
   const volumeSliderRef = useRef<HTMLDivElement>(null);
 
   // Use external fullscreen state if provided, otherwise use internal
@@ -163,18 +170,7 @@ const GameModal: React.FC<GameModalProps> = ({
             : `w-full h-full ${maxWidth} ${maxHeight}`
         } ${className}`}
       >
-        {/* Collapsible Arrow on Left Border */}
-        <div className={`absolute left-0 top-1/2 transform -translate-y-1/2 z-[9998] transition-all duration-300 ${
-          isFullscreen ? 'left-8' : 'left-0'
-        }`}>
-          <button
-            onClick={() => setShowControlsModal(!showControlsModal)}
-            className="bg-black bg-opacity-90 backdrop-blur-sm rounded-r-2xl p-3 shadow-2xl border border-white/10 hover:bg-opacity-95 transition-all duration-200 group"
-            title="Game Controls"
-          >
-            <ChevronRight className={`w-6 h-6 text-white transition-transform duration-300 ${showControlsModal ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
+
 
         {/* Animated Controls Modal */}
         <div className={`fixed left-0 top-0 h-full z-[9999] transition-all duration-500 ease-in-out ${
@@ -186,7 +182,10 @@ const GameModal: React.FC<GameModalProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">Game Controls</h3>
                 <button
-                  onClick={() => setShowControlsModal(false)}
+                  onClick={() => {
+                    setShowControlsModal(false);
+                    if (onSettings) onSettings(); // Notify parent to close settings
+                  }}
                   className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors text-white"
                 >
                   <X className="w-5 h-5" />

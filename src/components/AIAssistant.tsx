@@ -268,8 +268,8 @@ const AIAssistant: React.FC = () => {
     const { triggerAgent, showAgent, hideAgent, currentContext, updateContext } = useAIAgent();
     const { user: currentUser } = useUser();
     
-    // Remove limits for DemoUser
-    const isDemoUser = currentUser?.username === 'DemoUser';
+    // Remove limits for Admin users
+    const isUnlimitedUser = currentUser?.role === 'admin' || currentUser?.subscription?.tier === 'unlimited';
 
     // Load ElevenLabs widget script and custom styling (only once)
     useEffect(() => {
@@ -1841,8 +1841,8 @@ Need help with anything specific? Just ask! 🌟`;
         setInputMessage('');
         setIsLoading(true);
 
-        // Apply prompt count restrictions for non-demo users
-        if (!isDemoUser) {
+        // Apply prompt count restrictions for non-unlimited users
+        if (!isUnlimitedUser) {
             setPromptCount(count => count + 1);
         }
 
@@ -2082,7 +2082,7 @@ Need help with anything specific? Just ask! 🌟`;
     };
 
     const handleSendText = () => {
-        if (!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+        if (!inputMessage.trim() || isLoading || (!isUnlimitedUser && promptCount >= 10)) return;
         setMode('text_input');
         handleSendMessage(inputMessage);
         setMode('idle');
@@ -2323,7 +2323,7 @@ Need help with anything specific? Just ask! 🌟`;
 
     // Updated processTextMessage to use unified handler
     const processTextMessage = async (inputText: string) => {
-        if (!inputText.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+        if (!inputText.trim() || isLoading || (!isUnlimitedUser && promptCount >= 10)) return;
 
         // Use unified message handler
         await handleSendMessage(inputText);
@@ -2339,7 +2339,7 @@ Need help with anything specific? Just ask! 🌟`;
 
     // Updated sendTextMessage to use unified handler
     const sendTextMessage = async () => {
-        if (!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)) return;
+        if (!inputMessage.trim() || isLoading || (!isUnlimitedUser && promptCount >= 10)) return;
 
         // Use unified message handler
         await handleSendMessage(inputMessage);
@@ -3868,7 +3868,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                             {/* Send Button - Left */}
                             <button
                                 onClick={handleSendText}
-                                disabled={!inputMessage.trim() || isLoading || (!isDemoUser && promptCount >= 10)}
+                                disabled={!inputMessage.trim() || isLoading || (!isUnlimitedUser && promptCount >= 10)}
                                 className={`ai-mode-button flex-shrink-0 ${!inputMessage.trim() || isLoading ? 'opacity-50' : ''}`}
                                 title="Send Message"
                             >
@@ -3884,7 +3884,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         placeholder={
                                             mode === 'conversing' 
                                                 ? "Talk to AI Assistant in conversation mode! 🗣️" 
-                                                : (!isDemoUser && promptCount >= 10)
+                                                : (!isUnlimitedUser && promptCount >= 10)
                                                     ? "Daily limit reached! 🎯" 
                                                     : "Ask me anything, little explorer! 🚀"
                                         }
@@ -3892,7 +3892,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         onChange={(e) => setInputMessage(e.target.value)}
                                         onKeyPress={handleKeyPress}
                                         className="ai-input-field w-full"
-                                        disabled={isLoading || (!isDemoUser && promptCount >= 10)}
+                                        disabled={isLoading || (!isUnlimitedUser && promptCount >= 10)}
                                     />
                                 </label>
                             </div>
@@ -3932,7 +3932,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </div>
                             </div>
                         </div>
-                        {!isDemoUser && promptCount >= 10 && (
+                        {!isUnlimitedUser && promptCount >= 10 && (
                             <div className="text-center text-amber-400 text-xs mt-2 font-bold">🎯 You've used all your daily questions! Come back tomorrow for more fun! 🌟</div>
                         )}
 

@@ -219,7 +219,7 @@ const TheCubeGame: React.FC<TheCubeGameProps> = ({ onClose }) => {
       
       Please provide an encouraging analysis of their cognitive development and problem-solving skills.`;
 
-      const response = await fetch('/.netlify/functions/api', {
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -292,26 +292,9 @@ const TheCubeGame: React.FC<TheCubeGameProps> = ({ onClose }) => {
     }
   };
 
-  // Handle fullscreen toggle for iframe
+  // Handle fullscreen toggle - simply toggle the state
   const handleFullscreenToggle = () => {
     setIsFullscreen(!isFullscreen);
-    
-    // If going fullscreen, try to make the iframe fullscreen
-    if (!isFullscreen && iframeRef.current) {
-      try {
-        if (iframeRef.current.requestFullscreen) {
-          iframeRef.current.requestFullscreen();
-        } else if ((iframeRef.current as any).webkitRequestFullscreen) {
-          (iframeRef.current as any).webkitRequestFullscreen();
-        } else if ((iframeRef.current as any).mozRequestFullScreen) {
-          (iframeRef.current as any).mozRequestFullScreen();
-        } else if ((iframeRef.current as any).msRequestFullscreen) {
-          (iframeRef.current as any).msRequestFullscreen();
-        }
-      } catch (error) {
-        console.error('Failed to make iframe fullscreen:', error);
-      }
-    }
   };
 
   return (

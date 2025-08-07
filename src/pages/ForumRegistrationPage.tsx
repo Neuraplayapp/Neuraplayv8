@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 import { Users, Crown, Star, Zap, Brain, Trophy, Gift, ArrowRight } from 'lucide-react';
 import LetterReveal from '../components/LetterReveal';
 
 const ForumRegistrationPage: React.FC = () => {
   const { setUser } = useUser();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     role: '',
@@ -116,7 +118,11 @@ const ForumRegistrationPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-800 text-white py-24 px-6">
+    <div className={`min-h-screen py-24 px-6 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-800 text-white'
+        : 'bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-100 text-gray-900'
+    }`}>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-8">
@@ -126,7 +132,9 @@ const ForumRegistrationPage: React.FC = () => {
               className="w-32 h-32 object-contain"
             />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Sign up to the NeuraPlay Forum</h1>
+          <h1 className={`text-4xl md:text-5xl font-bold tracking-tight mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Sign up to the NeuraPlay Forum</h1>
           <LetterReveal 
             text="Create your free account and start your learning journey"
             className="text-xl text-violet-300"
@@ -274,8 +282,8 @@ const ForumRegistrationPage: React.FC = () => {
             <p className="text-violet-300 text-lg">Start your 7-day free trial and experience the full NeuraPlay potential</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="space-y-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6 lg:gap-12 mb-8 max-w-4xl mx-auto">
+            <div className="space-y-6 lg:space-y-8">
               <div className="flex items-center gap-3">
                 <Brain className="w-6 h-6 text-purple-400" />
                 <div>
@@ -291,7 +299,7 @@ const ForumRegistrationPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6 lg:space-y-8">
               <div className="flex items-center gap-3">
                 <Zap className="w-6 h-6 text-blue-400" />
                 <div>
