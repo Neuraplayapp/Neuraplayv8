@@ -5,7 +5,7 @@ import GameModal from '../GameModal';
 
 // Import services
 import { aiService } from '../../services/AIService';
-import { elevenLabsService } from '../../services/elevenLabsService';
+
 
 // The comprehensive 41 neuropsychological concepts
 const NEUROPSYCHOLOGICAL_CONCEPTS = [
@@ -371,7 +371,7 @@ Your response MUST be in JSON format with this exact structure:
       contextPrompt += `\n\nCurrent choice: ${choiceText}`;
 
       // Use the project's AI service
-      const response = await fetch('/.netlify/functions/api', {
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -527,7 +527,7 @@ Your response MUST be in JSON format with this exact structure:
       setIsSpeaking(true);
       
       // Use the project's ElevenLabs TTS service
-      const response = await fetch('/.netlify/functions/elevenlabs-tts', {
+      const response = await fetch('/api/elevenlabs-tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

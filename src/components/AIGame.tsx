@@ -19,7 +19,7 @@ const AIGame: React.FC<AIGameProps> = ({ onClose }) => {
   const [storiesCreated, setStoriesCreated] = useState(0);
 
   const callAPI = async (taskType: string, inputData: string) => {
-    const response = await fetch('/.netlify/functions/api', {
+    const response = await fetch('/api/api', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

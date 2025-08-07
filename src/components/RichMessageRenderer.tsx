@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface RichMessageRendererProps {
   text: string;
@@ -21,7 +21,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
 }) => {
 
   // 🔍 COMPREHENSIVE FRONTEND IMAGE DEBUGGING
-  React.useEffect(() => {
+  useEffect(() => {
     if (toolResults && toolResults.length > 0) {
       console.log('🔍 RichMessageRenderer received toolResults:', {
         count: toolResults.length,

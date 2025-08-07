@@ -10,7 +10,7 @@ const AIDemoSection: React.FC = () => {
     setLoading(true);
     setResponse('');
     try {
-      const res = await fetch('/.netlify/functions/api', {
+      const res = await fetch('/api/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

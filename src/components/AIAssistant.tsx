@@ -3,13 +3,13 @@ import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useConversation } from '@elevenlabs/react';
-import { AblyConversationService } from '../services/AblyConversationService';
+
 import { getAgentId, getVoiceId } from '../config/elevenlabs';
 import { useAIAgent } from '../contexts/AIAgentContext';
 import { useUser } from '../contexts/UserContext';
 import { useConversation as useGlobalConversation, type Message } from '../contexts/ConversationContext';
 import { base64ToBinary } from '../utils/videoUtils';
-import { elevenLabsService } from '../services/elevenLabsService';
+
 import RichMessageRenderer from './RichMessageRenderer';
 import ScribbleModule from './ScribbleModule';
 import { WebSocketService } from '../services/WebSocketService';
@@ -76,24 +76,7 @@ const SUPPORTED_LANGUAGES: Record<LanguageCode, string> = {
 const AIAssistant: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Listen for search triggers from clickable cards  
-    useEffect(() => {
-        const handleSearchTrigger = (event: CustomEvent) => {
-            const { query } = event.detail;
-            if (query) {
-                setInputMessage(query);
-                // Trigger AI search with the clicked concept
-                setTimeout(() => {
-                    handleAIWithToolCalling(query, true);
-                }, 100);
-            }
-        };
-
-        window.addEventListener('triggerAISearch', handleSearchTrigger as EventListener);
-        return () => {
-            window.removeEventListener('triggerAISearch', handleSearchTrigger as EventListener);
-        };
-    }, [handleAIWithToolCalling]);
+    // Listen for search triggers from clickable cards - moved to after function definition
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isScribbleModuleOpen, setIsScribbleModuleOpen] = useState(false);
     // Use global conversation context instead of local state
@@ -123,8 +106,7 @@ const AIAssistant: React.FC = () => {
     const [promptCount, setPromptCount] = useState(0);
     const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
     
-    // Platform-specific conversation services
-    const conversationService = useRef<AblyConversationService>(AblyConversationService.getInstance());
+    // WebSocket service for real-time communication  
     const webSocketService = useRef<WebSocketService>(WebSocketService.getInstance());
     
     // Official ElevenLabs Conversation Hook - ONLY for conversation mode
@@ -686,18 +668,7 @@ const AIAssistant: React.FC = () => {
 
     // Platform-specific conversation service event handlers
     useEffect(() => {
-        const service = conversationService.current;
         const wsService = webSocketService.current;
-        
-        // Ably (Netlify) event handlers
-        service.on('conversation_ready', (data) => {
-            console.log('Conversation ready with ElevenLabs');
-            addMessage(activeConversation, { 
-                text: "Voice conversation ready! Start speaking! 🎤", 
-                isUser: false, 
-                timestamp: new Date() 
-            });
-        });
         
         // WebSocket (Render) event handlers
         wsService.on('connected', () => {
@@ -741,7 +712,7 @@ const AIAssistant: React.FC = () => {
         };
 
         // Handle AI responses
-        service.on('ai_response', (data) => {
+        wsService.on('ai_response', (data: any) => {
             console.log('📥 Received AI response:', data);
             console.log('📥 Response has text:', !!data.text);
             console.log('📥 Response has audio:', !!data.audio);
@@ -840,11 +811,11 @@ const AIAssistant: React.FC = () => {
         });
 
         // Handle status updates
-        service.on('status', (data) => {
+        wsService.on('status', (data: any) => {
             console.log('📊 Status update:', data);
             console.log('📊 Current mode during status update:', mode);
             console.log('📊 Active conversation ID:', activeConversation);
-            console.log('📊 Service has active conversation:', service.hasActiveConversation);
+            console.log('📊 Service has active conversation:', wsService.connected);
             
             if (data.type === 'connected') {
                 console.log('✅ Service connected - conversation ready');
@@ -857,7 +828,7 @@ const AIAssistant: React.FC = () => {
         });
 
         // Handle errors
-        service.on('error', (data) => {
+        wsService.on('error', (data: any) => {
             console.error('Conversation error:', data);
             addMessage(activeConversation, { 
                 text: "Connection error. Please try again.", 
@@ -868,8 +839,8 @@ const AIAssistant: React.FC = () => {
 
         // Cleanup on unmount
         return () => {
-            if (service.hasActiveConversation) {
-                service.endConversation();
+            if (wsService.connected) {
+                wsService.disconnect();
             }
         };
     }, [activeConversation]);
@@ -2449,7 +2420,7 @@ Need help with anything specific? Just ask! 🌟`;
             const response = await handleAIWithToolCalling(inputMessage, enableToolCalling);
             
             // If this was triggered by voice recording, play the response back
-            if (mode === 'single_recording' && response.textResponse) {
+            if (mode === 'single_recording' && response && response.textResponse) {
                 console.log('Voice recording detected, playing TTS response');
                 setTimeout(async () => {
                     await playVoice(response.textResponse);
@@ -2621,7 +2592,7 @@ Need help with anything specific? Just ask! 🌟`;
                 console.log('🔧 DEBUG: Processing object response:', response);
                 const responseObj = response as any; // Cast for flexible property access
                 aiResponse = responseObj.generated_text || responseObj.text || 'No response received';
-                toolCalls = response.tool_calls || [];
+                toolCalls = responseObj.tool_calls || [];
                 console.log('🔧 DEBUG: Extracted tool calls from object:', toolCalls);
             } else {
                 console.log('🔧 DEBUG: No valid response format found');
@@ -2975,6 +2946,25 @@ Need help with anything specific? Just ask! 🌟`;
          }
     };
 
+    // Listen for search triggers from clickable cards - placed after handleAIWithToolCalling definition
+    useEffect(() => {
+        const handleSearchTrigger = (event: CustomEvent) => {
+            const { query } = event.detail;
+            if (query) {
+                setInputMessage(query);
+                // Trigger AI search with the clicked concept
+                setTimeout(() => {
+                    handleAIWithToolCalling(query, true);
+                }, 100);
+            }
+        };
+
+        window.addEventListener('triggerAISearch', handleSearchTrigger as EventListener);
+        return () => {
+            window.removeEventListener('triggerAISearch', handleSearchTrigger as EventListener);
+        };
+    }, []);
+
     // NEW: Get system prompt with comprehensive agency
     const getSystemPrompt = () => {
         const basePrompt = `You are Neural AI, NeuraPlay's AI assistant with FULL AGENCY and TOOL ACCESS to help users. You have access to the following tools:
@@ -3153,8 +3143,11 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             // Record usage before generating
             recordImageGeneration();
             
-            // Generate the image
-            const imageUrl = await generateImage(imagePrompt);
+            // Generate the image through the tool system
+            const response = await handleAIWithToolCalling(`Generate an image: ${imagePrompt}`, true);
+            
+            // Extract image URL from the response (if successful)  
+            const imageUrl = null; // Tool system handles image display through RichMessageRenderer
             
             if (imageUrl) {
                 const remaining = imageUsage.remaining - 1;
@@ -3190,54 +3183,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
         }
     };
 
-    // NEW: Generate image using API
-    const generateImage = async (prompt: string, retryCount = 0): Promise<string | null> => {
-        try {
-            console.log('Generating image for prompt:', prompt);
-            
-            // Use the enhanced AI service with tool calling
-            const { aiService } = await import('../services/AIService');
-            
-            // Check if this is a request for mathematical/educational graphs
-            const isGraphRequest = /\b(graph|chart|plot|histogram|diagram|visualization|visualize)\b/i.test(prompt);
-            
-            if (isGraphRequest) {
-                // Generate specialized educational graph
-                const enhancedPrompt = `Create a clear, educational ${prompt}. Professional style with: clean white background, bold labels, bright colors (blue, green, orange), grid lines, clear axes, legible fonts, child-friendly design. Mathematical accuracy is essential. Include all requested data points and proper scaling.`;
-                
-                const result = await aiService.handleImageGeneration(enhancedPrompt, {
-                    style: 'educational',
-                    size: '768x768'
-                });
-                
-                if (result?.image_url || result?.data) {
-                    return result.image_url || `data:${result.contentType || 'image/jpeg'};base64,${result.data}`;
-                }
-            } else {
-                // Regular image generation through tool system
-                const result = await aiService.handleImageGeneration(prompt, {
-                    style: 'child-friendly',
-                    size: '512x512'
-                });
-                
-                if (result?.image_url || result?.data) {
-                    return result.image_url || `data:${result.contentType || 'image/jpeg'};base64,${result.data}`;
-                }
-            }
-            
-            throw new Error('No image data received from service');
-            
-        } catch (error: any) {
-            console.error('Image generation error:', error);
-            
-            if (retryCount < 2) {
-                console.log(`Retrying image generation (attempt ${retryCount + 1})`);
-                return generateImage(prompt, retryCount + 1);
-            }
-            
-            return null;
-        }
-    };
+
 
     // NEW: Debug MediaRecorder
     const debugMediaRecorder = () => {
@@ -3364,20 +3310,22 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
         try {
             console.log('🧪 Testing all services...');
             
-            // Test Ably
-            console.log('🔗 Testing Ably connection...');
-            await conversationService.current.initialize();
-            console.log('✅ Ably connection successful');
+            // Test WebSocket Connection
+            console.log('🔗 Testing WebSocket connection...');
+            // WebSocket testing would go here if needed
+            console.log('✅ WebSocket service available');
             
             // Test ElevenLabs
             console.log('🎤 Testing ElevenLabs API...');
-            const ttsResponse = await fetch('/.netlify/functions/test-elevenlabs');
+            const testEndpoint = isNetlify() ? '/.netlify/functions/test-elevenlabs' : '/api/test-elevenlabs';
+            const ttsResponse = await fetch(testEndpoint);
             const ttsResult = await ttsResponse.json();
             console.log('✅ ElevenLabs test result:', ttsResult);
             
             // Test AssemblyAI
             console.log('🎙️ Testing AssemblyAI...');
-            const sttResponse = await fetch('/.netlify/functions/assemblyai-transcribe', {
+            const sttEndpoint = isNetlify() ? '/.netlify/functions/assemblyai-transcribe' : '/api/assemblyai-transcribe';
+            const sttResponse = await fetch(sttEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ audio_base64: 'dGVzdA==' }) // "test" in base64
@@ -3397,7 +3345,8 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
         try {
             console.log('🎤 Generating TTS for:', text.substring(0, 50) + '...');
             
-            const response = await fetch('/.netlify/functions/elevenlabs-streaming-tts', {
+            const streamingEndpoint = isNetlify() ? '/.netlify/functions/elevenlabs-streaming-tts' : '/api/elevenlabs-streaming-tts';
+            const response = await fetch(streamingEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

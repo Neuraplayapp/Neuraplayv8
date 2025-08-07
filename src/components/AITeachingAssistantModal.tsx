@@ -90,7 +90,7 @@ const AITeachingAssistantModal: React.FC<AITeachingAssistantModalProps> = ({ isO
       setIsSpeaking(true);
       
       // Use ElevenLabs TTS instead of browser speech synthesis
-      const response = await fetch('/.netlify/functions/elevenlabs-tts', {
+      const response = await fetch('/api/elevenlabs-tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

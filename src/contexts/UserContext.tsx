@@ -449,7 +449,7 @@ Total Sessions: ${assessment.totalSessions}
 
 Generate 3-5 specific, actionable recommendations for improving cognitive performance and learning. Focus on practical activities and strategies.`;
 
-      const response = await fetch('/.netlify/functions/api', {
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -509,7 +509,7 @@ Growth Areas: ${assessment.growthAreas.join(', ')}
 
 Write a detailed, encouraging analysis (2-3 paragraphs) that explains their cognitive development patterns, celebrates their strengths, and provides insight into their learning journey. Use positive, child-friendly language while being informative for parents.`;
 
-      const response = await fetch('/.netlify/functions/api', {
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -571,7 +571,7 @@ Create a detailed psychological report (4-5 paragraphs) that:
 
 Use professional but accessible language suitable for parents and educators.`;
 
-      const response = await fetch('/.netlify/functions/api', {
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

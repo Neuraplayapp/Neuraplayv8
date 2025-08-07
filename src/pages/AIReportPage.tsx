@@ -91,8 +91,8 @@ Create an encouraging, professional report that celebrates achievements, explain
 
       console.log('Generated prompt:', prompt);
 
-      console.log('Making API call to /.netlify/functions/api...');
-      const response = await fetch('/.netlify/functions/api', {
+      console.log('Making API call to /api/api...');
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -300,7 +300,7 @@ Create an encouraging, professional report that celebrates achievements, explain
                   onClick={async () => {
                     try {
                       console.log('Testing API...');
-                      const response = await fetch('/.netlify/functions/api', {
+                      const response = await fetch('/api/api', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -330,7 +330,7 @@ Create an encouraging, professional report that celebrates achievements, explain
                   onClick={async () => {
                     try {
                       console.log('Testing simple API call...');
-                      const response = await fetch('/.netlify/functions/api', {
+                      const response = await fetch('/api/api', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -399,7 +399,7 @@ Create an encouraging, professional report that celebrates achievements, explain
                   onClick={async () => {
                     try {
                       console.log('Testing API response format...');
-                      const response = await fetch('/.netlify/functions/api', {
+                      const response = await fetch('/api/api', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

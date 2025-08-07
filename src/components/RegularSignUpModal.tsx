@@ -75,7 +75,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
     try {
       console.log('Generating avatar with prompt:', avatarPrompt);
       
-      const response = await fetch('/.netlify/functions/api', {
+      const response = await fetch('/api/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

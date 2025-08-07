@@ -211,5 +211,16 @@ class IntelligentSearchDetector {
 // Export the class
 export { IntelligentSearchDetector };
 
-// Export a singleton instance
-export const intelligentSearchDetector = new IntelligentSearchDetector();
+// Export a factory function to avoid initialization issues
+export function createIntelligentSearchDetector(): IntelligentSearchDetector {
+  return new IntelligentSearchDetector();
+}
+
+// Export a lazy-loaded singleton
+let _instance: IntelligentSearchDetector | null = null;
+export function getIntelligentSearchDetector(): IntelligentSearchDetector {
+  if (!_instance) {
+    _instance = new IntelligentSearchDetector();
+  }
+  return _instance;
+}

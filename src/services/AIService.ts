@@ -1,5 +1,5 @@
 // Platform-aware AI Service
-// import { intelligentSearchDetector } from './IntelligentSearchDetector'; // TEMPORARILY DISABLED
+import { getIntelligentSearchDetector } from './IntelligentSearchDetector';
 
 // Configuration: Conversation memory management
 const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember
@@ -311,21 +311,22 @@ class AIService {
       text, enableToolCalling, context, streaming, hasAbortController: !!abortController, timeout 
     });
     
-    // 🧠 INTELLIGENT SEARCH DETECTION - TEMPORARILY DISABLED
-    // if (enableToolCalling) {
-    //   const searchAnalysis = intelligentSearchDetector.shouldTriggerSearch(text);
-    //   if (searchAnalysis.shouldSearch) {
-    //     console.log('🔍 Intelligent Search Triggered:', searchAnalysis);
+    // 🧠 INTELLIGENT SEARCH DETECTION - RE-ENABLED
+    if (enableToolCalling) {
+      const intelligentSearchDetector = getIntelligentSearchDetector();
+      const searchAnalysis = intelligentSearchDetector.shouldTriggerSearch(text);
+      if (searchAnalysis.shouldSearch) {
+        console.log('🔍 Intelligent Search Triggered:', searchAnalysis);
         
-    //     // Enhance the user message to include search context
-    //     const enhancedQuery = searchAnalysis.searchQuery || text;
-    //     const searchPrompt = `The user asked: "${text}". This appears to be about ${searchAnalysis.category} (${(searchAnalysis.confidence * 100).toFixed(0)}% confidence). Please search for current information using: "${enhancedQuery}" and then provide a comprehensive answer.`;
+        // Enhance the user message to include search context
+        const enhancedQuery = searchAnalysis.searchQuery || text;
+        const searchPrompt = `The user asked: "${text}". This appears to be about ${searchAnalysis.category} (${(searchAnalysis.confidence * 100).toFixed(0)}% confidence). Please search for current information using: "${enhancedQuery}" and then provide a comprehensive answer.`;
         
-    //     // Override the text with search-enhanced prompt
-    //     text = searchPrompt;
-    //     console.log('🔍 Enhanced query for AI:', text);
-    //   }
-    // }
+        // Override the text with search-enhanced prompt
+        text = searchPrompt;
+        console.log('🔍 Enhanced query for AI:', text);
+      }
+    }
     
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
@@ -418,7 +419,7 @@ class AIService {
         if (firstResponse.tool_results && firstResponse.tool_results.length > 0) {
           console.log('🔍 AI Service - Detailed tool results analysis:', {
             totalResults: firstResponse.tool_results.length,
-            results: firstResponse.tool_results.map((result, index) => ({
+            results: firstResponse.tool_results.map((result: any, index: number) => ({
               index,
               success: result?.success,
               hasData: !!result?.data,
@@ -431,10 +432,10 @@ class AIService {
           });
           
           // Check for image results specifically
-          const imageResults = firstResponse.tool_results.filter(r => r?.data?.image_url);
+          const imageResults = firstResponse.tool_results.filter((r: any) => r?.data?.image_url);
           if (imageResults.length > 0) {
             console.log('🔍 AI Service - Found images to pass to frontend:', imageResults.length);
-            imageResults.forEach((result, index) => {
+            imageResults.forEach((result: any, index: number) => {
               console.log(`🔍 AI Service - Image ${index}:`, {
                 isValidDataUrl: result.data.image_url.startsWith('data:image/'),
                 size: result.data.image_url.length,
