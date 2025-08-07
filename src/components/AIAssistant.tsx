@@ -11,6 +11,7 @@ import { useConversation as useGlobalConversation, type Message } from '../conte
 import { base64ToBinary } from '../utils/videoUtils';
 import { elevenLabsService } from '../services/elevenLabsService';
 import RichMessageRenderer from './RichMessageRenderer';
+import ScribbleModule from './ScribbleModule';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
 
@@ -94,6 +95,7 @@ const AIAssistant: React.FC = () => {
         };
     }, [handleAIWithToolCalling]);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isScribbleModuleOpen, setIsScribbleModuleOpen] = useState(false);
     // Use global conversation context instead of local state
     const {
         conversations,
@@ -3583,6 +3585,20 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        setIsScribbleModuleOpen(true);
+                                    }}
+                                    className="ai-fullscreen-button"
+                                    title="Open ScribbleModule - Project Plans & Mind Maps"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        <path d="M2 17l10 5 10-5"/>
+                                        <path d="M2 12l10 5 10-5"/>
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         clearCurrentConversation();
                                     }}
                                     className="ai-fullscreen-button"
@@ -3668,6 +3684,22 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </h3>
                             </div>
                             <div className="flex items-center gap-2">
+                                {/* ScribbleModule */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsScribbleModuleOpen(true);
+                                    }}
+                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    title="Open ScribbleModule - Project Plans & Mind Maps"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        <path d="M2 17l10 5 10-5"/>
+                                        <path d="M2 12l10 5 10-5"/>
+                                    </svg>
+                                </button>
+                                
                                 {/* Clear Conversation */}
                                 <button
                                     onClick={(e) => {
@@ -3962,6 +3994,12 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 </div>
             </aside>
 
+            {/* ScribbleModule Canvas */}
+            <ScribbleModule 
+                isOpen={isScribbleModuleOpen}
+                onClose={() => setIsScribbleModuleOpen(false)}
+                theme={theme}
+            />
 
         </>
     );

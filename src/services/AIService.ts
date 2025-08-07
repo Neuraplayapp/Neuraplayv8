@@ -1,4 +1,6 @@
 // Platform-aware AI Service
+import { intelligentSearchDetector } from './IntelligentSearchDetector';
+
 // Configuration: Conversation memory management
 const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember
 const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages (user + assistant)
@@ -308,6 +310,22 @@ class AIService {
     console.log('🔍 AI Service Debug - Input:', { 
       text, enableToolCalling, context, streaming, hasAbortController: !!abortController, timeout 
     });
+    
+    // 🧠 INTELLIGENT SEARCH DETECTION - Auto-trigger web search for current events
+    if (enableToolCalling) {
+      const searchAnalysis = intelligentSearchDetector.shouldTriggerSearch(text);
+      if (searchAnalysis.shouldSearch) {
+        console.log('🔍 Intelligent Search Triggered:', searchAnalysis);
+        
+        // Enhance the user message to include search context
+        const enhancedQuery = searchAnalysis.searchQuery || text;
+        const searchPrompt = `The user asked: "${text}". This appears to be about ${searchAnalysis.category} (${(searchAnalysis.confidence * 100).toFixed(0)}% confidence). Please search for current information using: "${enhancedQuery}" and then provide a comprehensive answer.`;
+        
+        // Override the text with search-enhanced prompt
+        text = searchPrompt;
+        console.log('🔍 Enhanced query for AI:', text);
+      }
+    }
     
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
