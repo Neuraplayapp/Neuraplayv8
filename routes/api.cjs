@@ -267,8 +267,7 @@ router.post('/api', async (req, res) => {
           const summary = {
             success: true,
             message: `Tool ${toolCall.function.name} executed successfully.`,
-            // Exclude the large data, the client already has it through toolResults
-            // The AI just needs to know it worked and can reference the image
+            // Summarize for AI context while preserving image data for client
             data: {
               image_was_generated: true,
               title: result.data.title || 'Generated content',
