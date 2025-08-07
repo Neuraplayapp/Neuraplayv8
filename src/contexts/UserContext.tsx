@@ -37,7 +37,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'learner' | 'parent';
+  role: 'learner' | 'parent' | 'admin';
   age?: number;
   
   // Authentication & Verification
@@ -46,7 +46,7 @@ export interface User {
   verificationToken?: string;
   verifiedAt?: string;
   subscription?: {
-    tier: 'free' | 'premium' | 'premium_plus';
+    tier: 'free' | 'premium' | 'premium_plus' | 'unlimited';
     startDate: string;
     endDate?: string;
     status: 'active' | 'expired' | 'cancelled';
@@ -615,6 +615,17 @@ Use professional but accessible language suitable for parents and educators.`;
   const getUsageLimits = () => {
     if (!user) return { aiLimit: 0, imageLimit: 0 };
     
+    // Admin users always get unlimited access
+    if (user.role === 'admin') {
+      return { aiLimit: -1, imageLimit: -1 }; // Unlimited for admin
+    }
+    
+    // Unlimited tier gets unlimited access
+    if (user.subscription?.tier === 'unlimited') {
+      return { aiLimit: -1, imageLimit: -1 }; // Unlimited tier
+    }
+    
+    // Premium Plus verified users get unlimited access
     if (user.isVerified && user.subscription?.tier === 'premium_plus') {
       return { aiLimit: -1, imageLimit: -1 }; // Unlimited
     } else if (user.isVerified && user.subscription?.tier === 'premium') {

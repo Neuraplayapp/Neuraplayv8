@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
     }
     
     // Check for secret admin user
-    if (email.toLowerCase() === 'smt@neuraplay.biz' && password === 'GH2300!') {
+    if (email.toLowerCase() === 'smt@neuraplay.biz' && password === 'GH23000!') {
       const adminUser = {
         id: 'admin_2025',
         username: 'NeuraPlay Admin',
