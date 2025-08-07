@@ -410,6 +410,22 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
 
   // Enhanced text formatting with mathematical and visual enhancements
   const formatText = (text: string) => {
+    // Minimal HTML/attribute escaping helpers to prevent broken markup
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const escapeAttr = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     // Theme-aware color classes
     const themeClasses = {
       // Mathematical concepts
@@ -463,9 +479,11 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       .replace(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b(?=:)/g, 
         `<strong class="font-bold ${isDarkMode ? 'text-white' : 'text-black'} break-words">$1</strong>`)
       
-      // CLICKABLE Mathematical concepts - make cards interactive!
-      .replace(/\b(distance|formula|equation|theorem|proof|calculate|graph|chart|diagram|temperature|humidity|weather|climate)\b/gi, 
-        `<button onclick="window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Explain $& in detail' } }))" class="inline-block px-2 py-1 ${themeClasses.mathConcepts} rounded font-semibold cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-400">📚 $&</button>`)
+      // CLICKABLE Mathematical concepts - make cards interactive! (exclude chart/diagram to avoid overlapping replacements)
+      .replace(/\b(distance|formula|equation|theorem|proof|calculate|temperature|humidity|weather|climate)\b/gi, (match) => {
+        const query = `Explain ${match} in detail`;
+        return `<button onclick=\"window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: '${escapeAttr(query)}' } }))\" class=\"inline-block px-2 py-1 ${themeClasses.mathConcepts} rounded font-semibold cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-400\">📚 ${escapeHtml(match)}</button>`;
+      })
       
       // Numbers and units - theme-aware formatting
       .replace(/(\d+(?:\.\d+)?)\s*(km|miles|°C|°F|%|kph|mph|meters|feet|seconds|minutes|hours)/g,
@@ -477,7 +495,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       .replace(/^## (.*$)/gim, 
         `<h2 class="text-xl md:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} mt-5 md:mt-7 mb-3 md:mb-4 flex items-center flex-wrap border-b-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'} pb-2"><span class="mr-2 md:mr-3 text-lg md:text-xl">🧮</span><span class="break-words">$1</span></h2>`)
       .replace(/^# (.*$)/gim, 
-        `<h1 class="text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap border-b-2 ${isDarkMode ? 'border-gray-500' : 'border-gray-400'} pb-3"><span class="mr-2 md:mr-3 text-xl md:text-2xl">🌟</span><span class="break-words">$1</span></h2>`)
+        `<h1 class="text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap border-b-2 ${isDarkMode ? 'border-gray-500' : 'border-gray-400'} pb-3"><span class="mr-2 md:mr-3 text-xl md:text-2xl">🌟</span><span class="break-words">$1</span></h1>`)
       
       // Mathematical expressions with theme-aware styling
       .replace(/\$(.*?)\$/g, 
@@ -497,11 +515,20 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       
       // CLICKABLE Weather conditions - make interactive!
       .replace(/\b(Clear|Sunny|Cloudy|Rainy|Stormy|Snowy)\b/g,
-        `<button onclick="window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'What causes $& weather conditions?' } }))" class="inline-block px-2 py-1 ${themeClasses.weather} rounded font-medium cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-sky-400">🌤️ $&</button>`)
+        (match) => {
+          const query = `What causes ${match} weather conditions?`;
+          return `<button onclick=\"window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: '${escapeAttr(query)}' } }))\" class=\"inline-block px-2 py-1 ${themeClasses.weather} rounded font-medium cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-sky-400\">🌤️ ${escapeHtml(match)}</button>`;
+        }
+      )
       
-      // CLICKABLE Chart and visualization keywords - make interactive!
+      // CLICKABLE Chart and visualization keywords - make interactive! (safe replacement)
       .replace(/\b(pie chart|bar chart|histogram|line chart|scatter plot|area chart|graph|visualization|chart|diagram)\b/gi,
-        `<button onclick="window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Create a $& showing data visualization' } }))" class="inline-block px-2 py-1 ${isDarkMode ? 'bg-purple-800/30 border-purple-600/50 text-purple-300 hover:bg-purple-700/40' : 'bg-purple-200/50 border-purple-400/50 text-purple-800 hover:bg-purple-300/60'} rounded font-medium cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-purple-400">📊 $&</button>`)
+        (match) => {
+          const query = `Create a ${match} showing data visualization`;
+          const btnClasses = isDarkMode ? 'bg-purple-800/30 border-purple-600/50 text-purple-300 hover:bg-purple-700/40' : 'bg-purple-200/50 border-purple-400/50 text-purple-800 hover:bg-purple-300/60';
+          return `<button onclick=\"window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: '${escapeAttr(query)}' } }))\" class=\"inline-block px-2 py-1 ${btnClasses} rounded font-medium cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-purple-400\">📊 ${escapeHtml(match)}</button>`;
+        }
+      )
       
       // Remove any remaining placeholder text patterns
       .replace(/\[.*?RENDERED\]/g, '')
