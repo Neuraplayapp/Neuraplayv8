@@ -25,14 +25,25 @@ export class WebSocketService {
     return WebSocketService.instance;
   }
 
+  // Generic send helper for JSON messages
+  send(payload: Record<string, any>): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket not connected');
+    }
+    this.ws.send(JSON.stringify(payload));
+  }
+
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
         // Connect to Render WebSocket server
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
-        const port = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
-        const wsUrl = `${protocol}//${host}:${port}`;
+        const port = window.location.port;
+        // Avoid explicitly appending default ports to prevent CDN/load balancer issues
+        const isDefaultHttps = protocol === 'wss:' && (port === '' || port === '443');
+        const isDefaultHttp = protocol === 'ws:' && (port === '' || port === '80');
+        const wsUrl = isDefaultHttps || isDefaultHttp ? `${protocol}//${host}` : `${protocol}//${host}:${port}`;
         
         console.log('🔗 Connecting to WebSocket server:', wsUrl);
         

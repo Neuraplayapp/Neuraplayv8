@@ -134,6 +134,23 @@ const tools = [
   {
     "type": "function",
     "function": {
+      "name": "open_canvas_mindmap",
+      "description": "Open the interactive canvas mindmap tool (ScribbleModule) to plan, organize and act on user prompts.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "enum": ["mindMap", "projectPlan", "chartDashboard"],
+            "description": "Optional template to load"
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "generate_image",
       "description": "Generate creative, educational, or artistic images based on user descriptions. Use this when users want to create, make, draw, or generate visual content.",
       "parameters": {
@@ -230,6 +247,10 @@ const TOOL_ROUTING_CONFIG = {
     'accessibility_support': {
       reason: 'Requires CSS/DOM manipulation and browser APIs',
       requires: ['dom_manipulation', 'css_changes', 'browser_api']
+    },
+    'open_canvas_mindmap': {
+      reason: 'Opens ScribbleModule mindmap UI on the client',
+      requires: ['ui_manipulation', 'browser_api']
     }
   }
 };

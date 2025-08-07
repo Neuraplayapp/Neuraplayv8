@@ -65,6 +65,9 @@ export class ToolExecutorService {
             success: false,
             message: `🚫 Image generation should be processed server-side, not by client ToolExecutor`
           };
+
+        case 'open_canvas_mindmap':
+          return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
         
         default:
           console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
@@ -270,6 +273,26 @@ export class ToolExecutorService {
       message: message,
       data: { type, action, details }
     };
+  }
+
+  // Canvas Mindmap tool handler (client-side UI)
+  private async handleOpenCanvasMindmap(params: any, context?: any): Promise<ToolResult> {
+    try {
+      // Fire a custom DOM event the UI listens to (AIAssistant toggles ScribbleModule)
+      const event = new CustomEvent('openScribbleModule', { detail: { template: params?.template || 'mindMap' } });
+      window.dispatchEvent(event);
+
+      return {
+        success: true,
+        message: `🧠 Opened canvas mindmap${params?.template ? ` with template "${params.template}"` : ''}.`,
+        data: { opened: true, template: params?.template || null }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to open canvas mindmap: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
   }
 
   // Data reading handler

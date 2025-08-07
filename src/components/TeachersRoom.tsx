@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { X, Mic, MicOff, Volume2, VolumeX, Settings, MessageSquare, Users, BookOpen, Brain, Zap, GraduationCap, ToggleLeft, ToggleRight } from 'lucide-react';
 import { getAgentId } from '../config/elevenlabs';
@@ -14,11 +14,13 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
   const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Array<{ text: string; isUser: boolean; timestamp: Date }>>([]);
   const [voiceMode, setVoiceMode] = useState<'websocket' | 'elevenlabs'>('elevenlabs');
+  const widgetRef = useRef<any>(null);
+  const agentId = getAgentId();
 
   // Load ElevenLabs widget script
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+    script.src = 'https://unpkg.com/@elevenlabs/convai-widget@latest';
     script.async = true;
     script.type = 'text/javascript';
     
@@ -30,13 +32,49 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
     }
 
     return () => {
-      // Cleanup on unmount
-      const scriptToRemove = document.querySelector(`script[src="${script.src}"]`);
-      if (scriptToRemove) {
-        document.head.removeChild(scriptToRemove);
-      }
+      // keep script cached
     };
   }, []);
+
+  // Attach robust event listeners to ElevenLabs widget (Web Component)
+  useEffect(() => {
+    const el = widgetRef.current as HTMLElement | null;
+    if (!el) return;
+
+    const onConnected = () => {
+      setConversationHistory(prev => [...prev, { text: '🔗 Connected to AI Teacher.', isUser: false, timestamp: new Date() }]);
+    };
+    const onDisconnected = () => {
+      setIsConversationActive(false);
+      setConversationHistory(prev => [...prev, { text: '🔌 Disconnected from AI Teacher.', isUser: false, timestamp: new Date() }]);
+    };
+    const onCallStarted = () => {
+      setIsConversationActive(true);
+      setConversationHistory(prev => [...prev, { text: '🎓 AI Teacher voice conversation started! 🎤', isUser: false, timestamp: new Date() }]);
+    };
+    const onCallEnded = () => {
+      setIsConversationActive(false);
+      setConversationHistory(prev => [...prev, { text: '📝 Voice lesson ended.', isUser: false, timestamp: new Date() }]);
+    };
+    const onError = (e: Event) => {
+      setConversationHistory(prev => [...prev, { text: '❌ ElevenLabs Error', isUser: false, timestamp: new Date() }]);
+    };
+
+    // Try multiple event names to be resilient
+    el.addEventListener('connected', onConnected as EventListener);
+    el.addEventListener('disconnected', onDisconnected as EventListener);
+    el.addEventListener('call-started', onCallStarted as EventListener);
+    el.addEventListener('call-ended', onCallEnded as EventListener);
+    el.addEventListener('error', onError as EventListener);
+
+    return () => {
+      el.removeEventListener('connected', onConnected as EventListener);
+      el.removeEventListener('disconnected', onDisconnected as EventListener);
+      el.removeEventListener('call-started', onCallStarted as EventListener);
+      el.removeEventListener('call-ended', onCallEnded as EventListener);
+      el.removeEventListener('error', onError as EventListener);
+    };
+  }, [widgetRef.current]);
 
   // Get theme-appropriate classes
   const getBackgroundClasses = () => {
@@ -216,75 +254,19 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
                       zIndex: 10
                     }}
                   >
-                    <elevenlabs-convai 
-                      key="elevenlabs-widget-teachers-room-enhanced"
-                      agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
+                    <elevenlabs-convai
+                      ref={(el) => (widgetRef.current = el)}
+                      agent-id={agentId}
                       variant="expanded"
                       action-text="🎤 Start AI Teacher Chat"
                       start-call-text="Start Voice Chat"
                       end-call-text="End Voice Chat"
                       avatar-orb-color-1="#8b5cf6"
                       avatar-orb-color-2="#a855f7"
-                      data-public="true"
-                      data-no-auth="true" 
-                      disable-auth="true"
-                      no-authentication="true"
                       public-agent="true"
                       enable-logging="true"
                       inactivity-timeout="30"
                       auto-mode="true"
-                      onCall={() => {
-                        console.log('🎤 ElevenLabs Teachers Room call started');
-                        setIsConversationActive(true);
-                        setConversationHistory(prev => [...prev, {
-                          text: "🎓 AI Teacher voice conversation started! Ask me anything! 🎤",
-                          isUser: false,
-                          timestamp: new Date()
-                        }]);
-                      }}
-                      onEnd={() => {
-                        console.log('🎤 ElevenLabs Teachers Room call ended');
-                        setIsConversationActive(false);
-                        setConversationHistory(prev => [...prev, {
-                          text: "🎓 Voice lesson ended. Great learning session! 📝",
-                          isUser: false,
-                          timestamp: new Date()
-                        }]);
-                      }}
-                      onConnect={() => {
-                        console.log('🎤 ElevenLabs Teachers Room connected');
-                        setConversationHistory(prev => [...prev, {
-                          text: "🔗 Connected to AI Teacher. Ready for voice lessons!",
-                          isUser: false,
-                          timestamp: new Date()
-                        }]);
-                      }}
-                      onDisconnect={() => {
-                        console.log('🎤 ElevenLabs Teachers Room disconnected');
-                        setConversationHistory(prev => [...prev, {
-                          text: "🔌 Disconnected from AI Teacher.",
-                          isUser: false,
-                          timestamp: new Date()
-                        }]);
-                      }}
-                      onMessage={(message: any) => {
-                        console.log('🎤 ElevenLabs Teachers Room message:', message);
-                        if (message?.text) {
-                          setConversationHistory(prev => [...prev, {
-                            text: message.text,
-                            isUser: false,
-                            timestamp: new Date()
-                          }]);
-                        }
-                      }}
-                      onError={(error: any) => {
-                        console.error('🚫 ElevenLabs Teachers Room Error:', error);
-                        setConversationHistory(prev => [...prev, {
-                          text: `❌ ElevenLabs Error: ${error}`,
-                          isUser: false,
-                          timestamp: new Date()
-                        }]);
-                      }}
                       style={{
                         '--primary-color': '#8b5cf6',
                         '--secondary-color': '#a855f7',

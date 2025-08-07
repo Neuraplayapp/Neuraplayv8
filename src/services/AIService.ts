@@ -284,6 +284,23 @@ class AIService {
             "required": ["concept"]
           }
         }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "open_canvas_mindmap",
+          "description": "Open the interactive canvas mindmap tool to plan, organize, and act on user prompts (ScribbleModule).",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "template": {
+                "type": "string",
+                "enum": ["mindMap", "projectPlan", "chartDashboard"],
+                "description": "Optional template to load into the canvas"
+              }
+            }
+          }
+        }
       }
     ];
   }

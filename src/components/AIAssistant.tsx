@@ -89,6 +89,15 @@ const AIAssistant: React.FC = () => {
         clearConversation,
         getActiveConversation
     } = useGlobalConversation();
+
+    // Listen for tool-triggered canvas open requests
+    useEffect(() => {
+        const handler = (e: any) => {
+            setIsScribbleModuleOpen(true);
+        };
+        window.addEventListener('openScribbleModule', handler as EventListener);
+        return () => window.removeEventListener('openScribbleModule', handler as EventListener);
+    }, []);
     
     // Use user context for usage limits and verification
     const { 
@@ -2622,11 +2631,11 @@ Need help with anything specific? Just ask! 🌟`;
         }
 
         // Add AI response to conversation with tool results
-        const assistantMessage: Message = {
+                        const assistantMessage: Message = {
             text: aiResponse,
             isUser: false,
             timestamp: new Date(),
-            toolResults: [] // Will be populated with tool execution results
+                            toolResults: (Array.isArray(response) && response[0]?.tool_results) ? response[0].tool_results : []
         };
         addMessage(activeConversation, assistantMessage);
 

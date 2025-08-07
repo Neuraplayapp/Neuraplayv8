@@ -77,7 +77,16 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     });
     
     // Handle tool results (server-generated diagrams and data)
+    // Support both summarized server content (result.content string) and full client content (result.data)
     toolResults.forEach((result, index) => {
+      let normalized: any = result;
+      try {
+        if (typeof result?.content === 'string') {
+          normalized = JSON.parse(result.content);
+        }
+      } catch (e) {
+        // keep original if JSON parse fails
+      }
       console.log(`🔍 Processing tool result ${index}:`, {
         hasImageUrl: !!(result.data?.image_url),
         hasDiagramType: !!(result.data?.diagram_type),
@@ -86,38 +95,40 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       });
 
       // Handle math diagrams (specific type)
-      if (result.data?.image_url && result.data.diagram_type) {
+      const data = normalized?.data || result?.data;
+      const message = normalized?.message || result?.message;
+      if (data?.image_url && data?.diagram_type) {
         console.log(`🔍 Adding math_diagram for result ${index}`);
         content.push({
           type: 'math_diagram',
-          content: result.data.image_url,
+          content: data.image_url,
           metadata: {
-            title: result.data.title || 'Mathematical Diagram',
-            diagramType: result.data.diagram_type,
-            style: result.data.style || 'colorful'
+            title: data.title || 'Mathematical Diagram',
+            diagramType: data.diagram_type,
+            style: data.style || 'colorful'
           }
         });
       }
       // Handle general images (from generate_image tool)
-      else if (result.data?.image_url) {
+      else if (data?.image_url) {
         console.log(`🔍 Adding general image for result ${index}`);
         content.push({
           type: 'image',
-          content: result.data.image_url,
+          content: data.image_url,
           metadata: {
-            title: result.data.title || 'Generated Image',
-            caption: result.message || 'Image generated successfully',
-            style: result.data.style || 'default'
+            title: data.title || 'Generated Image',
+            caption: message || 'Image generated successfully',
+            style: data.style || 'default'
           }
         });
       }
       // Handle other successful tool results
-      else if (result.success && result.data) {
+      else if ((normalized?.success || result?.success) && (data)) {
         console.log(`🔍 Adding tool_result for result ${index}`);
         content.push({
           type: 'tool_result',
-          content: result.message || 'Tool executed successfully',
-          metadata: result.data
+          content: message || 'Tool executed successfully',
+          metadata: data
         });
       } else {
         console.log(`🔍 Skipping result ${index} - no matching conditions`);

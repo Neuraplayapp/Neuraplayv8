@@ -190,8 +190,8 @@ router.post('/elevenlabs-tts', async (req, res) => {
 router.post('/api', async (req, res) => {
   try {
     console.log('🤖 AI API request received');
-    console.log('🔍 DEBUG: Request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 DEBUG: Request headers:', JSON.stringify(req.headers, null, 2));
+    // Avoid logging full headers to prevent leaking cookies/auth
+    console.log('🔍 DEBUG: Request body keys:', Object.keys(req.body || {}));
     const { task_type, input_data } = req.body;
     
     // Handle image generation separately
