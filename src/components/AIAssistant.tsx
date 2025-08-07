@@ -74,6 +74,25 @@ const SUPPORTED_LANGUAGES: Record<LanguageCode, string> = {
 
 const AIAssistant: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
+
+    // Listen for search triggers from clickable cards  
+    useEffect(() => {
+        const handleSearchTrigger = (event: CustomEvent) => {
+            const { query } = event.detail;
+            if (query) {
+                setInputMessage(query);
+                // Trigger AI search with the clicked concept
+                setTimeout(() => {
+                    handleAIWithToolCalling(query, true);
+                }, 100);
+            }
+        };
+
+        window.addEventListener('triggerAISearch', handleSearchTrigger as EventListener);
+        return () => {
+            window.removeEventListener('triggerAISearch', handleSearchTrigger as EventListener);
+        };
+    }, [handleAIWithToolCalling]);
     const [isFullscreen, setIsFullscreen] = useState(false);
     // Use global conversation context instead of local state
     const {

@@ -19,6 +19,15 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   isDarkMode, 
   toolResults = [] 
 }) => {
+
+  // Handle clickable searches
+  const handleConceptClick = (concept: string) => {
+    // Trigger search for the concept
+    const searchEvent = new CustomEvent('triggerAISearch', { 
+      detail: { query: `Explain ${concept} in detail` } 
+    });
+    window.dispatchEvent(searchEvent);
+  };
   
   // Parse message for rich mathematical and visual content
   const parseRichContent = (text: string, toolResults: any[]): RichContent[] => {
@@ -363,35 +372,41 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
         ? 'bg-gray-800 border-gray-600 text-cyan-300' 
         : 'bg-gray-200 border-gray-400 text-cyan-700',
       
-      // List items
-      listText: isDarkMode ? 'text-gray-100' : 'text-gray-800',
-      listBullet: isDarkMode ? 'text-blue-400' : 'text-blue-600'
+      // List items - BLACK text for readability
+      listText: isDarkMode ? 'text-white' : 'text-black',
+      listBullet: isDarkMode ? 'text-blue-400' : 'text-black'
     };
 
     return text
+      // Clean up asterisks and markdown remnants FIRST
+      .replace(/\*\*\*/g, '') // Remove triple asterisks
+      .replace(/\*\*/g, '')   // Remove remaining double asterisks  
+      .replace(/\*/g, '')     // Remove single asterisks
+      .replace(/_{2,}/g, '')  // Remove multiple underscores
+      
       // Special greeting phrases - refined Apple-like styling
       .replace(/\b(Here you go!|There you go!|Perfect!|Excellent!|Amazing!|Wonderful!|Great job!|Well done!|Fantastic!|Awesome!|Outstanding!)\b/gi, 
         `<div class="text-2xl md:text-4xl font-semibold my-4 md:my-6 text-center p-3 md:p-4 rounded-xl md:rounded-2xl ${isDarkMode ? 'bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white' : 'bg-gradient-to-r from-indigo-500/90 to-purple-500/90 text-white'} shadow-lg transform hover:scale-105 transition-all duration-300 backdrop-blur-sm border ${isDarkMode ? 'border-indigo-400/30' : 'border-indigo-300/40'}">✨ $& ✨</div>`)
       
-      // Convert **bold** to animated bullet points
-      .replace(/\*\*(.*?)\*\*/g, 
-        `<div class="flex items-start my-2 md:my-3 p-2 md:p-3 rounded-lg ${isDarkMode ? 'bg-slate-800/30 hover:bg-slate-700/40' : 'bg-slate-100/50 hover:bg-slate-200/60'} transition-all duration-300 transform hover:translate-x-2 group cursor-pointer border ${isDarkMode ? 'border-slate-700/30 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/70'}"><span class="mr-3 text-lg ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-500'} transform group-hover:scale-110 transition-all duration-300">●</span><span class="flex-1 font-medium ${isDarkMode ? 'text-gray-200 group-hover:text-white' : 'text-gray-700 group-hover:text-gray-900'} break-words">$1</span></div>`)
+      // Convert bold text properly
+      .replace(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b(?=:)/g, 
+        `<strong class="font-bold ${isDarkMode ? 'text-white' : 'text-black'} break-words">$1</strong>`)
       
-      // Mathematical concepts - theme-aware highlighting
+      // CLICKABLE Mathematical concepts - make cards interactive!
       .replace(/\b(distance|formula|equation|theorem|proof|calculate|graph|chart|diagram|temperature|humidity|weather|climate)\b/gi, 
-        `<span class="px-2 py-1 ${themeClasses.mathConcepts} rounded font-semibold">$&</span>`)
+        `<button onclick="window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Explain $& in detail' } }))" class="inline-block px-2 py-1 ${themeClasses.mathConcepts} rounded font-semibold cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-400">📚 $&</button>`)
       
       // Numbers and units - theme-aware formatting
       .replace(/(\d+(?:\.\d+)?)\s*(km|miles|°C|°F|%|kph|mph|meters|feet|seconds|minutes|hours)/g,
         `<span class="px-2 py-1 ${themeClasses.numbersBg} rounded font-bold">$1</span><span class="${themeClasses.numbersUnit} text-sm ml-1 font-medium">$2</span>`)
       
-      // Headers with mathematical styling and icons - responsive sizing
+      // CLEAN HEADERS - BLACK text, responsive sizing, better spacing
       .replace(/^### (.*$)/gim, 
-        '<h3 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mt-6 md:mt-8 mb-3 md:mb-4 flex items-center flex-wrap"><span class="mr-2 md:mr-3 text-xl md:text-2xl">📐</span><span class="break-words">$1</span></h3>')
+        `<h3 class="text-lg md:text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} mt-4 md:mt-6 mb-2 md:mb-3 flex items-center flex-wrap border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} pb-2"><span class="mr-2 text-base md:text-lg">📐</span><span class="break-words">$1</span></h3>`)
       .replace(/^## (.*$)/gim, 
-        '<h2 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap"><span class="mr-2 md:mr-3 text-2xl md:text-3xl">🧮</span><span class="break-words">$1</span></h2>')
+        `<h2 class="text-xl md:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} mt-5 md:mt-7 mb-3 md:mb-4 flex items-center flex-wrap border-b-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'} pb-2"><span class="mr-2 md:mr-3 text-lg md:text-xl">🧮</span><span class="break-words">$1</span></h2>`)
       .replace(/^# (.*$)/gim, 
-        '<h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-400 mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap"><span class="mr-2 md:mr-3 text-3xl md:text-4xl">🌟</span><span class="break-words">$1</span></h1>')
+        `<h1 class="text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap border-b-2 ${isDarkMode ? 'border-gray-500' : 'border-gray-400'} pb-3"><span class="mr-2 md:mr-3 text-xl md:text-2xl">🌟</span><span class="break-words">$1</span></h2>`)
       
       // Mathematical expressions with theme-aware styling
       .replace(/\$(.*?)\$/g, 
@@ -409,13 +424,13 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       .replace(/^[\s]*-[\s]+(.*$)/gim, 
         `<li class="ml-4 md:ml-8 mb-2 md:mb-3 ${themeClasses.listText} flex items-start"><span class="${themeClasses.listBullet} mr-2 md:mr-3 mt-1 text-base md:text-lg">●</span><span class="flex-1 break-words">$1</span></li>`)
       
-      // Special formatting for weather conditions - theme-aware
+      // CLICKABLE Weather conditions - make interactive!
       .replace(/\b(Clear|Sunny|Cloudy|Rainy|Stormy|Snowy)\b/g,
-        `<span class="px-2 py-1 ${themeClasses.weather} rounded font-medium">$&</span>`)
+        `<button onclick="window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'What causes $& weather conditions?' } }))" class="inline-block px-2 py-1 ${themeClasses.weather} rounded font-medium cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-sky-400">🌤️ $&</button>`)
       
-      // Highlight chart and visualization keywords
+      // CLICKABLE Chart and visualization keywords - make interactive!
       .replace(/\b(pie chart|bar chart|histogram|line chart|scatter plot|area chart|graph|visualization|chart|diagram)\b/gi,
-        `<span class="px-2 py-1 ${isDarkMode ? 'bg-purple-800/30 border-purple-600/50 text-purple-300' : 'bg-purple-200/50 border-purple-400/50 text-purple-800'} rounded font-medium">📊 $&</span>`)
+        `<button onclick="window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Create a $& showing data visualization' } }))" class="inline-block px-2 py-1 ${isDarkMode ? 'bg-purple-800/30 border-purple-600/50 text-purple-300 hover:bg-purple-700/40' : 'bg-purple-200/50 border-purple-400/50 text-purple-800 hover:bg-purple-300/60'} rounded font-medium cursor-pointer hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-purple-400">📊 $&</button>`)
       
       // Remove any remaining placeholder text patterns
       .replace(/\[.*?RENDERED\]/g, '')
