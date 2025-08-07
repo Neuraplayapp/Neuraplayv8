@@ -133,10 +133,10 @@ const ForumRegistrationPage: React.FC = () => {
   ];
 
   return (
-    <div className={`min-h-screen py-24 px-6 ${
+    <div className={`min-h-screen py-24 px-6 text-theme-primary ${
       isDarkMode 
-        ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-800 text-white'
-        : 'bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-100 text-gray-900'
+        ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-800'
+        : 'bg-gradient-to-br from-blue-50 via-sky-100 to-indigo-100'
     }`}>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
@@ -152,7 +152,7 @@ const ForumRegistrationPage: React.FC = () => {
           }`}>Sign up to the NeuraPlay Forum</h1>
           <LetterReveal 
             text="Create your free account and start your learning journey"
-            className="text-xl text-violet-300"
+            className={`text-xl ${isDarkMode ? 'text-violet-300' : 'text-gray-900'}`}
             delay={0.5}
             stagger={0.03}
             duration={0.4}
@@ -188,11 +188,11 @@ const ForumRegistrationPage: React.FC = () => {
                 <select
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                  className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                  className={`w-full p-4 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
                 >
-                  <option value={4} className="bg-slate-800">3-5 years</option>
-                  <option value={7} className="bg-slate-800">6-8 years</option>
-                  <option value={10} className="bg-slate-800">9-12 years</option>
+                  <option value={4} className={isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>3-5 years</option>
+                  <option value={7} className={isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>6-8 years</option>
+                  <option value={10} className={isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}>9-12 years</option>
                 </select>
               </div>
             )}
@@ -204,7 +204,7 @@ const ForumRegistrationPage: React.FC = () => {
                 placeholder="Create a unique username"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                                  className={`w-full p-4 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
               />
             </div>
 
@@ -215,7 +215,7 @@ const ForumRegistrationPage: React.FC = () => {
                 placeholder="Enter your email address"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                                  className={`w-full p-4 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
               />
             </div>
 
@@ -227,7 +227,7 @@ const ForumRegistrationPage: React.FC = () => {
                   value={avatarPrompt}
                   onChange={e => setAvatarPrompt(e.target.value)}
                   placeholder="Describe your avatar (e.g. brave robot, magical cat)"
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                  className={`flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
                   disabled={generatingAvatar}
                 />
                 <button
@@ -294,7 +294,7 @@ const ForumRegistrationPage: React.FC = () => {
               <Crown className="w-8 h-8 text-yellow-400" />
                               <h3 className="text-2xl font-bold text-theme-primary">Unlock Premium Features</h3>
             </div>
-            <p className="text-violet-300 text-lg">Start your 7-day free trial and experience the full NeuraPlay potential</p>
+            <p className="text-theme-secondary text-lg">Start your 7-day free trial and experience the full NeuraPlay potential</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6 lg:gap-12 mb-8 max-w-4xl mx-auto">
@@ -303,14 +303,14 @@ const ForumRegistrationPage: React.FC = () => {
                 <Brain className="w-6 h-6 text-purple-400" />
                 <div>
                   <div className="text-theme-primary font-semibold">AI-Powered Learning</div>
-                  <div className="text-violet-300 text-sm">Personalized cognitive development plans</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-violet-300' : 'text-gray-700'}`}>Personalized cognitive development plans</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Trophy className="w-6 h-6 text-yellow-400" />
                 <div>
                   <div className="text-theme-primary font-semibold">Advanced Games</div>
-                  <div className="text-violet-300 text-sm">Access to premium cognitive training games</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-violet-300' : 'text-gray-700'}`}>Access to premium cognitive training games</div>
                 </div>
               </div>
             </div>
@@ -319,14 +319,14 @@ const ForumRegistrationPage: React.FC = () => {
                 <Zap className="w-6 h-6 text-blue-400" />
                 <div>
                   <div className="text-theme-primary font-semibold">Real-time Analytics</div>
-                  <div className="text-violet-300 text-sm">Detailed progress tracking and insights</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-violet-300' : 'text-gray-700'}`}>Detailed progress tracking and insights</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Star className="w-6 h-6 text-pink-400" />
                 <div>
                   <div className="text-theme-primary font-semibold">Expert Support</div>
-                  <div className="text-violet-300 text-sm">Direct access to child development experts</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-violet-300' : 'text-gray-700'}`}>Direct access to child development experts</div>
                 </div>
               </div>
             </div>
@@ -348,7 +348,7 @@ const ForumRegistrationPage: React.FC = () => {
               Start Premium Trial
               <ArrowRight className="w-5 h-5" />
             </button>
-            <p className="text-violet-300 text-sm mt-3">Join thousands of families already transforming learning</p>
+            <p className="text-theme-secondary text-sm mt-3">Join thousands of families already transforming learning</p>
           </div>
         </div>
       </div>
