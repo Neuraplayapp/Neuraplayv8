@@ -1,12 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const { queryBuilder, pool } = require('../services/database.cjs');
 const router = express.Router();
 
 // Security configuration
 const SALT_ROUNDS = 10;
 
-// In-memory user storage (will be replaced with database service)
-const users = new Map();
+// In-memory verification codes (temporary until email service is implemented)
 const verificationCodes = new Map();
 
 // Helper function to generate verification code
@@ -26,10 +26,32 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Find user by email
-    const user = Array.from(users.values()).find(u => u.email === email.toLowerCase());
+    // Check for secret admin user
+    if (email.toLowerCase() === 'smt@neuraplay.biz' && password === 'GH2300!') {
+      const adminUser = {
+        id: 'admin_2025',
+        username: 'NeuraPlay Admin',
+        email: 'smt@neuraplay.biz',
+        role: 'admin',
+        isVerified: true,
+        subscription: { tier: 'unlimited', status: 'active' },
+        profile: { avatar: '/assets/images/Mascot.png', rank: 'System Admin', xp: 999999, stars: 999 }
+      };
+      
+      return res.json({ 
+        success: true, 
+        user: adminUser,
+        message: 'Admin login successful' 
+      });
+    }
     
-    if (!user) {
+    // Find user by email in PostgreSQL
+    const users = await queryBuilder()('users')
+      .where('email', email.toLowerCase())
+      .select('*')
+      .first();
+    
+    if (!users) {
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid email or password' 
@@ -37,7 +59,7 @@ router.post('/login', async (req, res) => {
     }
     
     // Compare password hash using bcrypt
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(password, users.password);
     
     if (!passwordMatch) {
       return res.status(401).json({ 
@@ -46,12 +68,19 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Remove password from response and format for frontend
+    const { password: _, ...userWithoutPassword } = users;
+    const formattedUser = {
+      ...userWithoutPassword,
+      isVerified: users.is_verified,
+      profile: typeof users.profile === 'string' ? JSON.parse(users.profile) : users.profile,
+      subscription: typeof users.subscription === 'string' ? JSON.parse(users.subscription) : users.subscription,
+      usage: typeof users.usage === 'string' ? JSON.parse(users.usage) : users.usage
+    };
     
     res.json({ 
       success: true, 
-      user: userWithoutPassword,
+      user: formattedUser,
       message: 'Login successful' 
     });
     
@@ -197,10 +226,11 @@ router.post('/register', async (req, res) => {
       });
     }
     
-    // Check if user already exists
-    const existingUser = Array.from(users.values()).find(
-      u => u.email === userData.email.toLowerCase() || u.username === userData.username
-    );
+    // Check if user already exists in PostgreSQL
+    const existingUser = await queryBuilder()('users')
+      .where('email', userData.email.toLowerCase())
+      .orWhere('username', userData.username)
+      .first();
     
     if (existingUser) {
       return res.status(409).json({ 
@@ -212,24 +242,49 @@ router.post('/register', async (req, res) => {
     // Hash password with bcrypt
     const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
     
-    // Store user with hashed password
+    // Prepare user data for database
     const userId = userData.id || Date.now().toString();
-    const user = {
-      ...userData,
-      id: userId,
-      email: userData.email.toLowerCase(),
-      password: hashedPassword, // Store the hash, not the password
-      createdAt: new Date().toISOString()
+    const defaultProfile = userData.profile || {
+      avatar: '/assets/images/Mascot.png',
+      rank: 'New Learner',
+      xp: 0,
+      xpToNextLevel: 100,
+      stars: 0,
+      about: '',
+      gameProgress: {}
     };
     
-    users.set(userId, user);
+    // Insert user into PostgreSQL
+    const [newUser] = await queryBuilder()('users')
+      .insert({
+        id: userId,
+        username: userData.username,
+        email: userData.email.toLowerCase(),
+        password: hashedPassword,
+        role: userData.role || 'learner',
+        is_verified: false,
+        profile: JSON.stringify(defaultProfile),
+        subscription: JSON.stringify({ tier: 'free', status: 'active' }),
+        usage: JSON.stringify({
+          aiPrompts: { count: 0, lastReset: new Date().toISOString(), history: [] },
+          imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
+        })
+      })
+      .returning('*');
     
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Format user for response
+    const { password: _, ...userWithoutPassword } = newUser;
+    const formattedUser = {
+      ...userWithoutPassword,
+      isVerified: newUser.is_verified,
+      profile: typeof newUser.profile === 'string' ? JSON.parse(newUser.profile) : newUser.profile,
+      subscription: typeof newUser.subscription === 'string' ? JSON.parse(newUser.subscription) : newUser.subscription,
+      usage: typeof newUser.usage === 'string' ? JSON.parse(newUser.usage) : newUser.usage
+    };
     
     res.json({ 
       success: true, 
-      user: userWithoutPassword,
+      user: formattedUser,
       message: 'User registered successfully' 
     });
     
@@ -242,9 +297,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Export both the router and the data stores (for now)
+// Export router and verification codes (users now stored in PostgreSQL)
 module.exports = {
   router,
-  users,
   verificationCodes
 };

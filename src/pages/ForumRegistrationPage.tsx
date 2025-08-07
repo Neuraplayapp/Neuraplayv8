@@ -21,33 +21,48 @@ const ForumRegistrationPage: React.FC = () => {
   const [avatarError, setAvatarError] = useState('');
   const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.role || !formData.username.trim() || !formData.email.trim()) {
       alert('Please fill out all fields.');
       return;
     }
 
-    const newUser = {
-      id: Date.now().toString(),
-      username: formData.username,
-      email: formData.email,
-      role: formData.role as 'learner' | 'parent',
-      age: formData.role === 'learner' ? formData.age : undefined,
-      profile: {
-        avatar: formData.avatar,
-        rank: 'New Learner',
-        xp: 0,
-        xpToNextLevel: 100,
-        stars: 0,
-        about: '',
-        gameProgress: {}
-      },
-      journeyLog: [],
-      hasPosted: false
-    };
+    try {
+      // Call backend registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: 'forum_user_123', // TODO: Add password field to form
+          role: formData.role,
+          age: formData.role === 'learner' ? formData.age : undefined,
+          profile: {
+            avatar: formData.avatar,
+            rank: 'New Learner',
+            xp: 0,
+            xpToNextLevel: 100,
+            stars: 0,
+            about: '',
+            gameProgress: {}
+          }
+        })
+      });
 
-    setUser(newUser);
-    navigate('/forum');
+      const result = await response.json();
+
+      if (response.ok && result.user) {
+        setUser(result.user);
+        navigate('/forum');
+      } else {
+        console.error('Registration failed:', result.message);
+        alert('Registration failed: ' + (result.message || 'Please try again'));
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Network error during registration. Please check your connection.');
+    }
   };
 
   const handleGenerateAvatar = async () => {
@@ -194,7 +209,7 @@ const ForumRegistrationPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-bold mb-4 text-white text-lg">Email</label>
+              <label className="block font-bold mb-4 text-theme-primary text-lg">Email</label>
               <input
                 type="email"
                 placeholder="Enter your email address"
@@ -205,7 +220,7 @@ const ForumRegistrationPage: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-4 text-white text-lg">Choose your hero avatar</h4>
+              <h4 className="font-bold mb-4 text-theme-primary text-lg">Choose your hero avatar</h4>
               <div className="flex gap-3 mb-4">
                 <input
                   type="text"

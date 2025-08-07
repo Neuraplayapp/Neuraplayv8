@@ -111,61 +111,47 @@ const RegistrationPage: React.FC = () => {
     setStep(2);
   };
 
-  const handleComplete = () => {
-    const now = new Date().toISOString();
-    const newUser = {
-      id: Date.now().toString(),
-      username: formData.username,
-      email: formData.email,
-      role: formData.role as 'learner' | 'parent',
-      age: formData.role === 'learner' ? formData.age : undefined,
-      
-      // Authentication & Verification (new users start unverified)
-      isVerified: false,
-      verificationMethod: undefined,
-      verificationToken: undefined,
-      verifiedAt: undefined,
-      subscription: {
-        tier: 'free' as const,
-        startDate: now,
-        status: 'active' as const
-      },
-      
-      // Usage Tracking (initialize with zero usage)
-      usage: {
-        aiPrompts: {
-          count: 0,
-          lastReset: now,
-          history: []
-        },
-        imageGeneration: {
-          count: 0,
-          lastReset: now,
-          history: []
-        }
-      },
-      
-      profile: {
-        avatar: formData.avatar,
-        rank: 'New Learner',
-        xp: 0,
-        xpToNextLevel: 100,
-        stars: 0,
-        about: '',
-        gameProgress: {}
-      },
-      journeyLog: [],
-      hasPosted: false,
-      friends: [],
-      friendRequests: { sent: [], received: [] }
-    };
-    
-    setUser(newUser);
-    setStep(3);
-    
-    setTimeout(() => {
-      navigate(formData.role === 'learner' ? '/playground' : '/forum');
-    }, 2000);
+  const handleComplete = async () => {
+    try {
+      // Call backend registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: 'temporary_password_123', // TODO: Add password field to form
+          role: formData.role,
+          age: formData.role === 'learner' ? formData.age : undefined,
+          profile: {
+            avatar: formData.avatar,
+            rank: 'New Learner',
+            xp: 0,
+            xpToNextLevel: 100,
+            stars: 0,
+            about: '',
+            gameProgress: {}
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.user) {
+        setUser(result.user);
+        setStep(3);
+        
+        setTimeout(() => {
+          navigate(formData.role === 'learner' ? '/playground' : '/forum');
+        }, 2000);
+      } else {
+        console.error('Registration failed:', result.message);
+        alert('Registration failed: ' + (result.message || 'Please try again'));
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Network error during registration. Please check your connection.');
+    }
   };
 
   const handleGenerateAvatar = async () => {
@@ -255,10 +241,10 @@ const RegistrationPage: React.FC = () => {
           <p className="text-xl text-violet-300">Unlock the full potential of cognitive development</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
           {/* Step 1: Basic Information */}
           {step === 1 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 lg:p-10 shadow-xl min-h-[520px] flex flex-col gap-6">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Check className="w-8 h-8 text-white" />
@@ -357,7 +343,7 @@ const RegistrationPage: React.FC = () => {
 
           {/* Step 2: Avatar Creation */}
           {step === 2 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 lg:p-10 shadow-xl min-h-[520px] flex flex-col gap-6">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Star className="w-8 h-8 text-white" />
@@ -438,9 +424,10 @@ const RegistrationPage: React.FC = () => {
 
           {/* Premium Features Sidebar */}
           <div 
-            className={`bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl transition-all duration-200 ${
+            onClick={() => handleSubscriptionSelect('premium')}
+            className={`bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 lg:p-10 shadow-xl min-h-[520px] transition-all duration-200 cursor-pointer ${
               selectedSubscription === 'premium' 
-                ? 'border-violet-400/50 bg-violet-600/10' 
+                ? 'border-violet-400/70 bg-violet-600/20 ring-2 ring-violet-400/30' 
                 : 'hover:border-violet-400/30 hover:bg-violet-600/5'
             }`}
           >
@@ -536,9 +523,10 @@ const RegistrationPage: React.FC = () => {
           
           {/* Premium Plus Subscription Card */}
           <div 
-            className={`bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl transition-all duration-200 ${
+            onClick={() => handleSubscriptionSelect('premium-plus')}
+            className={`bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 lg:p-10 shadow-xl min-h-[520px] transition-all duration-200 cursor-pointer ${
               selectedSubscription === 'premium-plus' 
-                ? 'border-amber-400/50 bg-amber-600/10' 
+                ? 'border-amber-400/70 bg-amber-600/20 ring-2 ring-amber-400/30' 
                 : 'hover:border-amber-400/30 hover:bg-amber-600/5'
             }`}
           >
@@ -629,6 +617,21 @@ const RegistrationPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Payment Integration Notice */}
+        {(selectedSubscription && selectedPlan) && (
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-600/20 to-amber-600/20 border border-violet-400/30 rounded-xl px-6 py-4 backdrop-blur-md">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-white font-medium">
+                {selectedSubscription === 'premium' ? 'Premium' : 'Premium Plus'} {selectedPlan} plan selected
+              </span>
+              <div className="text-gray-300 text-sm ml-4">
+                Payment integration coming soon
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* License Modal */}
         {showLicense && (

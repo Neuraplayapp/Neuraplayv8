@@ -31,37 +31,50 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
   const [avatarError, setAvatarError] = useState('');
   const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.role || !formData.username.trim() || !formData.email.trim()) {
       alert('Please fill out all fields.');
       return;
     }
 
-    const newUser = {
-      id: Date.now().toString(),
-      username: formData.username,
-      email: formData.email,
-      role: formData.role as 'learner' | 'parent',
-      age: formData.role === 'learner' ? formData.age : undefined,
-      profile: {
-        avatar: formData.avatar,
-        rank: 'New Learner',
-        xp: 0,
-        xpToNextLevel: 100,
-        stars: 0,
-        about: '',
-        gameProgress: {}
-      },
-      journeyLog: [],
-      hasPosted: false,
-      friends: [],
-      friendRequests: { sent: [], received: [] }
-    };
+    try {
+      // Call backend registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: 'regular_user_123', // TODO: Add password field to form
+          role: formData.role,
+          age: formData.role === 'learner' ? formData.age : undefined,
+          profile: {
+            avatar: formData.avatar,
+            rank: 'New Learner',
+            xp: 0,
+            xpToNextLevel: 100,
+            stars: 0,
+            about: '',
+            gameProgress: {}
+          }
+        })
+      });
 
-    setUser(newUser);
-    onSuccess?.();
-    navigate('/forum');
-    onClose();
+      const result = await response.json();
+
+      if (response.ok && result.user) {
+        setUser(result.user);
+        onSuccess?.();
+        navigate('/forum');
+        onClose();
+      } else {
+        console.error('Registration failed:', result.message);
+        alert('Registration failed: ' + (result.message || 'Please try again'));
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Network error during registration. Please check your connection.');
+    }
   };
 
   const handleGenerateAvatar = async () => {

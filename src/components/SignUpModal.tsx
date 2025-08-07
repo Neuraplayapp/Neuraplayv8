@@ -52,35 +52,45 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
 
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Call backend registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+          age: formData.role === 'learner' ? formData.age : undefined,
+          profile: {
+            avatar: '/assets/images/Mascot.png',
+            rank: 'New Learner',
+            xp: 0,
+            xpToNextLevel: 100,
+            stars: 0,
+            about: '',
+            gameProgress: {}
+          }
+        })
+      });
 
-    const newUser = {
-      id: Date.now().toString(),
-      username: formData.username,
-      email: formData.email,
-      role: formData.role as 'learner' | 'parent',
-      age: formData.role === 'learner' ? formData.age : undefined,
-      profile: {
-        avatar: '/assets/images/Mascot.png',
-        rank: 'New Learner',
-        xp: 0,
-        xpToNextLevel: 100,
-        stars: 0,
-        about: '',
-        gameProgress: {}
-      },
-      journeyLog: [],
-      hasPosted: false,
-      friends: [],
-      friendRequests: { sent: [], received: [] }
-    };
+      const result = await response.json();
 
-    setUser(newUser);
-    onSuccess?.();
-    navigate(redirectTo);
-    onClose();
-    setIsLoading(false);
+      if (response.ok && result.user) {
+        setUser(result.user);
+        onSuccess?.();
+        navigate(redirectTo);
+        onClose();
+      } else {
+        setError(result.message || 'Registration failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const premiumFeatures = [

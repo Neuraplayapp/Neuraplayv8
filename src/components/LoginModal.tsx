@@ -40,11 +40,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
       localStorage.removeItem('neuraplay_user');
 
       // Secret Admin Access
-      if (formData.email.toLowerCase() === 'smt@neuraplay.com' && formData.password === 'GH2300!') {
+      if (formData.email.toLowerCase() === 'smt@neuraplay.biz' && formData.password === 'GH2300!') {
         const adminUser = {
           id: 'admin_2025',
           username: 'NeuraPlay Admin',
-          email: 'smt@neuraplay.com',
+          email: 'smt@neuraplay.biz',
           role: 'admin' as const,
           isVerified: true,
           subscription: {
