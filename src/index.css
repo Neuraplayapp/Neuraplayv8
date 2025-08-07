@@ -4,6 +4,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Universal Theme-Aware Text Utility Classes */
+@layer utilities {
+  /* Primary text colors that automatically adapt to theme */
+  .text-theme-primary {
+    @apply text-gray-900 dark:text-white;
+  }
+  
+  .text-theme-secondary {
+    @apply text-gray-600 dark:text-white/70;
+  }
+  
+  .text-theme-muted {
+    @apply text-gray-500 dark:text-white/60;
+  }
+  
+  /* Form and label text */
+  .text-theme-label {
+    @apply text-gray-900 dark:text-white font-medium;
+  }
+  
+  /* Modal and card text */
+  .text-theme-modal {
+    @apply text-gray-800 dark:text-white;
+  }
+  
+  .text-theme-modal-secondary {
+    @apply text-gray-600 dark:text-white/80;
+  }
+  
+  /* Button text that adapts */
+  .text-theme-button {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+  
+  /* Background utilities */
+  .bg-theme-modal {
+    @apply bg-white/95 dark:bg-black/20;
+  }
+  
+  .bg-theme-input {
+    @apply bg-gray-50 dark:bg-white/10;
+  }
+  
+  .border-theme-input {
+    @apply border-gray-300 dark:border-white/20;
+  }
+}
+
 /* Custom Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 12px;

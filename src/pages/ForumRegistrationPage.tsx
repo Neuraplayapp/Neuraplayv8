@@ -149,7 +149,7 @@ const ForumRegistrationPage: React.FC = () => {
         <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
           <div className="space-y-6">
             <div>
-              <label className="block font-bold mb-4 text-white text-lg">I am a...</label>
+              <label className="block font-bold mb-4 text-lg text-theme-primary">I am a...</label>
               <div className="grid grid-cols-2 gap-4">
                 {['learner', 'parent'].map(role => (
                   <button
@@ -169,7 +169,7 @@ const ForumRegistrationPage: React.FC = () => {
 
             {formData.role === 'learner' && (
               <div>
-                <label className="block font-bold mb-4 text-white text-lg">Learner's age</label>
+                <label className="block font-bold mb-4 text-lg text-theme-primary">Learner's age</label>
                 <select
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
@@ -183,7 +183,7 @@ const ForumRegistrationPage: React.FC = () => {
             )}
 
             <div>
-              <label className="block font-bold mb-4 text-white text-lg">Username</label>
+              <label className="block font-bold mb-4 text-lg text-theme-primary">Username</label>
               <input
                 type="text"
                 placeholder="Create a unique username"
