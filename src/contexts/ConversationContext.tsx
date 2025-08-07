@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+// Configuration: Conversation memory management
+const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember  
+const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages in memory
+
 export interface Message {
   text: string;
   isUser: boolean;
@@ -110,14 +114,30 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [activeConversation]);
 
   const addMessage = (conversationId: string, message: Message) => {
-    setConversations(prev => ({
-      ...prev,
-      [conversationId]: {
-        ...prev[conversationId],
-        messages: [...(prev[conversationId]?.messages || []), message],
-        timestamp: new Date()
+    setConversations(prev => {
+      const currentMessages = prev[conversationId]?.messages || [];
+      const newMessages = [...currentMessages, message];
+      
+      // Implement sliding window: keep only last 30 messages (15 exchanges)
+      const MAX_MESSAGES = MAX_CONVERSATION_MESSAGES;
+      const trimmedMessages = newMessages.length > MAX_MESSAGES 
+        ? newMessages.slice(-MAX_MESSAGES) 
+        : newMessages;
+      
+      if (newMessages.length > MAX_MESSAGES) {
+        console.log('🧠 Conversation Context - Trimmed old messages:', 
+          `${newMessages.length} -> ${trimmedMessages.length} (sliding window)`);
       }
-    }));
+      
+      return {
+        ...prev,
+        [conversationId]: {
+          ...prev[conversationId],
+          messages: trimmedMessages,
+          timestamp: new Date()
+        }
+      };
+    });
   };
 
   const createConversation = (id: string, title: string) => {

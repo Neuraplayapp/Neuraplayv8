@@ -1,4 +1,8 @@
 // Platform-aware AI Service
+// Configuration: Conversation memory management
+const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember
+const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages (user + assistant)
+
 class AIService {
   private platform: string;
   private apiBase: string;
@@ -333,11 +337,18 @@ class AIService {
       ];
 
       // Add conversation history if available (for AI continuity)
+      // Implement sliding window: keep only last 15 exchanges (30 messages max)
       if (context?.conversationHistory && context.conversationHistory.length > 0) {
-        console.log('🧠 AI Service Debug - Including conversation history:', context.conversationHistory.length, 'messages');
+        const MAX_HISTORY_MESSAGES = MAX_CONVERSATION_MESSAGES;
+        
+        // Take only the most recent messages to prevent context pollution
+        const recentHistory = context.conversationHistory.slice(-MAX_HISTORY_MESSAGES);
+        
+        console.log('🧠 AI Service Debug - Total history available:', context.conversationHistory.length, 'messages');
+        console.log('🧠 AI Service Debug - Using recent history:', recentHistory.length, 'messages (sliding window)');
         
         // Convert conversation history to proper message format
-        const historyMessages = context.conversationHistory.map((msg: any) => ({
+        const historyMessages = recentHistory.map((msg: any) => ({
           role: msg.role === 'user' ? 'user' : 'assistant',
           content: msg.content || msg.text || '',
           ...(msg.hasImage && { 

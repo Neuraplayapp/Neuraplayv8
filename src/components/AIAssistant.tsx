@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Zap, Target, TrendingUp, Lightbulb, RotateCcw, Play, Pause, HelpCircle, Award, Clock, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff, Bell, Globe, Shield, Calculator, BookOpen, Palette, Music, Heart } from 'lucide-react';
+import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Zap, Target, TrendingUp, Lightbulb, RotateCcw, Play, Pause, HelpCircle, Award, Clock, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff, Bell, Globe, Shield, Calculator, BookOpen, Palette, Music, Heart, Trash2, RefreshCw } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useConversation } from '@elevenlabs/react';
@@ -635,6 +635,12 @@ const AIAssistant: React.FC = () => {
         });
         
         setActiveConversation(newId);
+    };
+
+    // Clear current conversation history
+    const clearCurrentConversation = () => {
+        clearConversation(activeConversation);
+        console.log('🧹 Cleared conversation history for:', activeConversation);
     };
 
     // updateConversationTitle function removed - not used in the component
@@ -3558,6 +3564,16 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        clearCurrentConversation();
+                                    }}
+                                    className="ai-fullscreen-button"
+                                    title="Clear Conversation History"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         createNewConversation();
                                     }}
                                     className="ai-fullscreen-button"
@@ -3633,6 +3649,18 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </h3>
                             </div>
                             <div className="flex items-center gap-2">
+                                {/* Clear Conversation */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        clearCurrentConversation();
+                                    }}
+                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    title="Clear Conversation History"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                                
                                 {/* Fullscreen Toggle */}
                                 <button
                                     onClick={(e) => {
