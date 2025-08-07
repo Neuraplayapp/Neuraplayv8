@@ -414,6 +414,38 @@ class AIService {
         console.log('🔍 AI Service Debug - Tool Calls Found:', firstResponse.tool_calls?.length || 0);
         console.log('🔍 AI Service Debug - Tool Results Found:', firstResponse.tool_results?.length || 0);
         
+        // 🔍 COMPREHENSIVE IMAGE DEBUGGING IN AI SERVICE
+        if (firstResponse.tool_results && firstResponse.tool_results.length > 0) {
+          console.log('🔍 AI Service - Detailed tool results analysis:', {
+            totalResults: firstResponse.tool_results.length,
+            results: firstResponse.tool_results.map((result, index) => ({
+              index,
+              success: result?.success,
+              hasData: !!result?.data,
+              hasImageUrl: !!(result?.data?.image_url),
+              imageUrlLength: result?.data?.image_url?.length || 0,
+              imageUrlType: typeof result?.data?.image_url,
+              message: result?.message,
+              dataStructure: result?.data ? Object.keys(result.data) : []
+            }))
+          });
+          
+          // Check for image results specifically
+          const imageResults = firstResponse.tool_results.filter(r => r?.data?.image_url);
+          if (imageResults.length > 0) {
+            console.log('🔍 AI Service - Found images to pass to frontend:', imageResults.length);
+            imageResults.forEach((result, index) => {
+              console.log(`🔍 AI Service - Image ${index}:`, {
+                isValidDataUrl: result.data.image_url.startsWith('data:image/'),
+                size: result.data.image_url.length,
+                preview: result.data.image_url.substring(0, 100) + '...'
+              });
+            });
+          } else {
+            console.log('🔍 AI Service - No image URLs found in tool results');
+          }
+        }
+        
         return {
           generated_text: firstResponse.generated_text || 'No response received',
           tool_calls: firstResponse.tool_calls || [],

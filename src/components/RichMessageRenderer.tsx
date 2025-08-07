@@ -20,6 +20,43 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   toolResults = [] 
 }) => {
 
+  // 🔍 COMPREHENSIVE FRONTEND IMAGE DEBUGGING
+  React.useEffect(() => {
+    if (toolResults && toolResults.length > 0) {
+      console.log('🔍 RichMessageRenderer received toolResults:', {
+        count: toolResults.length,
+        toolResults: toolResults.map((result, index) => ({
+          index,
+          success: result?.success,
+          hasData: !!result?.data,
+          hasImageUrl: !!(result?.data?.image_url),
+          imageUrlLength: result?.data?.image_url?.length || 0,
+          imageUrlType: typeof result?.data?.image_url,
+          imageUrlPreview: result?.data?.image_url?.substring(0, 100) + '...',
+          message: result?.message,
+          dataKeys: result?.data ? Object.keys(result.data) : []
+        }))
+      });
+
+      // Check if any images should be displayed
+      const imageResults = toolResults.filter(result => result?.data?.image_url);
+      if (imageResults.length > 0) {
+        console.log('🔍 Found image results that should be displayed:', imageResults.length);
+        imageResults.forEach((result, index) => {
+          console.log(`🔍 Image Result ${index}:`, {
+            imageUrl: result.data.image_url.substring(0, 100) + '...',
+            isDataUrl: result.data.image_url.startsWith('data:'),
+            isHttpUrl: result.data.image_url.startsWith('http'),
+            hasTitle: !!result.data.title,
+            hasCaption: !!result.message
+          });
+        });
+      } else {
+        console.log('🔍 No image URLs found in tool results');
+      }
+    }
+  }, [toolResults]);
+
   // Handle clickable searches
   const handleConceptClick = (concept: string) => {
     // Trigger search for the concept
@@ -34,10 +71,23 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const content: RichContent[] = [];
     let processedText = text;
     
+    console.log('🔍 parseRichContent called with:', {
+      text: text.substring(0, 100) + '...',
+      toolResultsCount: toolResults.length
+    });
+    
     // Handle tool results (server-generated diagrams and data)
     toolResults.forEach((result, index) => {
+      console.log(`🔍 Processing tool result ${index}:`, {
+        hasImageUrl: !!(result.data?.image_url),
+        hasDiagramType: !!(result.data?.diagram_type),
+        success: result.success,
+        hasData: !!result.data
+      });
+
       // Handle math diagrams (specific type)
       if (result.data?.image_url && result.data.diagram_type) {
+        console.log(`🔍 Adding math_diagram for result ${index}`);
         content.push({
           type: 'math_diagram',
           content: result.data.image_url,
@@ -50,6 +100,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       }
       // Handle general images (from generate_image tool)
       else if (result.data?.image_url) {
+        console.log(`🔍 Adding general image for result ${index}`);
         content.push({
           type: 'image',
           content: result.data.image_url,
@@ -62,12 +113,21 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       }
       // Handle other successful tool results
       else if (result.success && result.data) {
+        console.log(`🔍 Adding tool_result for result ${index}`);
         content.push({
           type: 'tool_result',
           content: result.message || 'Tool executed successfully',
           metadata: result.data
         });
+      } else {
+        console.log(`🔍 Skipping result ${index} - no matching conditions`);
       }
+    });
+    
+    console.log('🔍 parseRichContent created content items:', {
+      totalItems: content.length,
+      itemTypes: content.map(item => item.type),
+      hasImages: content.some(item => item.type === 'image' || item.type === 'math_diagram')
     });
     
     // Parse IMAGE_GENERATED format

@@ -392,14 +392,29 @@ const { handleImageGeneration } = require('./imageGeneration.cjs');
 
 // Image generation tool handler (for agentic system)
 async function handleImageGenerationTool(params) {
+  console.log('🔍 IMAGE GENERATION TOOL EXECUTION STARTED');
+  console.log('🔍 Input params:', params);
+  console.log('🔍 Environment check - Neuraplay API key exists:', !!process.env.Neuraplay);
+  
   try {
     const { prompt, style = 'child-friendly', size = '512x512' } = params;
     
     console.log('🎨 Agentic image generation request:', { prompt, style, size });
+    console.log('🔍 About to call handleImageGeneration...');
     
     const imageResult = await handleImageGeneration({ prompt, size }, process.env.Neuraplay);
     
-    return {
+    console.log('🔍 handleImageGeneration returned:', {
+      success: !!imageResult,
+      hasImageUrl: !!(imageResult?.image_url),
+      imageUrlType: typeof imageResult?.image_url,
+      imageUrlLength: imageResult?.image_url?.length || 0,
+      imageUrlStartsWith: imageResult?.image_url?.substring(0, 30) + '...',
+      hasContentType: !!(imageResult?.contentType),
+      contentType: imageResult?.contentType
+    });
+    
+    const finalResult = {
       success: true,
       message: `🎨 I've created a beautiful ${style} image for you: "${prompt}"`,
       data: { 
@@ -409,12 +424,34 @@ async function handleImageGenerationTool(params) {
         size
       }
     };
+    
+    console.log('🔍 Final tool result structure:', {
+      success: finalResult.success,
+      messageLength: finalResult.message?.length || 0,
+      hasData: !!finalResult.data,
+      dataKeys: finalResult.data ? Object.keys(finalResult.data) : [],
+      dataImageUrlExists: !!(finalResult.data?.image_url),
+      dataImageUrlLength: finalResult.data?.image_url?.length || 0
+    });
+    
+    console.log('🔍 IMAGE GENERATION TOOL EXECUTION COMPLETED SUCCESSFULLY');
+    return finalResult;
+    
   } catch (error) {
-    console.error('Agentic image generation failed:', error);
-    return {
+    console.error('🔍 IMAGE GENERATION TOOL EXECUTION FAILED');
+    console.error('🔍 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    const errorResult = {
       success: false,
       message: `Sorry, I couldn't generate that image: ${error.message}`
     };
+    
+    console.log('🔍 Error result structure:', errorResult);
+    return errorResult;
   }
 }
 

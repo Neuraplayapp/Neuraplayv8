@@ -348,13 +348,33 @@ router.post('/api', async (req, res) => {
       // Send FULL tool results to client (no validation needed, already structured)
       console.log('🔧 Sending FULL tool results to client (with image data)');
       
+      // 🔍 COMPREHENSIVE IMAGE DEBUGGING
+      toolResultsForClient.forEach((result, index) => {
+        console.log(`🔍 DEBUG Tool Result ${index}:`, {
+          success: result.success,
+          hasData: !!result.data,
+          hasImageUrl: !!(result.data?.image_url),
+          imageUrlLength: result.data?.image_url?.length || 0,
+          imageUrlPreview: result.data?.image_url?.substring(0, 50) + '...',
+          message: result.message
+        });
+      });
+      
       // Return in the expected format with BOTH server results AND client-side tools to execute
-      res.json([{
+      const responseData = [{
         generated_text: finalData.choices[0].message.content,
         tool_calls: clientSideTools, // Only client-side tools for client execution
         tool_results: toolResultsForClient,    // FULL server-executed tool results (with image data)
         server_tool_calls: serverSideTools
-      }]);
+      }];
+      
+      console.log('🔍 FINAL RESPONSE DEBUG:', {
+        toolResultsCount: toolResultsForClient.length,
+        hasImageResults: toolResultsForClient.some(r => r.data?.image_url),
+        responseStructure: Object.keys(responseData[0])
+      });
+      
+      res.json(responseData);
     } else {
       // No tool calls, return direct response
       console.log('No tool calls, returning direct response');
