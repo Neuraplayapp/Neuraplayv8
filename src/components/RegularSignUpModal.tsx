@@ -153,14 +153,14 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
               className="w-16 h-16 object-contain"
             />
           </div>
-          <h2 className="text-xl font-bold text-white mb-1">Join Our Community</h2>
-          <p className="text-white/70 text-sm">Create your free account and start your learning journey</p>
+                      <h2 className="text-xl font-bold text-theme-primary mb-1">Join Our Community</h2>
+            <p className="text-theme-secondary text-sm">Create your free account and start your learning journey</p>
         </div>
 
         {/* Sign Up Form */}
         <div className="space-y-3">
           <div>
-            <label className="block font-bold mb-2 text-white text-base">I am a...</label>
+            <label className="block font-bold mb-2 text-theme-primary text-base">I am a...</label>
             <div className="grid grid-cols-2 gap-2">
               {['learner', 'parent'].map(role => (
                 <button
@@ -181,7 +181,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
 
           {formData.role === 'learner' && (
             <div>
-              <label className="block font-bold mb-1 text-white text-base">Learner's age</label>
+              <label className="block font-bold mb-1 text-theme-primary text-base">Learner's age</label>
               <select
                 value={formData.age}
                 onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
@@ -195,7 +195,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
           )}
 
           <div>
-            <label className="block font-bold mb-1 text-white text-base flex items-center gap-2">
+            <label className="block font-bold mb-1 text-theme-primary text-base flex items-center gap-2">
               <User className="w-4 h-4" />
               Username
             </label>
@@ -210,7 +210,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-bold mb-1 text-white text-base flex items-center gap-2">
+            <label className="block font-bold mb-1 text-theme-primary text-base flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Email Address
             </label>
@@ -225,7 +225,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
           </div>
 
           <div>
-            <h4 className="font-bold mb-3 text-white text-base flex items-center gap-2">
+            <h4 className="font-bold mb-3 text-theme-primary text-base flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Choose your hero avatar
             </h4>
@@ -297,7 +297,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
 
         {/* Additional Info */}
         <div className="text-center">
-          <p className="text-white/60 text-xs">
+          <p className="text-theme-secondary text-xs">
             Already have an account?{' '}
             <button
               onClick={() => {

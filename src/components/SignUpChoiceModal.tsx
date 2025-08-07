@@ -161,9 +161,9 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
             <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-lg p-3 border border-emerald-400/30 mb-4">
               <div className="flex items-center gap-2">
                 <Gift className="w-4 h-4 text-emerald-400" />
-                <span className="text-white font-semibold text-sm">7-Day Free Trial + 20% Discount</span>
+                <span className="text-theme-primary font-semibold text-sm">7-Day Free Trial + 20% Discount</span>
               </div>
-              <p className="text-white/80 text-xs mt-1">Best value - Save 20% with yearly plan</p>
+              <p className="text-theme-secondary text-xs mt-1">Best value - Save 20% with yearly plan</p>
             </div>
 
             <button
@@ -181,27 +181,27 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
           <div className="flex items-center gap-3 mb-4">
             <Users className="w-8 h-8 text-blue-400" />
             <div>
-              <h3 className="text-xl font-bold text-white">Community Access</h3>
-              <p className="text-white/70 text-sm">Join our community and start your learning journey</p>
+                              <h3 className="text-xl font-bold text-theme-primary">Community Access</h3>
+                <p className="text-theme-secondary text-sm">Join our community and start your learning journey</p>
             </div>
           </div>
           
           <div className="space-y-2 mb-6">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-blue-400" />
-              <span className="text-white text-sm">Access to community forum</span>
+              <span className="text-theme-primary text-sm">Access to community forum</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-blue-400" />
-              <span className="text-white text-sm">Basic learning games</span>
+              <span className="text-theme-primary text-sm">Basic learning games</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-blue-400" />
-              <span className="text-white text-sm">AI avatar generation</span>
+              <span className="text-theme-primary text-sm">AI avatar generation</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-blue-400" />
-              <span className="text-white text-sm">Free forever</span>
+              <span className="text-theme-primary text-sm">Free forever</span>
             </div>
           </div>
 
@@ -216,7 +216,7 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
 
         {/* Additional Info */}
         <div className="text-center">
-          <p className="text-white/60 text-sm">
+          <p className="text-theme-secondary text-sm">
             Already have an account?{' '}
             <button
               onClick={() => {

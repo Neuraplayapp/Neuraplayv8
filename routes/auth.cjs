@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { queryBuilder, pool } = require('../services/database.cjs');
+const databaseService = require('../services/database.cjs');
 const router = express.Router();
 
 // Security configuration
@@ -46,7 +46,15 @@ router.post('/login', async (req, res) => {
     }
     
     // Find user by email in PostgreSQL
-    const users = await queryBuilder()('users')
+    const queryBuilder = databaseService.queryBuilder();
+    if (!queryBuilder) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database not available' 
+      });
+    }
+    
+    const users = await queryBuilder('users')
       .where('email', email.toLowerCase())
       .select('*')
       .first();
@@ -227,7 +235,15 @@ router.post('/register', async (req, res) => {
     }
     
     // Check if user already exists in PostgreSQL
-    const existingUser = await queryBuilder()('users')
+    const queryBuilder = databaseService.queryBuilder();
+    if (!queryBuilder) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database not available' 
+      });
+    }
+    
+    const existingUser = await queryBuilder('users')
       .where('email', userData.email.toLowerCase())
       .orWhere('username', userData.username)
       .first();
@@ -255,7 +271,7 @@ router.post('/register', async (req, res) => {
     };
     
     // Insert user into PostgreSQL
-    const [newUser] = await queryBuilder()('users')
+    const [newUser] = await queryBuilder('users')
       .insert({
         id: userId,
         username: userData.username,

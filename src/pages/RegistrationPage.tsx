@@ -227,7 +227,7 @@ const RegistrationPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white py-24 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 py-24 px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-8">
@@ -237,7 +237,7 @@ const RegistrationPage: React.FC = () => {
               className="w-32 h-32 object-contain"
             />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Join NeuraPlay Premium</h1>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-theme-primary mb-4">Join NeuraPlay Premium</h1>
           <p className="text-xl text-violet-300">Unlock the full potential of cognitive development</p>
         </div>
 
@@ -247,15 +247,15 @@ const RegistrationPage: React.FC = () => {
             <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 lg:p-10 shadow-xl min-h-[520px] flex flex-col gap-6">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
-                  <Check className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Step 1: Your Information</h2>
-                <p className="text-gray-300">Let's get to know you better</p>
+                                  <Check className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-theme-primary mb-2">Step 1: Your Information</h2>
+              <p className="text-theme-secondary">Let's get to know you better</p>
               </div>
 
               <div className="space-y-8">
                 <div>
-                  <label className="block font-bold mb-4 text-white text-lg">I am a...</label>
+                  <label className="block font-bold mb-4 text-theme-primary text-lg">I am a...</label>
                   <div className="grid grid-cols-2 gap-6">
                     {['learner', 'parent'].map(role => (
                       <button
@@ -275,7 +275,7 @@ const RegistrationPage: React.FC = () => {
 
                 {formData.role === 'learner' && (
                   <div>
-                    <label className="block font-bold mb-4 text-white text-lg">Learner's age</label>
+                    <label className="block font-bold mb-4 text-theme-primary text-lg">Learner's age</label>
                     <select
                       value={formData.age}
                       onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
@@ -289,7 +289,7 @@ const RegistrationPage: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block font-bold mb-4 text-white text-lg">Username</label>
+                  <label className="block font-bold mb-4 text-theme-primary text-lg">Username</label>
                   <input
                     type="text"
                     placeholder="Create a unique username"
@@ -300,7 +300,7 @@ const RegistrationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-4 text-white text-lg">Email</label>
+                  <label className="block font-bold mb-4 text-theme-primary text-lg">Email</label>
                   <input
                     type="email"
                     placeholder="Enter your email address"
@@ -346,15 +346,15 @@ const RegistrationPage: React.FC = () => {
             <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 lg:p-10 shadow-xl min-h-[520px] flex flex-col gap-6">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
-                  <Star className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Step 2: Create Your Avatar</h2>
-                <p className="text-gray-300">Design your unique hero character</p>
+                                  <Star className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-theme-primary mb-2">Step 2: Create Your Avatar</h2>
+              <p className="text-theme-secondary">Design your unique hero character</p>
               </div>
 
               <div className="space-y-8">
                 <div>
-                  <h4 className="font-bold mb-4 text-white text-lg">Choose your hero avatar</h4>
+                  <h4 className="font-bold mb-4 text-theme-primary text-lg">Choose your hero avatar</h4>
                   <div className="flex gap-3 mb-4">
                     <input
                       type="text"
@@ -440,8 +440,8 @@ const RegistrationPage: React.FC = () => {
               <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center">
                 <Star className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Premium Features</h2>
-              <p className="text-gray-300">Unlock the full NeuraPlay experience</p>
+                              <h2 className="text-2xl font-bold text-theme-primary mb-2">Premium Features</h2>
+                <p className="text-theme-secondary">Unlock the full NeuraPlay experience</p>
             </div>
 
             <div className="space-y-4 mb-8">
@@ -449,37 +449,37 @@ const RegistrationPage: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">Unlimited AI Learning & Games</span>
+                <span className="text-theme-primary">Unlimited AI Learning & Games</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">AI-Agency with Personally Tailored Learning</span>
+                <span className="text-theme-primary">AI-Agency with Personally Tailored Learning</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">Advanced Progress Analytics</span>
+                <span className="text-theme-primary">Advanced Progress Analytics</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">Personalized Learning Paths</span>
+                <span className="text-theme-primary">Personalized Learning Paths</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">Priority Customer Support</span>
+                <span className="text-theme-primary">Priority Customer Support</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
                   <Check className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white">Exclusive Educational Content</span>
+                <span className="text-theme-primary">Exclusive Educational Content</span>
               </div>
             </div>
 
@@ -539,8 +539,8 @@ const RegistrationPage: React.FC = () => {
               <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
                 <Star className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Premium Plus</h2>
-              <p className="text-gray-300">Unlimited AI Access</p>
+                              <h2 className="text-2xl font-bold text-theme-primary mb-2">Premium Plus</h2>
+                <p className="text-theme-secondary">Unlimited AI Access</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -582,37 +582,37 @@ const RegistrationPage: React.FC = () => {
                 <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-white text-sm">Unlimited AI Access</span>
+                <span className="text-theme-primary text-sm">Unlimited AI Access</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-white text-sm">No Usage Limits</span>
+                <span className="text-theme-primary text-sm">No Usage Limits</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-white text-sm">All Premium Features</span>
+                <span className="text-theme-primary text-sm">All Premium Features</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-white text-sm">Priority Support</span>
+                <span className="text-theme-primary text-sm">Priority Support</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-white text-sm">Advanced Analytics</span>
+                <span className="text-theme-primary text-sm">Advanced Analytics</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-white text-sm">Exclusive Content</span>
+                <span className="text-theme-primary text-sm">Exclusive Content</span>
               </div>
             </div>
           </div>
@@ -623,7 +623,7 @@ const RegistrationPage: React.FC = () => {
           <div className="mt-8 text-center">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-600/20 to-amber-600/20 border border-violet-400/30 rounded-xl px-6 py-4 backdrop-blur-md">
               <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-white font-medium">
+              <span className="text-theme-primary font-medium">
                 {selectedSubscription === 'premium' ? 'Premium' : 'Premium Plus'} {selectedPlan} plan selected
               </span>
               <div className="text-gray-300 text-sm ml-4">
@@ -638,7 +638,7 @@ const RegistrationPage: React.FC = () => {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
             <div className="bg-black/90 border border-white/10 rounded-2xl p-8 max-w-4xl max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-white">Terms of Service</h3>
+                <h3 className="text-2xl font-bold text-theme-primary">Terms of Service</h3>
                 <button
                   onClick={() => setShowLicense(false)}
                   className="text-gray-400 hover:text-white transition-colors"

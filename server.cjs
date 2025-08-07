@@ -2056,6 +2056,12 @@ async function handleTTSRequest(clientWs, text, voiceId = '8LVfoRdkh4zgjr8v5ObE'
   }
 }
 
+// Initialize database
+initializeDatabase().catch(err => {
+  console.error('❌ Database initialization failed:', err);
+  console.log('⚠️ Continuing without database - using in-memory fallback');
+});
+
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0'; // CRITICAL: Bind to 0.0.0.0 for Render deployment
 

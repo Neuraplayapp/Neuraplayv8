@@ -292,7 +292,7 @@ const ForumRegistrationPage: React.FC = () => {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <Crown className="w-8 h-8 text-yellow-400" />
-              <h3 className="text-2xl font-bold text-white">Unlock Premium Features</h3>
+                              <h3 className="text-2xl font-bold text-theme-primary">Unlock Premium Features</h3>
             </div>
             <p className="text-violet-300 text-lg">Start your 7-day free trial and experience the full NeuraPlay potential</p>
           </div>
@@ -302,14 +302,14 @@ const ForumRegistrationPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Brain className="w-6 h-6 text-purple-400" />
                 <div>
-                  <div className="text-white font-semibold">AI-Powered Learning</div>
+                  <div className="text-theme-primary font-semibold">AI-Powered Learning</div>
                   <div className="text-violet-300 text-sm">Personalized cognitive development plans</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Trophy className="w-6 h-6 text-yellow-400" />
                 <div>
-                  <div className="text-white font-semibold">Advanced Games</div>
+                  <div className="text-theme-primary font-semibold">Advanced Games</div>
                   <div className="text-violet-300 text-sm">Access to premium cognitive training games</div>
                 </div>
               </div>
@@ -318,14 +318,14 @@ const ForumRegistrationPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Zap className="w-6 h-6 text-blue-400" />
                 <div>
-                  <div className="text-white font-semibold">Real-time Analytics</div>
+                  <div className="text-theme-primary font-semibold">Real-time Analytics</div>
                   <div className="text-violet-300 text-sm">Detailed progress tracking and insights</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Star className="w-6 h-6 text-pink-400" />
                 <div>
-                  <div className="text-white font-semibold">Expert Support</div>
+                  <div className="text-theme-primary font-semibold">Expert Support</div>
                   <div className="text-violet-300 text-sm">Direct access to child development experts</div>
                 </div>
               </div>
@@ -335,9 +335,9 @@ const ForumRegistrationPage: React.FC = () => {
           <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-400/30 mb-6">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Gift className="w-5 h-5 text-yellow-400" />
-              <span className="text-white font-semibold">7-Day Free Trial</span>
+                              <span className="text-theme-primary font-semibold">7-Day Free Trial</span>
             </div>
-            <p className="text-white/80 text-center text-sm">Start free, cancel anytime. No commitment required.</p>
+                          <p className="text-theme-secondary text-center text-sm">Start free, cancel anytime. No commitment required.</p>
           </div>
 
           <div className="text-center">
