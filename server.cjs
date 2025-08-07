@@ -3,232 +3,78 @@ const path = require('path');
 const WebSocket = require('ws');
 const http = require('http');
 
-// For Node.js versions without native fetch
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+// Import modular components
+const authRoutes = require('./routes/auth.cjs');
+const apiRoutes = require('./routes/api.cjs');
+const { initializeDatabase, handleDatabaseRequest } = require('./services/database.cjs');
+const { handleWebSocketConnections } = require('./services/websockets.cjs');
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// In-memory user storage (replace with database in production)
-const users = new Map();
-const verificationCodes = new Map();
+// Use modular routes
+app.use('/api/auth', authRoutes.router);
+app.use('/api', apiRoutes.router);
 
-// Helper function to generate verification code
-const generateVerificationCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Authentication Routes
-app.post('/api/auth/login', async (req, res) => {
+// Database API endpoint
+app.post('/api/database', handleDatabaseRequest);
+app.post('/api/assemblyai-webhook', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    console.log('📥 AssemblyAI webhook received:', req.body.transcript_id, req.body.status);
     
-    if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email and password are required' 
-      });
+    const { transcript_id, status, text, error } = req.body;
+    
+    if (!transcript_id) {
+      return res.status(400).json({ error: 'Missing transcript_id' });
     }
     
-    // In production, hash passwords and use a database
-    const user = Array.from(users.values()).find(u => u.email === email.toLowerCase());
+    // Find the pending transcription request
+    const pendingRequest = pendingTranscriptions.get(transcript_id);
     
-    if (!user || user.password !== password) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid email or password' 
-      });
+    if (!pendingRequest) {
+      console.log('⚠️ Received webhook for unknown transcript_id:', transcript_id);
+      return res.status(404).json({ error: 'Transcript not found' });
     }
     
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Remove from pending requests
+    pendingTranscriptions.delete(transcript_id);
     
-    res.json({ 
-      success: true, 
-      user: userWithoutPassword,
-      message: 'Login successful' 
-    });
+    if (status === 'completed') {
+      console.log('✅ Transcription completed:', transcript_id);
+      
+      // Send response to the original client
+      pendingRequest.res.json({
+        text: text || '',
+        language_code: req.body.language_code || 'auto',
+        transcript_id
+      });
+      
+    } else if (status === 'error') {
+      console.error('❌ Transcription failed:', error);
+      
+      pendingRequest.res.status(500).json({ 
+        error: `Transcription failed: ${error}` 
+      });
+      
+    } else {
+      console.log('🔄 Transcription status:', status);
+      // For 'processing' or 'queued' status, we just acknowledge but don't respond yet
+    }
+    
+    // Always acknowledge the webhook
+    res.status(200).json({ received: true });
     
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
-    });
+    console.error('❌ Webhook processing error:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 
-app.post('/api/auth/send-verification', async (req, res) => {
-  try {
-    const { userId, email, method } = req.body;
-    
-    if (!userId || !email || !method) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User ID, email, and method are required' 
-      });
-    }
-    
-    const user = users.get(userId);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-    }
-    
-    const verificationCode = generateVerificationCode();
-    const token = `${userId}_${Date.now()}`;
-    
-    // Store verification code (expires in 10 minutes)
-    verificationCodes.set(token, {
-      code: verificationCode,
-      userId,
-      email,
-      method,
-      expiresAt: Date.now() + (10 * 60 * 1000)
-    });
-    
-    // In production, send actual email/SMS
-    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
-    
-    res.json({ 
-      success: true, 
-      token,
-      message: `Verification code sent to your ${method}`,
-      // For development only - remove in production
-      devCode: verificationCode
-    });
-    
-  } catch (error) {
-    console.error('Send verification error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
-    });
-  }
-});
-
-app.post('/api/auth/verify', async (req, res) => {
-  try {
-    const { userId, token, code } = req.body;
-    
-    if (!userId || !token || !code) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User ID, token, and code are required' 
-      });
-    }
-    
-    const verification = verificationCodes.get(token);
-    
-    if (!verification || verification.userId !== userId) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Invalid verification token' 
-      });
-    }
-    
-    if (Date.now() > verification.expiresAt) {
-      verificationCodes.delete(token);
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Verification code has expired' 
-      });
-    }
-    
-    if (verification.code !== code) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid verification code' 
-      });
-    }
-    
-    // Mark user as verified
-    const user = users.get(userId);
-    if (user) {
-      user.isVerified = true;
-      user.verifiedAt = new Date().toISOString();
-      user.verificationMethod = verification.method;
-      users.set(userId, user);
-    }
-    
-    // Clean up verification code
-    verificationCodes.delete(token);
-    
-    res.json({ 
-      success: true, 
-      message: 'Email verified successfully!' 
-    });
-    
-  } catch (error) {
-    console.error('Verification error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
-    });
-  }
-});
-
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const userData = req.body;
-    
-    if (!userData.email || !userData.username) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email and username are required' 
-      });
-    }
-    
-    // Check if user already exists
-    const existingUser = Array.from(users.values()).find(
-      u => u.email === userData.email.toLowerCase() || u.username === userData.username
-    );
-    
-    if (existingUser) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'User with this email or username already exists' 
-      });
-    }
-    
-    // Store user (in production, hash password and use database)
-    const userId = userData.id || Date.now().toString();
-    const user = {
-      ...userData,
-      id: userId,
-      email: userData.email.toLowerCase(),
-      password: userData.password || 'temp123', // In production, hash this
-      createdAt: new Date().toISOString()
-    };
-    
-    users.set(userId, user);
-    
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
-    
-    res.json({ 
-      success: true, 
-      user: userWithoutPassword,
-      message: 'User registered successfully' 
-    });
-    
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
-    });
-  }
-});
-
-// API Routes
 app.post('/api/assemblyai-transcribe', async (req, res) => {
   try {
     console.log('🎙️ Transcription request received');
@@ -238,7 +84,13 @@ app.post('/api/assemblyai-transcribe', async (req, res) => {
       return res.status(400).json({ error: 'No audio data provided' });
     }
 
-    // Forward to AssemblyAI
+    // Generate webhook URL - in production, this would be your actual domain
+    const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const webhookUrl = `${baseUrl}/api/assemblyai-webhook`;
+    
+    console.log('📡 Using webhook URL:', webhookUrl);
+
+    // Forward to AssemblyAI with webhook URL
     const response = await fetch('https://api.assemblyai.com/v2/transcript', {
       method: 'POST',
       headers: {
@@ -251,7 +103,8 @@ app.post('/api/assemblyai-transcribe', async (req, res) => {
         language_detection: language_code === 'auto',
         speech_model: speech_model,
         punctuate: true,
-        format_text: true
+        format_text: true,
+        webhook_url: webhookUrl
       })
     });
 
@@ -262,29 +115,33 @@ app.post('/api/assemblyai-transcribe', async (req, res) => {
     }
 
     const result = await response.json();
-    
-    // Poll for completion
     const transcriptId = result.id;
-    let transcriptResult;
     
-    do {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-        headers: {
-          'Authorization': process.env.VITE_ASSEMBLYAI_API_KEY,
-        }
-      });
-      transcriptResult = await pollResponse.json();
-    } while (transcriptResult.status === 'processing' || transcriptResult.status === 'queued');
-
-    if (transcriptResult.status === 'error') {
-      return res.status(500).json({ error: `Transcription failed: ${transcriptResult.error}` });
-    }
-
-    res.json({
-      text: transcriptResult.text || '',
-      language_code: transcriptResult.language_code || language_code
+    console.log('📋 Transcription submitted:', transcriptId, '- waiting for webhook callback');
+    
+    // Store the response object for later use when webhook is called
+    pendingTranscriptions.set(transcriptId, {
+      res: res,
+      timestamp: Date.now(),
+      language_code: language_code
     });
+
+    // Set a timeout to cleanup stale requests (5 minutes)
+    setTimeout(() => {
+      const pendingRequest = pendingTranscriptions.get(transcriptId);
+      if (pendingRequest) {
+        console.log('⏰ Transcription timeout:', transcriptId);
+        pendingTranscriptions.delete(transcriptId);
+        
+        if (!pendingRequest.res.headersSent) {
+          pendingRequest.res.status(408).json({ 
+            error: 'Transcription timeout - please try again' 
+          });
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    // Don't send response here - it will be sent by the webhook handler
 
   } catch (error) {
     console.error('Transcription error:', error);
@@ -1240,7 +1097,7 @@ async function handleImageGeneration(input_data, token) {
     console.log('Image generation prompt:', enhancedPrompt);
     console.log('Generating image with FLUX model via Fireworks AI...');
 
-    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image', {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1354,22 +1211,35 @@ app.post('/api/api', async (req, res) => {
       // Execute all tool calls
       for (const toolCall of toolCalls) {
         const result = await executeTool(toolCall);
-        const resultJson = JSON.stringify(result);
+        let contentForAI = JSON.stringify(result);
+        
+        // Check if the result is from an image/diagram tool that produces large data
+        if (result.success && result.data?.image_url) {
+          console.log(`🔧 Summarizing large tool result for ${toolCall.function.name}`);
+          const summary = {
+            success: true,
+            message: `Tool ${toolCall.function.name} executed successfully.`,
+            // Exclude the large data, the client already has it through toolResults
+            // The AI just needs to know it worked and can reference the image
+            data: {
+              image_was_generated: true,
+              title: result.data.title || 'Generated content',
+              diagram_type: result.data.diagram_type || toolCall.function.name.replace('_', ' '),
+              size: result.data.size || 'standard',
+              style: result.data.style || 'default'
+            }
+          };
+          contentForAI = JSON.stringify(summary);
+        }
         
         // Debug logging for tool results
-        console.log(`🔧 Tool ${toolCall.function.name} result size: ${resultJson.length} characters`);
-        if (resultJson.length > 1000) {
-          console.log(`🔧 Large tool result detected for ${toolCall.function.name}`);
-          if (result.data?.image_url) {
-            console.log(`🔧 Image URL length: ${result.data.image_url.length} characters`);
-          }
-        }
+        console.log(`🔧 Tool ${toolCall.function.name} result size: ${contentForAI.length} characters`);
         
         toolResults.push({
           tool_call_id: toolCall.id,
           role: 'tool',
           name: toolCall.function.name,
-          content: resultJson
+          content: contentForAI
         });
       }
 
