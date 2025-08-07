@@ -208,5 +208,8 @@ class IntelligentSearchDetector {
   }
 }
 
-export const intelligentSearchDetector = new IntelligentSearchDetector();
+// Export the class
 export { IntelligentSearchDetector };
+
+// Export a singleton instance
+export const intelligentSearchDetector = new IntelligentSearchDetector();
