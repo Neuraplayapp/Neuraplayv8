@@ -86,7 +86,7 @@ class AIService {
 
   // Generic OpenAI API
   async openAICall(message: string, model: string = 'gpt-3.5-turbo') {
-    return this.apiCall('/api/api', {
+    return this.apiCall('/api', {
       method: 'POST',
       body: JSON.stringify({ message, model }),
     });
@@ -155,8 +155,8 @@ class AIService {
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
 
-    // Use correct endpoint - server has /api/api route
-    const apiEndpoint = '/api/api';
+    // Use correct endpoint - server has /api/api route  
+    const apiEndpoint = '/api';
     
     console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
@@ -266,7 +266,7 @@ class AIService {
     const prompt = this.extractImagePrompt(text);
     
     // Use the correct API endpoint for each platform
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -519,7 +519,7 @@ Current context: ${JSON.stringify(context || {})}`;
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = '/api/api';
+    const apiEndpoint = '/api';
     
     try {
       const response = await this.apiCall(apiEndpoint, {

@@ -392,7 +392,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       
       // Enhanced lists with theme-aware bullets and mobile-friendly spacing
       .replace(/^[\s]*-[\s]+(.*$)/gim, 
-        `<li class="ml-4 md:ml-8 mb-2 md:mb-3 ${themeClasses.listText} flex items-start"><span class="${themeClasses.listBullet} mr-2 md:mr-3 mt-1 text-base md:text-lg">▸</span><span class="flex-1 break-words">$1</span></li>`)
+        `<li class="ml-4 md:ml-8 mb-2 md:mb-3 ${themeClasses.listText} flex items-start"><span class="${themeClasses.listBullet} mr-2 md:mr-3 mt-1 text-base md:text-lg">●</span><span class="flex-1 break-words">$1</span></li>`)
       
       // Special formatting for weather conditions - theme-aware
       .replace(/\b(Clear|Sunny|Cloudy|Rainy|Stormy|Snowy)\b/g,
