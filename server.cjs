@@ -1024,40 +1024,71 @@ async function handleImageGeneration(input_data, token) {
     console.log('Image generation prompt:', enhancedPrompt);
     console.log('Generating image with FLUX model via Fireworks AI...');
 
-    const response = await fetch('https://api.fireworks.ai/inference/v1/text_to_image', {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'image/jpeg',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        model: 'accounts/fireworks/models/flux-1-schnell-fp8',
-        prompt: enhancedPrompt,
-        n: 1,
-        size: "1024x1024"
+        prompt: enhancedPrompt
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Fireworks image generation failed:', errorText);
-      throw new Error(`Image generation failed: ${errorText}`);
+      console.error('Response status:', response.status);
+      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+      throw new Error(`Image generation failed: ${response.status} - ${errorText}`);
     }
 
-    // Get image data as buffer
-    const imageBuffer = await response.buffer();
+    // Parse JSON response from Fireworks
+    const responseData = await response.json();
+    console.log('✅ Fireworks image generation response:', responseData);
     
-    // Convert to base64 for consistent API response
-    const base64Image = imageBuffer.toString('base64');
-    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+    // Extract image URL from response
+    let imageUrl = null;
+    let base64Image = null;
+    
+    if (responseData.image) {
+      // If response contains direct image data
+      imageUrl = responseData.image;
+    } else if (responseData.images && responseData.images[0]) {
+      // If response contains images array
+      imageUrl = responseData.images[0].url || responseData.images[0];
+    } else if (responseData.url) {
+      // If response contains url field
+      imageUrl = responseData.url;
+    } else {
+      throw new Error('No image URL found in Fireworks response');
+    }
+    
+    // If we got a data URL, extract base64
+    if (imageUrl && imageUrl.startsWith('data:image/')) {
+      base64Image = imageUrl.split(',')[1];
+    } else if (imageUrl) {
+      // If we got a URL, fetch the image and convert to base64
+      try {
+        const imageResponse = await fetch(imageUrl);
+        const imageBuffer = await imageResponse.buffer();
+        base64Image = imageBuffer.toString('base64');
+        imageUrl = `data:image/jpeg;base64,${base64Image}`;
+      } catch (fetchError) {
+        console.warn('Could not fetch image from URL, using URL directly:', fetchError);
+        // Use the URL as-is if we can't fetch it
+      }
+    }
+    
+    const dataUrl = imageUrl;
     
     console.log('✅ Image generation successful');
     
     return {
       image_url: dataUrl,
       contentType: 'image/jpeg',
-      data: base64Image
+      data: base64Image || (dataUrl ? dataUrl.split(',')[1] : null)
     };
 
   } catch (error) {
