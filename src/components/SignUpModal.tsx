@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import ModalReveal from './ModalReveal';
 import { UserPlus, User, Mail, Lock, Eye, EyeOff, Crown, Star, Zap, Brain, Trophy, Gift } from 'lucide-react';
@@ -20,6 +21,7 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
   onShowLogin
 }) => {
   const { setUser } = useUser();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     role: '',
@@ -126,23 +128,33 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
               className="w-16 h-16 object-contain"
             />
           </div>
-          <h2 className="text-xl font-bold text-white mb-1">Unlock Your Child's Potential</h2>
-          <p className="text-white/70 text-sm">Join thousands of families already transforming learning</p>
+          <h2 className={`text-xl font-bold mb-1 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Unlock Your Child's Potential</h2>
+          <p className={`text-sm ${
+            isDarkMode ? 'text-white/70' : 'text-gray-600'
+          }`}>Join thousands of families already transforming learning</p>
         </div>
 
         {/* Premium Features Preview */}
         <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl p-3 border border-violet-400/30">
           <div className="flex items-center gap-2 mb-2">
             <Crown className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-semibold text-sm">Premium Features Included</span>
+            <span className={`font-semibold text-sm ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>Premium Features Included</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {premiumFeatures.map((feature, index) => (
               <div key={index} className="flex items-center gap-2 text-xs">
                 {feature.icon}
                 <div>
-                  <div className="text-white font-medium text-xs">{feature.title}</div>
-                  <div className="text-white/60 text-xs leading-tight">{feature.description}</div>
+                  <div className={`font-medium text-xs ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>{feature.title}</div>
+                  <div className={`text-xs leading-tight ${
+                    isDarkMode ? 'text-white/60' : 'text-gray-600'
+                  }`}>{feature.description}</div>
                 </div>
               </div>
             ))}
@@ -152,7 +164,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
         {/* Sign Up Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block font-bold mb-2 text-white text-base">I am a...</label>
+            <label className={`block font-bold mb-2 text-base ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>I am a...</label>
             <div className="grid grid-cols-2 gap-2">
               {['learner', 'parent'].map(role => (
                 <button
@@ -162,7 +176,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   className={`p-2 rounded-lg font-semibold text-sm transition-all border-2 ${
                     formData.role === role
                       ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-600 shadow-lg'
-                      : 'bg-white/10 text-gray-300 border-white/20 hover:border-violet-400 hover:bg-white/20'
+                      : isDarkMode 
+                        ? 'bg-white/10 text-gray-300 border-white/20 hover:border-violet-400 hover:bg-white/20'
+                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:border-violet-400 hover:bg-gray-200'
                   }`}
                 >
                   {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -173,21 +189,29 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
 
           {formData.role === 'learner' && (
             <div>
-              <label className="block font-bold mb-1 text-white text-base">Learner's age</label>
+              <label className={`block font-bold mb-1 text-base ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Learner's age</label>
               <select
                 value={formData.age}
                 onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                className="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all text-sm"
+                className={`w-full p-2 rounded-lg border focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all text-sm ${
+                  isDarkMode 
+                    ? 'bg-white/10 border-white/20 text-white' 
+                    : 'bg-gray-50 border-gray-300 text-gray-900'
+                }`}
               >
-                <option value={4} className="bg-slate-800">3-5 years</option>
-                <option value={7} className="bg-slate-800">6-8 years</option>
-                <option value={10} className="bg-slate-800">9-12 years</option>
+                <option value={4} className={isDarkMode ? "bg-slate-800" : "bg-white"}>3-5 years</option>
+                <option value={7} className={isDarkMode ? "bg-slate-800" : "bg-white"}>6-8 years</option>
+                <option value={10} className={isDarkMode ? "bg-slate-800" : "bg-white"}>9-12 years</option>
               </select>
             </div>
           )}
 
           <div>
-            <label className="block font-bold mb-1 text-white text-base flex items-center gap-2">
+            <label className={`block font-bold mb-1 text-base flex items-center gap-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               <User className="w-4 h-4" />
               Username
             </label>
@@ -196,13 +220,19 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
               placeholder="Create a unique username"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all text-sm"
+              className={`w-full p-2 rounded-lg border focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all text-sm ${
+                isDarkMode 
+                  ? 'bg-white/10 border-white/20 text-white placeholder-gray-400' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               required
             />
           </div>
 
           <div>
-            <label className="block font-bold mb-1 text-white text-base flex items-center gap-2">
+            <label className={`block font-bold mb-1 text-base flex items-center gap-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               <Mail className="w-4 h-4" />
               Email Address
             </label>
@@ -211,13 +241,19 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
               placeholder="Enter your email address"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all text-sm"
+              className={`w-full p-2 rounded-lg border focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all text-sm ${
+                isDarkMode 
+                  ? 'bg-white/10 border-white/20 text-white placeholder-gray-400' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               required
             />
           </div>
 
           <div>
-            <label className="block font-bold mb-1 text-white text-base flex items-center gap-2">
+            <label className={`block font-bold mb-1 text-base flex items-center gap-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               <Lock className="w-4 h-4" />
               Password
             </label>
@@ -233,7 +269,11 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 transition-colors ${
+                  isDarkMode 
+                    ? 'text-white/60 hover:text-white' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -241,7 +281,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-bold mb-1 text-white text-base flex items-center gap-2">
+            <label className={`block font-bold mb-1 text-base flex items-center gap-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               <Lock className="w-4 h-4" />
               Confirm Password
             </label>
@@ -257,7 +299,11 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 transition-colors ${
+                  isDarkMode 
+                    ? 'text-white/60 hover:text-white' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
               >
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -294,12 +340,18 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
           <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg p-3 border border-yellow-400/30">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Gift className="w-4 h-4 text-yellow-400" />
-              <span className="text-white font-semibold text-sm">Free Trial Available</span>
+              <span className={`font-semibold text-sm ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Free Trial Available</span>
             </div>
-            <p className="text-white/80 text-xs">Start with a 7-day free trial. Cancel anytime.</p>
+            <p className={`text-xs ${
+              isDarkMode ? 'text-white/80' : 'text-gray-600'
+            }`}>Start with a 7-day free trial. Cancel anytime.</p>
           </div>
           
-          <p className="text-white/60 text-xs">
+          <p className={`text-xs ${
+            isDarkMode ? 'text-white/60' : 'text-gray-600'
+          }`}>
             Already have an account?{' '}
             <button
               onClick={() => {

@@ -255,10 +255,10 @@ const RegistrationPage: React.FC = () => {
           <p className="text-xl text-violet-300">Unlock the full potential of cognitive development</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Step 1: Basic Information */}
           {step === 1 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full mx-auto flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Check className="w-8 h-8 text-white" />
@@ -357,7 +357,7 @@ const RegistrationPage: React.FC = () => {
 
           {/* Step 2: Avatar Creation */}
           {step === 2 && (
-            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full mx-auto flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
+            <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-10 shadow-xl min-w-[340px] min-h-[520px] max-w-lg w-full flex flex-col gap-8 md:p-12 md:min-w-[420px] md:min-h-[600px]">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center">
                   <Star className="w-8 h-8 text-white" />

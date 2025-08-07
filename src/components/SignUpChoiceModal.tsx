@@ -1,5 +1,6 @@
 import React from 'react';
 import ModalReveal from './ModalReveal';
+import { useTheme } from '../contexts/ThemeContext';
 import { Crown, Users, Star, Zap, Brain, Trophy, Gift, ArrowRight } from 'lucide-react';
 
 interface SignUpChoiceModalProps {
@@ -17,6 +18,7 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
   onRegularSignUp,
   onShowLogin
 }) => {
+  const { isDarkMode } = useTheme();
   const premiumFeatures = [
     {
       icon: <Brain className="w-6 h-6 text-purple-400" />,
@@ -62,8 +64,12 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
               className="w-20 h-20 object-contain"
             />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Welcome to NeuraPlay</h2>
-          <p className="text-white/70 text-base">Choose your path to unlock your child's potential</p>
+          <h2 className={`text-2xl font-bold mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Welcome to NeuraPlay</h2>
+          <p className={`text-base ${
+            isDarkMode ? 'text-white/70' : 'text-gray-600'
+          }`}>Choose your path to unlock your child's potential</p>
         </div>
 
         {/* Premium Options */}
@@ -73,8 +79,12 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
             <div className="flex items-center gap-3 mb-4">
               <Crown className="w-8 h-8 text-yellow-400" />
               <div>
-                <h3 className="text-xl font-bold text-white">Premium Journey - Monthly</h3>
-                <p className="text-white/70 text-sm">Full access to all features and personalized learning</p>
+                <h3 className={`text-xl font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Premium Journey - Monthly</h3>
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>Full access to all features and personalized learning</p>
               </div>
             </div>
             
@@ -83,8 +93,12 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
                 <div key={index} className="flex items-center gap-2">
                   {feature.icon}
                   <div>
-                    <div className="text-white font-medium text-sm">{feature.title}</div>
-                    <div className="text-white/60 text-xs leading-tight">{feature.description}</div>
+                    <div className={`font-medium text-sm ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>{feature.title}</div>
+                    <div className={`text-xs leading-tight ${
+                      isDarkMode ? 'text-white/60' : 'text-gray-600'
+                    }`}>{feature.description}</div>
                   </div>
                 </div>
               ))}
@@ -93,9 +107,13 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
             <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg p-3 border border-yellow-400/30 mb-4">
               <div className="flex items-center gap-2">
                 <Gift className="w-4 h-4 text-yellow-400" />
-                <span className="text-white font-semibold text-sm">7-Day Free Trial</span>
+                <span className={`font-semibold text-sm ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>7-Day Free Trial</span>
               </div>
-              <p className="text-white/80 text-xs mt-1">Start free, cancel anytime</p>
+              <p className={`text-xs mt-1 ${
+                isDarkMode ? 'text-white/80' : 'text-gray-600'
+              }`}>Start free, cancel anytime</p>
             </div>
 
             <button
@@ -115,8 +133,12 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
             <div className="flex items-center gap-3 mb-4">
               <Crown className="w-8 h-8 text-emerald-400" />
               <div>
-                <h3 className="text-xl font-bold text-white">Premium Journey - Yearly</h3>
-                <p className="text-white/70 text-sm">Full access to all features and personalized learning</p>
+                <h3 className={`text-xl font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Premium Journey - Yearly</h3>
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>Full access to all features and personalized learning</p>
               </div>
             </div>
             
@@ -125,8 +147,12 @@ const SignUpChoiceModal: React.FC<SignUpChoiceModalProps> = ({
                 <div key={index} className="flex items-center gap-2">
                   {feature.icon}
                   <div>
-                    <div className="text-white font-medium text-sm">{feature.title}</div>
-                    <div className="text-white/60 text-xs leading-tight">{feature.description}</div>
+                    <div className={`font-medium text-sm ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>{feature.title}</div>
+                    <div className={`text-xs leading-tight ${
+                      isDarkMode ? 'text-white/60' : 'text-gray-600'
+                    }`}>{feature.description}</div>
                   </div>
                 </div>
               ))}

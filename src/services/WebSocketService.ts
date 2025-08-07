@@ -25,10 +25,6 @@ export class WebSocketService {
     return WebSocketService.instance;
   }
 
-  get connected(): boolean {
-    return this.isConnected;
-  }
-
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
