@@ -14,19 +14,30 @@ const ForumRegistrationPage: React.FC = () => {
     age: 5,
     username: '',
     email: '',
+    password: '',
     avatar: '/assets/placeholder.png'
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [avatarPrompt, setAvatarPrompt] = useState('');
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
 
   const handleSubmit = async () => {
-    if (!formData.role || !formData.username.trim() || !formData.email.trim()) {
-      alert('Please fill out all fields.');
+    if (!formData.role || !formData.username.trim() || !formData.email.trim() || !formData.password) {
+      setError('Please fill out all required fields.');
       return;
     }
+    
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+    
+    setError('');
 
+    setIsLoading(true);
     try {
       // Call backend registration API
       const response = await fetch('/api/auth/register', {
@@ -35,7 +46,7 @@ const ForumRegistrationPage: React.FC = () => {
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
-          password: 'forum_user_123', // TODO: Add password field to form
+          password: formData.password,
           role: formData.role,
           age: formData.role === 'learner' ? formData.age : undefined,
           profile: {
@@ -57,11 +68,13 @@ const ForumRegistrationPage: React.FC = () => {
         navigate('/forum');
       } else {
         console.error('Registration failed:', result.message);
-        alert('Registration failed: ' + (result.message || 'Please try again'));
+        setError(result.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Network error during registration. Please check your connection.');
+      setError('Network error during registration. Please check your connection.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -215,8 +228,20 @@ const ForumRegistrationPage: React.FC = () => {
                 placeholder="Enter your email address"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                  className={`w-full p-4 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
+                className={`w-full p-4 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
               />
+            </div>
+
+            <div>
+              <label className="block font-bold mb-4 text-theme-primary text-lg">Password</label>
+              <input
+                type="password"
+                placeholder="Create a secure password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className={`w-full p-4 rounded-xl bg-white/10 border border-white/20 ${isDarkMode ? 'text-white' : 'text-gray-900'} placeholder-gray-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all`}
+              />
+              <p className="mt-2 text-sm text-theme-secondary">Password must be at least 6 characters long</p>
             </div>
 
             <div>
@@ -277,12 +302,25 @@ const ForumRegistrationPage: React.FC = () => {
                   )}
             </div>
 
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
+                {error}
+              </div>
+            )}
+
             <button
               onClick={handleSubmit}
-              disabled={!formData.role || !formData.username.trim() || !formData.email.trim()}
-              className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-xl hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg text-lg"
+              disabled={isLoading || !formData.role || !formData.username.trim() || !formData.email.trim() || !formData.password}
+              className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold px-8 py-4 rounded-xl hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg text-lg flex items-center justify-center gap-2"
             >
-              Create Account
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
           </div>
         </div>
