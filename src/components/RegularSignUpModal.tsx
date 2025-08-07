@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
 import ModalReveal from './ModalReveal';
-import { User, Mail, Users, Sparkles } from 'lucide-react';
+import { User, Mail, Users, Sparkles, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface RegularSignUpModalProps {
   isOpen: boolean;
@@ -24,18 +24,37 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
     age: 5,
     username: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     avatar: '/assets/placeholder.png'
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [avatarPrompt, setAvatarPrompt] = useState('');
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [generatedAvatars, setGeneratedAvatars] = useState<string[]>([]);
 
   const handleSubmit = async () => {
-    if (!formData.role || !formData.username.trim() || !formData.email.trim()) {
-      alert('Please fill out all fields.');
+    if (!formData.role || !formData.username.trim() || !formData.email.trim() || !formData.password || !formData.confirmPassword) {
+      setError('Please fill out all required fields.');
       return;
     }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setError('');
+    setIsLoading(true);
 
     try {
       // Call backend registration API
@@ -45,7 +64,7 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
-          password: 'regular_user_123', // TODO: Add password field to form
+          password: formData.password,
           role: formData.role,
           age: formData.role === 'learner' ? formData.age : undefined,
           profile: {
@@ -69,11 +88,13 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
         onClose();
       } else {
         console.error('Registration failed:', result.message);
-        alert('Registration failed: ' + (result.message || 'Please try again'));
+        setError(result.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Network error during registration. Please check your connection.');
+      setError('Network error during registration. Please check your connection.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -225,6 +246,55 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
           </div>
 
           <div>
+            <label className="block font-bold mb-1 text-theme-primary text-base flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Create a password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full p-2 pr-10 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all text-sm"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="mt-1 text-theme-secondary text-xs">Password must be at least 6 characters long</p>
+          </div>
+
+          <div>
+            <label className="block font-bold mb-1 text-theme-primary text-base flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                className="w-full p-2 pr-10 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all text-sm"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
             <h4 className="font-bold mb-3 text-theme-primary text-base flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Choose your hero avatar
@@ -285,13 +355,28 @@ const RegularSignUpModal: React.FC<RegularSignUpModalProps> = ({
             )}
           </div>
 
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
+              {error}
+            </div>
+          )}
+
           <button
             onClick={handleSubmit}
-            disabled={!formData.role || !formData.username.trim() || !formData.email.trim()}
+            disabled={isLoading || !formData.role || !formData.username.trim() || !formData.email.trim() || !formData.password || !formData.confirmPassword}
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold px-6 py-3 rounded-lg hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg text-base flex items-center justify-center gap-2"
           >
-            <Users className="w-4 h-4" />
-            Join Community
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Creating Account...
+              </>
+            ) : (
+              <>
+                <Users className="w-4 h-4" />
+                Join Community
+              </>
+            )}
           </button>
         </div>
 
