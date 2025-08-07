@@ -264,7 +264,7 @@ const RegistrationPage: React.FC = () => {
                         className={`min-w-[140px] min-h-[80px] p-6 rounded-xl font-semibold text-lg transition-all border-2 whitespace-pre-line break-words text-center flex flex-col items-center justify-center shadow-sm ${
                           formData.role === role
                             ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-600 shadow-lg'
-                            : 'bg-white/10 text-gray-800 border-white/20 hover:border-violet-400 hover:bg-white/20'
+                            : 'bg-white/10 text-theme-primary border-white/20 hover:border-violet-400 hover:bg-white/20'
                         }`}
                       >
                         {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -318,7 +318,7 @@ const RegistrationPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
                     className="mt-1 w-5 h-5 text-violet-600 bg-white/10 border-white/20 rounded focus:ring-violet-400 focus:ring-2"
                   />
-                  <label htmlFor="agreeToTerms" className="text-sm text-gray-300">
+                  <label htmlFor="agreeToTerms" className="text-sm text-theme-secondary">
                     I agree to the{' '}
                     <button
                       type="button"
@@ -497,7 +497,7 @@ const RegistrationPage: React.FC = () => {
                 }`}
               >
                 <div className="text-lg font-bold text-white mb-1">$9.99</div>
-                <div className="text-gray-300 text-sm">Monthly</div>
+                <div className="text-theme-secondary text-sm">Monthly</div>
               </button>
               
               {/* Yearly Plan */}
@@ -516,7 +516,7 @@ const RegistrationPage: React.FC = () => {
                   20% OFF
                 </div>
                 <div className="text-lg font-bold text-white mb-1">$95.90</div>
-                <div className="text-gray-300 text-sm">Yearly</div>
+                <div className="text-theme-secondary text-sm">Yearly</div>
               </button>
             </div>
           </div>
@@ -557,7 +557,7 @@ const RegistrationPage: React.FC = () => {
                 }`}
               >
                 <div className="text-lg font-bold text-white mb-1">$19.99</div>
-                <div className="text-gray-300 text-sm">Monthly</div>
+                <div className="text-theme-secondary text-sm">Monthly</div>
               </button>
               
               {/* Yearly Plan */}
@@ -573,7 +573,7 @@ const RegistrationPage: React.FC = () => {
                 }`}
               >
                 <div className="text-lg font-bold text-white mb-1">$199.90</div>
-                <div className="text-gray-300 text-sm">Yearly</div>
+                <div className="text-theme-secondary text-sm">Yearly</div>
               </button>
             </div>
 
@@ -626,7 +626,7 @@ const RegistrationPage: React.FC = () => {
               <span className="text-theme-primary font-medium">
                 {selectedSubscription === 'premium' ? 'Premium' : 'Premium Plus'} {selectedPlan} plan selected
               </span>
-              <div className="text-gray-300 text-sm ml-4">
+              <div className="text-theme-secondary text-sm ml-4">
                 Payment integration coming soon
               </div>
             </div>
@@ -646,7 +646,7 @@ const RegistrationPage: React.FC = () => {
                   ✕
                 </button>
               </div>
-              <div className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+              <div className="text-theme-secondary whitespace-pre-wrap text-sm leading-relaxed">
                 {LICENSE_TEXT}
               </div>
             </div>

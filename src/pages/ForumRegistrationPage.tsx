@@ -170,11 +170,11 @@ const ForumRegistrationPage: React.FC = () => {
                   <button
                     key={role}
                     onClick={() => setFormData({ ...formData, role })}
-                    className={`p-6 rounded-xl font-semibold text-lg transition-all border-2 ${
-                      formData.role === role
-                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-600 shadow-lg'
-                        : 'bg-white/10 text-gray-300 border-white/20 hover:border-violet-400 hover:bg-white/20'
-                    }`}
+                                         className={`p-6 rounded-xl font-semibold text-lg transition-all border-2 ${
+                       formData.role === role
+                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-600 shadow-lg'
+                         : 'bg-white/10 text-theme-primary border-white/20 hover:border-violet-400 hover:bg-white/20'
+                     }`}
                   >
                     {role.charAt(0).toUpperCase() + role.slice(1)}
                   </button>
