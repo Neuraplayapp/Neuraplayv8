@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { X, Mic, MicOff, Volume2, VolumeX, Settings, MessageSquare, Users, BookOpen, Brain, Zap, GraduationCap } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, VolumeX, Settings, MessageSquare, Users, BookOpen, Brain, Zap, GraduationCap, ToggleLeft, ToggleRight } from 'lucide-react';
 import { getAgentId } from '../config/elevenlabs';
+import VoiceConversationWidget from './VoiceConversationWidget';
 
 interface TeachersRoomProps {
   onClose: () => void;
@@ -12,6 +13,30 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
   const [isConversationActive, setIsConversationActive] = useState(false);
   const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Array<{ text: string; isUser: boolean; timestamp: Date }>>([]);
+  const [voiceMode, setVoiceMode] = useState<'websocket' | 'elevenlabs'>('elevenlabs');
+
+  // Load ElevenLabs widget script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+    script.async = true;
+    script.type = 'text/javascript';
+    
+    // Check if script is already loaded
+    const existingScript = document.querySelector(`script[src="${script.src}"]`);
+    if (!existingScript) {
+      document.head.appendChild(script);
+      console.log('📜 ElevenLabs widget script loaded for Teachers Room');
+    }
+
+    return () => {
+      // Cleanup on unmount
+      const scriptToRemove = document.querySelector(`script[src="${script.src}"]`);
+      if (scriptToRemove) {
+        document.head.removeChild(scriptToRemove);
+      }
+    };
+  }, []);
 
   // Get theme-appropriate classes
   const getBackgroundClasses = () => {
@@ -139,87 +164,178 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
                 </div>
               </div>
 
-              {/* ElevenLabs Widget */}
+              {/* Voice Mode Toggle */}
+              <div className="flex justify-center mb-4">
+                <div className={`flex items-center space-x-3 p-2 rounded-lg ${
+                  isDarkMode ? 'bg-black/20' : 'bg-white/20'
+                } backdrop-blur-sm border ${
+                  isDarkMode ? 'border-white/10' : 'border-black/10'
+                }`}>
+                  <span className={`text-sm font-medium ${
+                    voiceMode === 'elevenlabs' 
+                      ? isDarkMode ? 'text-purple-300' : 'text-purple-600'
+                      : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    ElevenLabs
+                  </span>
+                  <button
+                    onClick={() => setVoiceMode(voiceMode === 'elevenlabs' ? 'websocket' : 'elevenlabs')}
+                    className="p-1"
+                    title="Switch voice conversation mode"
+                  >
+                    {voiceMode === 'elevenlabs' ? (
+                      <ToggleLeft className={`w-6 h-6 ${isDarkMode ? 'text-purple-400' : 'text-purple-500'}`} />
+                    ) : (
+                      <ToggleRight className={`w-6 h-6 ${isDarkMode ? 'text-purple-400' : 'text-purple-500'}`} />
+                    )}
+                  </button>
+                  <span className={`text-sm font-medium ${
+                    voiceMode === 'websocket' 
+                      ? isDarkMode ? 'text-purple-300' : 'text-purple-600'
+                      : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    WebSocket
+                  </span>
+                </div>
+              </div>
+
+              {/* Voice Interface */}
               <div className="flex-1 flex items-center justify-center">
-                <div 
-                  className="elevenlabs-widget-teachers-room"
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    width: '100%',
-                    maxWidth: '500px',
-                    minHeight: '200px',
-                    position: 'relative',
-                    zIndex: 10
-                  }}
-                >
-                  <elevenlabs-convai 
-                    key="elevenlabs-widget-teachers-room-v1"
-                    agent-id={getAgentId()}
-                    variant="expanded"
-                    action-text="🎤 Start Voice Chat"
-                    start-call-text="Start Voice"
-                    end-call-text="End Voice"
-                    avatar-orb-color-1="#8b5cf6"
-                    avatar-orb-color-2="#a855f7"
-                    data-public="true"
-                    data-no-auth="true" 
-                    disable-auth="true"
-                    no-authentication="true"
-                    public-agent="true"
-                    onCall={() => {
-                      console.log('🎤 Teachers Room widget call started');
-                      setIsConversationActive(true);
-                      setConversationHistory(prev => [...prev, {
-                        text: "Voice conversation started! 🎤",
-                        isUser: false,
-                        timestamp: new Date()
-                      }]);
-                    }}
-                    onEnd={() => {
-                      console.log('🎤 Teachers Room widget call ended');
-                      setIsConversationActive(false);
-                      setConversationHistory(prev => [...prev, {
-                        text: "Voice conversation ended. 📝",
-                        isUser: false,
-                        timestamp: new Date()
-                      }]);
-                    }}
-                    onConnect={() => {
-                      console.log('🎤 Teachers Room widget connected');
-                    }}
-                    onDisconnect={() => {
-                      console.log('🎤 Teachers Room widget disconnected');
-                    }}
-                    onMessage={(message: any) => {
-                      console.log('🎤 Teachers Room widget message:', message);
-                      if (message?.text) {
-                        setConversationHistory(prev => [...prev, {
-                          text: message.text,
-                          isUser: false,
-                          timestamp: new Date()
-                        }]);
-                      }
-                    }}
-                    onError={(error: any) => {
-                      console.error('🚫 Teachers Room Widget Error:', error);
-                    }}
+                {voiceMode === 'elevenlabs' ? (
+                  /* ElevenLabs Official Widget - Enhanced Configuration */
+                  <div 
+                    className="elevenlabs-widget-teachers-room"
                     style={{
-                      '--primary-color': '#8b5cf6',
-                      '--secondary-color': '#a855f7',
-                      '--background-color': 'rgba(139, 92, 246, 0.1)',
-                      '--text-color': '#333333',
-                      '--border-radius': '16px',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
                       width: '100%',
                       maxWidth: '500px',
                       minHeight: '200px',
-                      fontSize: '18px',
-                      overflow: 'visible',
-                      zIndex: '10'
+                      position: 'relative',
+                      zIndex: 10
                     }}
-                  ></elevenlabs-convai>
-                </div>
+                  >
+                    <elevenlabs-convai 
+                      key="elevenlabs-widget-teachers-room-enhanced"
+                      agent-id="agent_2201k13zjq5nf9faywz14701hyhb"
+                      variant="expanded"
+                      action-text="🎤 Start AI Teacher Chat"
+                      start-call-text="Start Voice Chat"
+                      end-call-text="End Voice Chat"
+                      avatar-orb-color-1="#8b5cf6"
+                      avatar-orb-color-2="#a855f7"
+                      data-public="true"
+                      data-no-auth="true" 
+                      disable-auth="true"
+                      no-authentication="true"
+                      public-agent="true"
+                      enable-logging="true"
+                      inactivity-timeout="30"
+                      auto-mode="true"
+                      onCall={() => {
+                        console.log('🎤 ElevenLabs Teachers Room call started');
+                        setIsConversationActive(true);
+                        setConversationHistory(prev => [...prev, {
+                          text: "🎓 AI Teacher voice conversation started! Ask me anything! 🎤",
+                          isUser: false,
+                          timestamp: new Date()
+                        }]);
+                      }}
+                      onEnd={() => {
+                        console.log('🎤 ElevenLabs Teachers Room call ended');
+                        setIsConversationActive(false);
+                        setConversationHistory(prev => [...prev, {
+                          text: "🎓 Voice lesson ended. Great learning session! 📝",
+                          isUser: false,
+                          timestamp: new Date()
+                        }]);
+                      }}
+                      onConnect={() => {
+                        console.log('🎤 ElevenLabs Teachers Room connected');
+                        setConversationHistory(prev => [...prev, {
+                          text: "🔗 Connected to AI Teacher. Ready for voice lessons!",
+                          isUser: false,
+                          timestamp: new Date()
+                        }]);
+                      }}
+                      onDisconnect={() => {
+                        console.log('🎤 ElevenLabs Teachers Room disconnected');
+                        setConversationHistory(prev => [...prev, {
+                          text: "🔌 Disconnected from AI Teacher.",
+                          isUser: false,
+                          timestamp: new Date()
+                        }]);
+                      }}
+                      onMessage={(message: any) => {
+                        console.log('🎤 ElevenLabs Teachers Room message:', message);
+                        if (message?.text) {
+                          setConversationHistory(prev => [...prev, {
+                            text: message.text,
+                            isUser: false,
+                            timestamp: new Date()
+                          }]);
+                        }
+                      }}
+                      onError={(error: any) => {
+                        console.error('🚫 ElevenLabs Teachers Room Error:', error);
+                        setConversationHistory(prev => [...prev, {
+                          text: `❌ ElevenLabs Error: ${error}`,
+                          isUser: false,
+                          timestamp: new Date()
+                        }]);
+                      }}
+                      style={{
+                        '--primary-color': '#8b5cf6',
+                        '--secondary-color': '#a855f7',
+                        '--background-color': 'rgba(139, 92, 246, 0.1)',
+                        '--text-color': isDarkMode ? '#ffffff' : '#333333',
+                        '--border-radius': '16px',
+                        width: '100%',
+                        maxWidth: '500px',
+                        minHeight: '200px',
+                        fontSize: '18px',
+                        overflow: 'visible',
+                        zIndex: '10'
+                      } as React.CSSProperties}
+                    />
+                  </div>
+                ) : (
+                  /* Custom WebSocket Voice Widget - Backup Option */
+                  <VoiceConversationWidget
+                    onConversationStart={() => {
+                      console.log('🎤 WebSocket voice conversation started');
+                      setIsConversationActive(true);
+                      setConversationHistory(prev => [...prev, {
+                        text: "🌐 WebSocket voice conversation started! 🎤",
+                        isUser: false,
+                        timestamp: new Date()
+                      }]);
+                    }}
+                    onConversationEnd={() => {
+                      console.log('🎤 WebSocket voice conversation ended');
+                      setIsConversationActive(false);
+                      setConversationHistory(prev => [...prev, {
+                        text: "🌐 WebSocket voice conversation ended. 📝",
+                        isUser: false,
+                        timestamp: new Date()
+                      }]);
+                    }}
+                    onMessage={(message) => {
+                      console.log('🎤 WebSocket voice message:', message);
+                      setConversationHistory(prev => [...prev, message]);
+                    }}
+                    onError={(error) => {
+                      console.error('🚫 WebSocket Voice Error:', error);
+                      setConversationHistory(prev => [...prev, {
+                        text: `❌ WebSocket Error: ${error}`,
+                        isUser: false,
+                        timestamp: new Date()
+                      }]);
+                    }}
+                    className="w-full max-w-lg"
+                  />
+                )}
               </div>
 
               {/* Conversation Status */}
@@ -227,7 +343,9 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
                 <div className="flex items-center space-x-2">
                   <div className={`w-2 h-2 rounded-full ${isConversationActive ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
                   <span className={`text-sm ${getTextClasses('secondary')}`}>
-                    {isConversationActive ? 'Voice conversation active' : 'Voice conversation ready'}
+                    {isConversationActive 
+                      ? `${voiceMode === 'elevenlabs' ? 'ElevenLabs' : 'WebSocket'} voice conversation active` 
+                      : `${voiceMode === 'elevenlabs' ? 'ElevenLabs' : 'WebSocket'} voice conversation ready`}
                   </span>
                 </div>
               </div>
