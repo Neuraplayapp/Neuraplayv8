@@ -86,7 +86,7 @@ class AIService {
 
   // Generic OpenAI API
   async openAICall(message: string, model: string = 'gpt-3.5-turbo') {
-    return this.apiCall('/api', {
+    return this.apiCall('/api/api', {
       method: 'POST',
       body: JSON.stringify({ message, model }),
     });
@@ -143,6 +143,8 @@ class AIService {
   }
 
   // Enhanced AI Message with Tool Calling Support
+  // ⚠️ IMPORTANT: This service requires Render environment with Fireworks API key (Neuraplay env var)
+  // Local testing will fail with "unauthorized" - this is expected and normal
   async sendMessage(text: string, context?: any, enableToolCalling: boolean = true): Promise<{
     generated_text: string;
     tool_calls: any[];
@@ -153,8 +155,8 @@ class AIService {
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
 
-    // Use correct endpoint - server has /api/api route, but apiBase handles /api prefix
-    const apiEndpoint = '/api';
+    // Use correct endpoint - server has /api/api route
+    const apiEndpoint = '/api/api';
     
     console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
     
@@ -264,7 +266,7 @@ class AIService {
     const prompt = this.extractImagePrompt(text);
     
     // Use the correct API endpoint for each platform
-    const apiEndpoint = '/api';
+    const apiEndpoint = '/api/api';
 
     try {
       const response = await this.apiCall(apiEndpoint, {
@@ -414,6 +416,7 @@ class AIService {
 - **Cognitive Load Management**: Break complex topics into digestible chunks
 
 🛠️ TOOL CALLING BEHAVIOR:
+- **Image Generation**: For ANY request to "make", "create", "draw", "generate", or "show" an image, ALWAYS use the generate_image tool
 - **Proactive Visual Creation**: For ANY math/science question, immediately generate illustrative diagrams/graphs
 - **Context-Aware Tools**: Use conversation history to provide more relevant responses
 - **Educational Enhancement**: When explaining concepts, create visual aids automatically
@@ -436,6 +439,13 @@ class AIService {
 - **Clear Explanations**: Use analogies, real-world examples, and step-by-step breakdowns
 - **Visual-First Approach**: "Let me show you..." instead of just "Let me tell you..."
 - **Encouraging**: Celebrate understanding and curiosity
+
+🔧 TOOL USAGE EXAMPLES:
+- User says "make an image of a cat" → CALL generate_image tool with prompt="cute cat with whiskers, child-friendly style"
+- User says "create a picture of a dog" → CALL generate_image tool immediately
+- User says "draw me a house" → CALL generate_image tool for house illustration
+- User says "weather in London" → CALL get_weather tool for London
+- User says "search for cats" → CALL web_search tool with query="cats"
 
 Current context: ${JSON.stringify(context || {})}`;
   }
@@ -509,7 +519,7 @@ Current context: ${JSON.stringify(context || {})}`;
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = '/api';
+    const apiEndpoint = '/api/api';
     
     try {
       const response = await this.apiCall(apiEndpoint, {

@@ -179,37 +179,47 @@ const RegistrationPage: React.FC = () => {
     try {
       console.log('Generating avatar with prompt:', avatarPrompt);
       
-      const response = await fetch('/.netlify/functions/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task_type: 'image',
-          input_data: avatarPrompt
-        })
-      });
+      // Use the AI service with tool calling to generate avatar
+      const { aiService } = await import('../services/AIService');
       
-      console.log('Avatar generation response status:', response.status);
+      const response = await aiService.sendMessage(
+        `Generate an avatar image: ${avatarPrompt}. Make it child-friendly, colorful, and suitable as a profile picture.`,
+        {
+          user: { id: 'registration' },
+          capabilities: { imageGeneration: true, toolCalling: true }
+        },
+        true // Enable tool calling
+      );
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to get response' }));
-        console.error('Avatar generation error:', errorData);
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      console.log('Avatar generation AI response:', response);
+      
+      // Extract image from tool results
+      let imageData = null;
+      if (response.tool_results && response.tool_results.length > 0) {
+        const imageResult = response.tool_results.find(r => r.data?.image_url);
+        if (imageResult) {
+          imageData = imageResult.data.image_url;
+        }
       }
       
-      const result = await response.json();
+      if (!imageData) {
+        throw new Error('No image generated from AI response');
+      }
+      
+      // Create result object matching expected format  
+      const result = {
+        data: imageData,
+        contentType: 'image/png'
+      };
+      
       console.log('Avatar generation result:', result);
       
-      if (result.data && result.data.length > 0) {
-        const imageBlob = `data:${result.contentType || 'image/png'};base64,${result.data}`;
-        console.log('Generated avatar blob length:', imageBlob.length);
-        setGeneratedAvatars(prev => [...prev, imageBlob]);
-        setFormData({ ...formData, avatar: imageBlob });
-      } else if (result.data) {
-        // Handle case where data is a string (not array)
-        const imageBlob = `data:${result.contentType || 'image/png'};base64,${result.data}`;
-        console.log('Generated avatar blob length:', imageBlob.length);
-        setGeneratedAvatars(prev => [...prev, imageBlob]);
-        setFormData({ ...formData, avatar: imageBlob });
+      if (result.data) {
+        // The image data is already a data URL from the tool result
+        console.log('Generated avatar URL length:', result.data.length);
+        setGeneratedAvatars(prev => [...prev, result.data]);
+        setFormData({ ...formData, avatar: result.data });
+        setAvatarGenerated(true);
       } else {
         console.error('No image data in response:', result);
         setAvatarError('Failed to generate avatar. Please try again.');

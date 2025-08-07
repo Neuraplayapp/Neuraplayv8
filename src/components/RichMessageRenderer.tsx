@@ -8,7 +8,7 @@ interface RichMessageRendererProps {
 }
 
 interface RichContent {
-  type: 'text' | 'image' | 'math_diagram' | 'chart' | 'table' | 'formula' | 'weather_table' | 'tool_result';
+  type: 'text' | 'image' | 'math_diagram' | 'chart' | 'table' | 'formula' | 'weather_table' | 'tool_result' | 'chart_request';
   content: string;
   metadata?: any;
 }
@@ -55,7 +55,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
         content: match[1], // base64 data URL
         metadata: { caption: match[2] }
       });
-      processedText = processedText.replace(match[0], `[IMAGE_RENDERED]`);
+      processedText = processedText.replace(match[0], '');
     }
     
     // Parse mathematical formulas $$...$$
@@ -66,7 +66,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
         content: match[1],
         metadata: { inline: false }
       });
-      processedText = processedText.replace(match[0], `[FORMULA_RENDERED]`);
+      processedText = processedText.replace(match[0], '');
     }
     
     // Parse weather tables and structured data
@@ -80,7 +80,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
           isWeatherTable: match[0].includes('°C') || match[0].includes('Temperature') || match[0].includes('Humidity')
         }
       });
-      processedText = processedText.replace(match[0], `[TABLE_RENDERED]`);
+      processedText = processedText.replace(match[0], '');
     }
     
     // Add formatted text as final content
@@ -94,90 +94,151 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     return content;
   };
 
-  // Render mathematical diagrams with beautiful styling
-  const renderMathDiagram = (content: string, metadata: any) => (
-    <div className="math-diagram-container my-8 p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-600 shadow-2xl">
-      <div className="diagram-header mb-6">
-        <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 flex items-center">
-          <span className="mr-3 text-3xl">📊</span>
-          {metadata.title}
-        </h3>
-        <p className="text-sm text-slate-400 capitalize mt-2 flex items-center">
-          <span className="mr-2">🎯</span>
-          {metadata.diagramType} • {metadata.style} style • Interactive visualization
-        </p>
-      </div>
-      
-      <div className="diagram-content bg-black/40 rounded-xl p-6 border border-slate-700 backdrop-blur-sm">
-        <img 
-          src={content} 
-          alt={metadata.title}
-          className="w-full max-w-5xl mx-auto rounded-lg shadow-2xl"
-          style={{ 
-            imageRendering: 'crisp-edges',
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.05)'
-          }}
-        />
-      </div>
-      
-      <div className="diagram-footer mt-4 text-xs text-slate-400 text-center">
-        ✨ Pedagogical visualization designed for enhanced learning
-      </div>
-    </div>
-  );
+  // Render mathematical diagrams with beautiful, theme-aware styling
+  const renderMathDiagram = (content: string, metadata: any) => {
+    const containerClass = isDarkMode 
+      ? 'bg-gradient-to-br from-gray-800/60 via-gray-900/40 to-gray-800/60 border-gray-600/40' 
+      : 'bg-gradient-to-br from-gray-50 via-white to-gray-50/80 border-gray-200/60';
+    
+    const headerClass = isDarkMode 
+      ? 'text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-indigo-300 to-purple-300'
+      : 'text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600';
+    
+    const subtitleClass = isDarkMode ? 'text-gray-400' : 'text-gray-600';
+    const contentBg = isDarkMode ? 'bg-black/20' : 'bg-white/60';
+    const contentBorder = isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50';
+    const footerClass = isDarkMode ? 'text-gray-500' : 'text-gray-500';
 
-  // Render generated images with elegant presentation
-  const renderImage = (content: string, metadata: any) => (
-    <div className="image-container my-8 p-6 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl border border-gray-600 shadow-2xl">
-      <div className="image-header mb-4">
-        <h4 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 flex items-center">
-          <span className="mr-2 text-2xl">🎨</span>
-          AI Generated Image
-        </h4>
-      </div>
-      
-      <div className="image-content bg-black/40 rounded-xl p-4 border border-gray-700 backdrop-blur-sm">
-        <img 
-          src={content} 
-          alt={metadata.caption || "AI Generated image"}
-          className="w-full max-w-3xl mx-auto rounded-xl shadow-2xl"
-          style={{ 
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5)) brightness(1.05)'
-          }}
-        />
-      </div>
-      
-      {metadata.caption && (
-        <p className="text-center mt-4 text-sm text-gray-300 italic flex items-center justify-center">
-          <span className="mr-2">✨</span>
-          {metadata.caption}
-        </p>
-      )}
-    </div>
-  );
+    // Get appropriate icon based on chart type
+    const getChartIcon = (type: string) => {
+      const lowerType = type?.toLowerCase() || '';
+      if (lowerType.includes('pie')) return '🥧';
+      if (lowerType.includes('bar') || lowerType.includes('histogram')) return '📊';
+      if (lowerType.includes('line') || lowerType.includes('spending')) return '📈';
+      if (lowerType.includes('scatter')) return '🎯';
+      if (lowerType.includes('area')) return '⛰️';
+      if (lowerType.includes('moon') || lowerType.includes('distance') || lowerType.includes('orbital')) return '🌙';
+      return '📊';
+    };
 
-  // Render mathematical formulas with beautiful styling
-  const renderFormula = (content: string, metadata: any) => (
-    <div className={`formula-container my-6 p-6 rounded-2xl ${
-      metadata.inline 
-        ? 'inline-block bg-slate-800 border border-slate-600' 
-        : 'bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 border border-indigo-500 shadow-2xl'
-    }`}>
-      <div className="formula-content text-center">
-        <div className="text-2xl text-yellow-200 font-mono font-bold leading-relaxed">
-          {content}
+    const chartIcon = getChartIcon(metadata.diagramType);
+
+    return (
+      <div className={`math-diagram-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-xl md:rounded-2xl border shadow-lg backdrop-blur-sm overflow-hidden`}>
+        <div className="diagram-header mb-4 md:mb-6">
+          <h3 className={`text-lg md:text-2xl font-semibold ${headerClass} flex items-center flex-wrap`}>
+            <span className="mr-2 md:mr-3 text-xl md:text-3xl">{chartIcon}</span>
+            <span className="break-words flex-1">{metadata.title}</span>
+          </h3>
+          <p className={`text-xs md:text-sm ${subtitleClass} capitalize mt-2 flex items-center flex-wrap`}>
+            <span className="mr-2">🎯</span>
+            <span className="break-words">{metadata.diagramType} • {metadata.style} style • Educational chart</span>
+          </p>
+        </div>
+        
+        <div className={`diagram-content ${contentBg} rounded-lg md:rounded-xl p-3 md:p-6 border ${contentBorder} backdrop-blur-sm`}>
+          <img 
+            src={content} 
+            alt={metadata.title}
+            className="w-full max-w-full mx-auto rounded-md md:rounded-lg shadow-lg"
+            style={{ 
+              imageRendering: 'crisp-edges',
+              filter: isDarkMode 
+                ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.3)) brightness(1.05)'
+                : 'drop-shadow(0 4px 12px rgba(0,0,0,0.1)) brightness(0.98)',
+              maxHeight: '600px',
+              objectFit: 'contain'
+            }}
+          />
+        </div>
+        
+        <div className={`diagram-footer mt-3 md:mt-4 text-xs ${footerClass} text-center break-words`}>
+          ✨ Interactive visualization designed for enhanced learning
         </div>
       </div>
-      {!metadata.inline && (
-        <div className="formula-footer text-xs text-center text-slate-400 mt-3 flex items-center justify-center">
-          <span className="mr-2">📐</span>
-          Mathematical Expression
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
-  // Render beautiful interactive tables
+  // Render generated images with elegant, theme-aware presentation
+  const renderImage = (content: string, metadata: any) => {
+    const containerClass = isDarkMode 
+      ? 'bg-gradient-to-br from-gray-800/60 via-gray-900/40 to-gray-800/60 border-gray-600/40' 
+      : 'bg-gradient-to-br from-gray-50 via-white to-gray-50/80 border-gray-200/60';
+    
+    const headerClass = isDarkMode 
+      ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300'
+      : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-purple-600';
+    
+    const contentBg = isDarkMode ? 'bg-black/20' : 'bg-white/60';
+    const contentBorder = isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50';
+    const captionClass = isDarkMode ? 'text-gray-400' : 'text-gray-600';
+
+    return (
+      <div className={`image-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-xl md:rounded-2xl border shadow-lg backdrop-blur-sm`}>
+        <div className="image-header mb-3 md:mb-4">
+          <h4 className={`text-base md:text-lg font-medium ${headerClass} flex items-center flex-wrap`}>
+            <span className="mr-2 text-xl md:text-2xl">🎨</span>
+            <span className="break-words">AI Generated Image</span>
+          </h4>
+        </div>
+        
+        <div className={`image-content ${contentBg} rounded-lg md:rounded-xl p-3 md:p-4 border ${contentBorder} backdrop-blur-sm`}>
+          <img 
+            src={content} 
+            alt={metadata.caption || "AI Generated image"}
+            className="w-full max-w-full md:max-w-3xl mx-auto rounded-md md:rounded-xl shadow-lg"
+            style={{ 
+              filter: isDarkMode 
+                ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.4)) brightness(1.05)'
+                : 'drop-shadow(0 4px 12px rgba(0,0,0,0.1)) brightness(0.98)'
+            }}
+          />
+        </div>
+        
+        {metadata.caption && (
+          <p className={`text-center mt-3 md:mt-4 text-xs md:text-sm ${captionClass} italic flex items-center justify-center flex-wrap break-words`}>
+            <span className="mr-2">✨</span>
+            <span className="break-words">{metadata.caption}</span>
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Render mathematical formulas with beautiful, theme-aware styling
+  const renderFormula = (content: string, metadata: any) => {
+    const containerClass = metadata.inline 
+      ? (isDarkMode 
+          ? 'inline-block bg-slate-700/60 border border-slate-500/40' 
+          : 'inline-block bg-slate-100/80 border border-slate-300/60')
+      : (isDarkMode 
+          ? 'bg-gradient-to-r from-indigo-800/40 via-purple-800/40 to-indigo-800/40 border border-indigo-500/30 shadow-lg' 
+          : 'bg-gradient-to-r from-indigo-50/80 via-purple-50/80 to-indigo-50/80 border border-indigo-200/60 shadow-lg');
+    
+    const textClass = isDarkMode 
+      ? 'text-yellow-200' 
+      : 'text-yellow-800';
+    
+    const footerClass = isDarkMode ? 'text-gray-400' : 'text-gray-600';
+
+    return (
+      <div className={`formula-container my-4 md:my-6 p-4 md:p-6 rounded-xl md:rounded-2xl ${containerClass} break-words overflow-hidden`}>
+        <div className="formula-content text-center">
+          <div className={`text-lg md:text-2xl ${textClass} font-mono font-semibold leading-relaxed break-words`}>
+            {content}
+          </div>
+        </div>
+        {!metadata.inline && (
+          <div className={`formula-footer text-xs text-center ${footerClass} mt-2 md:mt-3 flex items-center justify-center flex-wrap`}>
+            <span className="mr-2">📐</span>
+            <span className="break-words">Mathematical Expression</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render beautiful interactive tables with theme-aware styling
   const renderTable = (content: string, metadata: any) => {
     const lines = content.trim().split('\n');
     const headers = lines[0].split('|').filter(h => h.trim()).map(h => h.trim());
@@ -187,39 +248,58 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
 
     const isWeatherTable = metadata.isWeatherTable;
     
+    const containerClass = isWeatherTable
+      ? (isDarkMode 
+          ? 'bg-gradient-to-br from-blue-800/40 via-cyan-800/30 to-blue-800/40 border border-cyan-500/30' 
+          : 'bg-gradient-to-br from-blue-50/80 via-cyan-50/60 to-blue-50/80 border border-cyan-200/60')
+      : (isDarkMode 
+          ? 'bg-gradient-to-br from-slate-800/60 via-slate-900/40 to-slate-800/60 border border-slate-600/40' 
+          : 'bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-50/80 border border-slate-200/60');
+    
+    const headerClass = isDarkMode 
+      ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300'
+      : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600';
+    
+    const contentBg = isDarkMode ? 'bg-black/20' : 'bg-white/50';
+    const contentBorder = isDarkMode ? 'border-slate-700/50' : 'border-slate-200/50';
+    const headerRowBorder = isDarkMode ? 'border-slate-600/50' : 'border-slate-300/50';
+    const headerCellBg = isDarkMode ? 'bg-slate-800/40' : 'bg-slate-100/60';
+    const headerCellText = isDarkMode ? 'text-cyan-300' : 'text-cyan-700';
+    const rowBorder = isDarkMode ? 'border-slate-700/30' : 'border-slate-200/60';
+    const rowHover = isDarkMode ? 'hover:bg-slate-800/20' : 'hover:bg-slate-100/40';
+    const cellText = isDarkMode ? 'text-gray-200' : 'text-gray-700';
+
     return (
-      <div className={`table-container my-8 p-6 rounded-2xl shadow-2xl ${
-        isWeatherTable 
-          ? 'bg-gradient-to-br from-blue-900 via-cyan-900 to-blue-900 border border-cyan-500' 
-          : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600'
-      }`}>
-        <div className="table-header mb-4">
-          <h4 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 flex items-center">
-            <span className="mr-2 text-2xl">{isWeatherTable ? '🌤️' : '📊'}</span>
-            {isWeatherTable ? 'Weather Data' : 'Data Table'}
-          </h4>
-        </div>
+      <div className={`table-container my-6 md:my-8 p-4 md:p-6 rounded-xl md:rounded-2xl shadow-lg ${containerClass} overflow-hidden`}>
+              <div className="table-header mb-3 md:mb-4">
+        <h4 className={`text-base md:text-lg font-medium ${headerClass} flex items-center flex-wrap`}>
+          <span className="mr-2 text-xl md:text-2xl">{isWeatherTable ? '☀️☁️' : '📊'}</span>
+          <span className="break-words">{isWeatherTable ? 'Weather Data' : 'Data Table'}</span>
+        </h4>
+      </div>
         
-        <div className="table-content bg-black/30 rounded-xl p-4 border border-slate-700 backdrop-blur-sm overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className={`table-content ${contentBg} rounded-lg md:rounded-xl p-3 md:p-4 border ${contentBorder} backdrop-blur-sm overflow-x-auto`}>
+          <table className="w-full text-xs md:text-sm min-w-full">
             <thead>
-              <tr className="border-b border-slate-600">
+              <tr className={`border-b ${headerRowBorder}`}>
                 {headers.map((header, i) => (
-                  <th key={i} className="px-4 py-3 text-left font-semibold text-cyan-300 bg-slate-800/50">
-                    {header}
+                  <th key={i} className={`px-2 md:px-4 py-2 md:py-3 text-left font-medium ${headerCellText} ${headerCellBg} break-words`}>
+                    <span className="break-words">{header}</span>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, i) => (
-                <tr key={i} className="border-b border-slate-700 hover:bg-slate-800/30 transition-colors">
+                <tr key={i} className={`border-b ${rowBorder} ${rowHover} transition-colors`}>
                   {row.map((cell, j) => (
-                    <td key={j} className="px-4 py-3 text-gray-200">
-                      {/* Highlight numbers and units */}
-                      <span dangerouslySetInnerHTML={{
+                    <td key={j} className={`px-2 md:px-4 py-2 md:py-3 ${cellText} break-words max-w-0`}>
+                      {/* Highlight numbers and units with theme-aware colors */}
+                      <span className="break-words" dangerouslySetInnerHTML={{
                         __html: cell.replace(/(\d+(?:\.\d+)?)\s*(°C|°F|%|kph|mph)/g,
-                          '<span class="px-2 py-1 bg-green-800/40 border border-green-600/50 rounded text-green-300 font-bold">$1</span><span class="text-green-400 text-xs ml-1">$2</span>'
+                          isDarkMode 
+                            ? '<span class="px-2 py-1 bg-green-800/40 border border-green-600/50 rounded text-green-300 font-semibold">$1</span><span class="text-green-400 text-xs ml-1">$2</span>'
+                            : '<span class="px-2 py-1 bg-green-200/60 border border-green-400/50 rounded text-green-700 font-semibold">$1</span><span class="text-green-600 text-xs ml-1">$2</span>'
                         )
                       }} />
                     </td>
@@ -235,46 +315,102 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
 
   // Enhanced text formatting with mathematical and visual enhancements
   const formatText = (text: string) => {
+    // Theme-aware color classes
+    const themeClasses = {
+      // Mathematical concepts
+      mathConcepts: isDarkMode 
+        ? 'bg-blue-800/30 border-blue-600/50 text-blue-300' 
+        : 'bg-blue-200/50 border-blue-400/50 text-blue-800',
+      
+      // Numbers and units
+      numbersBg: isDarkMode 
+        ? 'bg-emerald-800/30 border-emerald-600/50 text-emerald-300' 
+        : 'bg-emerald-200/50 border-emerald-400/50 text-emerald-800',
+      numbersUnit: isDarkMode ? 'text-emerald-400' : 'text-emerald-600',
+      
+      // Weather conditions  
+      weather: isDarkMode 
+        ? 'bg-sky-800/30 border-sky-600/50 text-sky-300' 
+        : 'bg-sky-200/50 border-sky-400/50 text-sky-800',
+      
+      // Math expressions
+      mathExpr: isDarkMode 
+        ? 'bg-gradient-to-r from-yellow-900 to-orange-900 text-yellow-200 border-yellow-600/50' 
+        : 'bg-gradient-to-r from-yellow-200 to-orange-200 text-yellow-900 border-yellow-500/50',
+      
+      // Code blocks
+      codeBlock: isDarkMode 
+        ? 'bg-gray-900 border-gray-700 text-green-400' 
+        : 'bg-gray-100 border-gray-300 text-green-700',
+      
+      // Inline code
+      inlineCode: isDarkMode 
+        ? 'bg-gray-800 border-gray-600 text-cyan-300' 
+        : 'bg-gray-200 border-gray-400 text-cyan-700',
+      
+      // List items
+      listText: isDarkMode ? 'text-gray-100' : 'text-gray-800',
+      listBullet: isDarkMode ? 'text-blue-400' : 'text-blue-600'
+    };
+
     return text
-      // Mathematical concepts - special highlighting
-      .replace(/\b(distance|formula|equation|theorem|proof|calculate|graph|chart|diagram|temperature|humidity|weather|climate)\b/gi, 
-        '<span class="px-2 py-1 bg-blue-800/30 border border-blue-600/50 rounded text-blue-300 font-semibold">$&</span>')
+      // Special greeting phrases - refined Apple-like styling
+      .replace(/\b(Here you go!|There you go!|Perfect!|Excellent!|Amazing!|Wonderful!|Great job!|Well done!|Fantastic!|Awesome!|Outstanding!)\b/gi, 
+        `<div class="text-2xl md:text-4xl font-semibold my-4 md:my-6 text-center p-3 md:p-4 rounded-xl md:rounded-2xl ${isDarkMode ? 'bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white' : 'bg-gradient-to-r from-indigo-500/90 to-purple-500/90 text-white'} shadow-lg transform hover:scale-105 transition-all duration-300 backdrop-blur-sm border ${isDarkMode ? 'border-indigo-400/30' : 'border-indigo-300/40'}">✨ $& ✨</div>`)
       
-      // Numbers and units - enhanced formatting
-      .replace(/(\d+(?:\.\d+)?)\s*(km|miles|°C|°F|%|kph|mph|meters|feet|seconds|minutes|hours)/g,
-        '<span class="px-2 py-1 bg-emerald-800/30 border border-emerald-600/50 rounded text-emerald-300 font-bold">$1</span><span class="text-emerald-400 text-sm ml-1 font-medium">$2</span>')
-      
-      // Bold text with beautiful gradients
+      // Convert **bold** to animated bullet points
       .replace(/\*\*(.*?)\*\*/g, 
-        '<strong class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">$1</strong>')
+        `<div class="flex items-start my-2 md:my-3 p-2 md:p-3 rounded-lg ${isDarkMode ? 'bg-slate-800/30 hover:bg-slate-700/40' : 'bg-slate-100/50 hover:bg-slate-200/60'} transition-all duration-300 transform hover:translate-x-2 group cursor-pointer border ${isDarkMode ? 'border-slate-700/30 hover:border-slate-600/50' : 'border-slate-200/50 hover:border-slate-300/70'}"><span class="mr-3 text-lg ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-500'} transform group-hover:scale-110 transition-all duration-300">●</span><span class="flex-1 font-medium ${isDarkMode ? 'text-gray-200 group-hover:text-white' : 'text-gray-700 group-hover:text-gray-900'} break-words">$1</span></div>`)
       
-      // Headers with mathematical styling and icons
+      // Mathematical concepts - theme-aware highlighting
+      .replace(/\b(distance|formula|equation|theorem|proof|calculate|graph|chart|diagram|temperature|humidity|weather|climate)\b/gi, 
+        `<span class="px-2 py-1 ${themeClasses.mathConcepts} rounded font-semibold">$&</span>`)
+      
+      // Numbers and units - theme-aware formatting
+      .replace(/(\d+(?:\.\d+)?)\s*(km|miles|°C|°F|%|kph|mph|meters|feet|seconds|minutes|hours)/g,
+        `<span class="px-2 py-1 ${themeClasses.numbersBg} rounded font-bold">$1</span><span class="${themeClasses.numbersUnit} text-sm ml-1 font-medium">$2</span>`)
+      
+      // Headers with mathematical styling and icons - responsive sizing
       .replace(/^### (.*$)/gim, 
-        '<h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mt-8 mb-4 flex items-center"><span class="mr-3 text-2xl">📐</span>$1</h3>')
+        '<h3 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mt-6 md:mt-8 mb-3 md:mb-4 flex items-center flex-wrap"><span class="mr-2 md:mr-3 text-xl md:text-2xl">📐</span><span class="break-words">$1</span></h3>')
       .replace(/^## (.*$)/gim, 
-        '<h2 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-8 mb-6 flex items-center"><span class="mr-3 text-3xl">🧮</span>$1</h2>')
+        '<h2 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap"><span class="mr-2 md:mr-3 text-2xl md:text-3xl">🧮</span><span class="break-words">$1</span></h2>')
       .replace(/^# (.*$)/gim, 
-        '<h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-400 mt-8 mb-6 flex items-center"><span class="mr-3 text-4xl">🌟</span>$1</h1>')
+        '<h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-400 mt-6 md:mt-8 mb-4 md:mb-6 flex items-center flex-wrap"><span class="mr-2 md:mr-3 text-3xl md:text-4xl">🌟</span><span class="break-words">$1</span></h1>')
       
-      // Mathematical expressions with enhanced styling
+      // Mathematical expressions with theme-aware styling
       .replace(/\$(.*?)\$/g, 
-        '<span class="inline-block bg-gradient-to-r from-yellow-900 to-orange-900 px-4 py-2 rounded-xl text-yellow-200 font-mono border border-yellow-600/50 shadow-lg backdrop-blur-sm">$1</span>')
+        `<span class="inline-block ${themeClasses.mathExpr} px-3 md:px-4 py-1 md:py-2 rounded-lg md:rounded-xl font-mono border shadow-lg backdrop-blur-sm text-sm md:text-base">$1</span>`)
       
-      // Code blocks with enhanced syntax highlighting
+      // Code blocks with theme-aware syntax highlighting
       .replace(/```([\s\S]*?)```/g, 
-        '<pre class="bg-gray-900 border-2 border-gray-700 rounded-2xl p-6 my-8 overflow-x-auto shadow-2xl backdrop-blur-sm"><code class="text-green-400 font-mono text-sm leading-relaxed">$1</code></pre>')
+        `<pre class="${themeClasses.codeBlock} border-2 rounded-xl md:rounded-2xl p-4 md:p-6 my-6 md:my-8 overflow-x-auto shadow-2xl backdrop-blur-sm"><code class="font-mono text-xs md:text-sm leading-relaxed">$1</code></pre>`)
       
-      // Inline code with better styling
+      // Inline code with theme-aware styling
       .replace(/`([^`]+)`/g, 
-        '<code class="bg-gray-800 px-3 py-1 rounded-lg text-cyan-300 font-mono border border-gray-600">$1</code>')
+        `<code class="${themeClasses.inlineCode} px-2 md:px-3 py-1 rounded-md md:rounded-lg font-mono border text-sm">$1</code>`)
       
-      // Enhanced lists with beautiful bullets and spacing
+      // Enhanced lists with theme-aware bullets and mobile-friendly spacing
       .replace(/^[\s]*-[\s]+(.*$)/gim, 
-        '<li class="ml-8 mb-3 text-gray-100 flex items-start"><span class="text-blue-400 mr-3 mt-1 text-lg">▸</span><span class="flex-1">$1</span></li>')
+        `<li class="ml-4 md:ml-8 mb-2 md:mb-3 ${themeClasses.listText} flex items-start"><span class="${themeClasses.listBullet} mr-2 md:mr-3 mt-1 text-base md:text-lg">▸</span><span class="flex-1 break-words">$1</span></li>`)
       
-      // Special formatting for weather conditions
+      // Special formatting for weather conditions - theme-aware
       .replace(/\b(Clear|Sunny|Cloudy|Rainy|Stormy|Snowy)\b/g,
-        '<span class="px-2 py-1 bg-sky-800/30 border border-sky-600/50 rounded text-sky-300 font-medium">$&</span>')
+        `<span class="px-2 py-1 ${themeClasses.weather} rounded font-medium">$&</span>`)
+      
+      // Highlight chart and visualization keywords
+      .replace(/\b(pie chart|bar chart|histogram|line chart|scatter plot|area chart|graph|visualization|chart|diagram)\b/gi,
+        `<span class="px-2 py-1 ${isDarkMode ? 'bg-purple-800/30 border-purple-600/50 text-purple-300' : 'bg-purple-200/50 border-purple-400/50 text-purple-800'} rounded font-medium">📊 $&</span>`)
+      
+      // Remove any remaining placeholder text patterns
+      .replace(/\[.*?RENDERED\]/g, '')
+      .replace(/\[.*?COMPLETE\]/g, '')
+      .replace(/\[IMAGE_.*?\]/g, '')
+      .replace(/\[TABLE_.*?\]/g, '')
+      .replace(/\[FORMULA_.*?\]/g, '')
+      .replace(/\[COMPUTATION.*?\]/g, '')
+      .replace(/\[MATH_.*?\]/g, '')
+      .replace(/\[DIAGRAM_.*?\]/g, '')
       
       // Line breaks
       .replace(/\n\n/g, '<br/><br/>')
@@ -285,7 +421,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   const richContent = parseRichContent(text, toolResults);
   
   return (
-    <div className="rich-message-content prose prose-invert max-w-none">
+    <div className="rich-message-content prose prose-invert max-w-none break-words overflow-hidden">
       {richContent.map((item, index) => {
         switch (item.type) {
           case 'math_diagram':
@@ -308,11 +444,12 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             );
           case 'text':
           default:
-  return (
-    <div 
+            return (
+              <div 
                 key={index}
+                className="break-words overflow-hidden"
                 dangerouslySetInnerHTML={{ __html: item.content }}
-    />
+              />
             );
         }
       })}

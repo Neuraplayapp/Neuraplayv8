@@ -746,9 +746,26 @@ async function createMathDiagram(params) {
         svgContent = createHistogram(data, title, style);
         break;
         
+      case 'pie chart':
+      case 'pie':
+      case 'donut chart':
+        svgContent = createPieChart(data, title, style);
+        break;
+        
+      case 'line chart':
+      case 'line graph':
       case 'spending chart':
       case 'monthly spending':
         svgContent = createSpendingChart(data, title, style);
+        break;
+        
+      case 'scatter plot':
+      case 'scatter chart':
+        svgContent = createScatterPlot(data, title, style);
+        break;
+        
+      case 'area chart':
+        svgContent = createAreaChart(data, title, style);
         break;
         
       case 'scale comparison':
@@ -962,6 +979,202 @@ function createSpendingChart(data, title, style) {
   </svg>`;
 }
 
+// Create pie chart visualization
+function createPieChart(data, title, style) {
+  const values = data.values || [30, 25, 20, 15, 10];
+  const labels = data.labels || ['A', 'B', 'C', 'D', 'E'];
+  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#F97316'];
+  
+  const total = values.reduce((sum, val) => sum + val, 0);
+  const centerX = 300;
+  const centerY = 220;
+  const radius = 120;
+  
+  let currentAngle = 0;
+  let slices = '';
+  let legends = '';
+  
+  values.forEach((value, i) => {
+    const sliceAngle = (value / total) * 2 * Math.PI;
+    const endAngle = currentAngle + sliceAngle;
+    
+    const x1 = centerX + radius * Math.cos(currentAngle);
+    const y1 = centerY + radius * Math.sin(currentAngle);
+    const x2 = centerX + radius * Math.cos(endAngle);
+    const y2 = centerY + radius * Math.sin(endAngle);
+    
+    const largeArc = sliceAngle > Math.PI ? 1 : 0;
+    
+    const color = colors[i % colors.length];
+    
+    slices += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${color}"/>`;
+    
+    // Add percentage label
+    const midAngle = currentAngle + sliceAngle / 2;
+    const labelX = centerX + (radius * 0.7) * Math.cos(midAngle);
+    const labelY = centerY + (radius * 0.7) * Math.sin(midAngle);
+    const percentage = Math.round((value / total) * 100);
+    
+    slices += `<text x="${labelX}" y="${labelY}" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">${percentage}%</text>`;
+    
+    // Add legend
+    const legendY = 50 + i * 25;
+    legends += `<rect x="450" y="${legendY - 10}" width="15" height="15" fill="${color}" rx="2"/>`;
+    legends += `<text x="475" y="${legendY + 2}" fill="white" font-family="Arial" font-size="12">${labels[i]}: ${value}</text>`;
+    
+    currentAngle = endAngle;
+  });
+  
+  return `<svg width="600" height="450" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="600" height="450" fill="#0f172a"/>
+    
+    <!-- Title -->
+    <text x="300" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    
+    <!-- Pie chart -->
+    ${slices}
+    
+    <!-- Legend -->
+    ${legends}
+    
+    <!-- Center circle for donut effect -->
+    <circle cx="${centerX}" cy="${centerY}" r="40" fill="#0f172a"/>
+    <text x="${centerX}" y="${centerY - 5}" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">Total</text>
+    <text x="${centerX}" y="${centerY + 10}" text-anchor="middle" fill="white" font-family="Arial" font-size="12">${total}</text>
+  </svg>`;
+}
+
+// Create scatter plot visualization
+function createScatterPlot(data, title, style) {
+  const xValues = data.x || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const yValues = data.y || [2, 5, 3, 8, 7, 6, 9, 4, 8, 10];
+  const labels = data.labels || xValues.map((_, i) => `Point ${i + 1}`);
+  
+  const maxX = Math.max(...xValues);
+  const maxY = Math.max(...yValues);
+  const chartWidth = 500;
+  const chartHeight = 300;
+  const marginX = 80;
+  const marginY = 80;
+  
+  let points = '';
+  
+  xValues.forEach((x, i) => {
+    const y = yValues[i];
+    const plotX = marginX + (x / maxX) * chartWidth;
+    const plotY = (marginY + chartHeight) - (y / maxY) * chartHeight;
+    
+    points += `<circle cx="${plotX}" cy="${plotY}" r="6" fill="#06B6D4" stroke="white" stroke-width="2"/>`;
+  });
+  
+  return `<svg width="700" height="500" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="700" height="500" fill="#1a1a2e"/>
+    
+    <!-- Title -->
+    <text x="350" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    
+    <!-- Grid -->
+    <defs><pattern id="scatterGrid" width="50" height="30" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 30" fill="none" stroke="#374151" stroke-width="0.5"/></pattern></defs>
+    <rect x="${marginX}" y="${marginY}" width="${chartWidth}" height="${chartHeight}" fill="url(#scatterGrid)"/>
+    
+    <!-- Axes -->
+    <line x1="${marginX}" y1="${marginY}" x2="${marginX}" y2="${marginY + chartHeight}" stroke="white" stroke-width="2"/>
+    <line x1="${marginX}" y1="${marginY + chartHeight}" x2="${marginX + chartWidth}" y2="${marginY + chartHeight}" stroke="white" stroke-width="2"/>
+    
+    <!-- Data points -->
+    ${points}
+    
+    <!-- Axis labels -->
+    <text x="350" y="480" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">X Values</text>
+    <text x="25" y="250" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold" transform="rotate(-90 25 250)">Y Values</text>
+    
+    <!-- Scale labels -->
+    <text x="${marginX - 10}" y="${marginY + chartHeight + 15}" text-anchor="end" fill="white" font-family="Arial" font-size="12">0</text>
+    <text x="${marginX + chartWidth + 10}" y="${marginY + chartHeight + 15}" text-anchor="start" fill="white" font-family="Arial" font-size="12">${maxX}</text>
+    <text x="${marginX - 10}" y="${marginY + 5}" text-anchor="end" fill="white" font-family="Arial" font-size="12">${maxY}</text>
+  </svg>`;
+}
+
+// Create area chart visualization
+function createAreaChart(data, title, style) {
+  const values = data.values || [20, 45, 30, 70, 55, 80, 65, 90, 75, 85];
+  const labels = data.labels || values.map((_, i) => `Point ${i + 1}`);
+  
+  const maxValue = Math.max(...values);
+  const chartWidth = 500;
+  const chartHeight = 300;
+  const marginX = 80;
+  const marginY = 60;
+  
+  let pathPoints = `M ${marginX} ${marginY + chartHeight}`;
+  let linePoints = '';
+  
+  values.forEach((value, i) => {
+    const x = marginX + (i * (chartWidth / (values.length - 1)));
+    const y = (marginY + chartHeight) - ((value / maxValue) * chartHeight);
+    
+    if (i === 0) {
+      pathPoints += ` L ${x} ${y}`;
+      linePoints += `${x},${y} `;
+    } else {
+      pathPoints += ` L ${x} ${y}`;
+      linePoints += `${x},${y} `;
+    }
+  });
+  
+  pathPoints += ` L ${marginX + chartWidth} ${marginY + chartHeight} Z`;
+  
+  return `<svg width="700" height="450" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="700" height="450" fill="#0f172a"/>
+    
+    <!-- Title -->
+    <text x="350" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${title}</text>
+    
+    <!-- Grid -->
+    <defs>
+      <pattern id="areaGrid" width="50" height="25" patternUnits="userSpaceOnUse">
+        <path d="M 50 0 L 0 0 0 25" fill="none" stroke="#374151" stroke-width="0.5"/>
+      </pattern>
+      <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:0.8" />
+        <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:0.2" />
+      </linearGradient>
+    </defs>
+    <rect x="${marginX}" y="${marginY}" width="${chartWidth}" height="${chartHeight}" fill="url(#areaGrid)"/>
+    
+    <!-- Axes -->
+    <line x1="${marginX}" y1="${marginY}" x2="${marginX}" y2="${marginY + chartHeight}" stroke="white" stroke-width="2"/>
+    <line x1="${marginX}" y1="${marginY + chartHeight}" x2="${marginX + chartWidth}" y2="${marginY + chartHeight}" stroke="white" stroke-width="2"/>
+    
+    <!-- Area fill -->
+    <path d="${pathPoints}" fill="url(#areaGradient)"/>
+    
+    <!-- Line -->
+    <polyline points="${linePoints}" fill="none" stroke="#06B6D4" stroke-width="3"/>
+    
+    <!-- Data points -->
+    ${values.map((value, i) => {
+      const x = marginX + (i * (chartWidth / (values.length - 1)));
+      const y = (marginY + chartHeight) - ((value / maxValue) * chartHeight);
+      return `<circle cx="${x}" cy="${y}" r="4" fill="#06B6D4" stroke="white" stroke-width="2"/>`;
+    }).join('')}
+    
+    <!-- Y-axis labels -->
+    <text x="${marginX - 10}" y="${marginY + chartHeight + 15}" text-anchor="end" fill="white" font-family="Arial" font-size="12">0</text>
+    <text x="${marginX - 10}" y="${marginY + chartHeight * 0.75 + 5}" text-anchor="end" fill="white" font-family="Arial" font-size="12">${Math.round(maxValue * 0.25)}</text>
+    <text x="${marginX - 10}" y="${marginY + chartHeight * 0.5 + 5}" text-anchor="end" fill="white" font-family="Arial" font-size="12">${Math.round(maxValue * 0.5)}</text>
+    <text x="${marginX - 10}" y="${marginY + chartHeight * 0.25 + 5}" text-anchor="end" fill="white" font-family="Arial" font-size="12">${Math.round(maxValue * 0.75)}</text>
+    <text x="${marginX - 10}" y="${marginY + 5}" text-anchor="end" fill="white" font-family="Arial" font-size="12">${maxValue}</text>
+    
+    <!-- Axis titles -->
+    <text x="350" y="430" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">Data Points</text>
+    <text x="25" y="225" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold" transform="rotate(-90 25 225)">Values</text>
+  </svg>`;
+}
+
 // Generic math diagram creator
 function createGenericMathDiagram(concept, data, title, style) {
   return `<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
@@ -1013,6 +1226,9 @@ async function handleImageGeneration(input_data, token) {
 
     console.log('Starting image generation with Fireworks AI token:', !!token);
     console.log('Extracted prompt for image generation:', prompt);
+    
+    // ⚠️ IMPORTANT: Uses Fireworks accounts/fireworks/models/flux-1-schnell-fp8 
+    // This requires Render environment with Neuraplay API key - local testing will fail
 
     if (!token) {
       throw new Error('No Fireworks AI token provided for image generation');
@@ -1024,11 +1240,11 @@ async function handleImageGeneration(input_data, token) {
     console.log('Image generation prompt:', enhancedPrompt);
     console.log('Generating image with FLUX model via Fireworks AI...');
 
-    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/flux-1-schnell-fp8', {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/workflows/accounts/fireworks/models/accounts/fireworks/models/flux-1-schnell-fp8/text_to_image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Accept': 'image/jpeg',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
@@ -1044,44 +1260,13 @@ async function handleImageGeneration(input_data, token) {
       throw new Error(`Image generation failed: ${response.status} - ${errorText}`);
     }
 
-    // Parse JSON response from Fireworks
-    const responseData = await response.json();
-    console.log('✅ Fireworks image generation response:', responseData);
+    // Handle binary image response from Fireworks (not JSON)
+    const imageBuffer = await response.buffer();
+    console.log('✅ Fireworks image generation response received, size:', imageBuffer.length, 'bytes');
     
-    // Extract image URL from response
-    let imageUrl = null;
-    let base64Image = null;
-    
-    if (responseData.image) {
-      // If response contains direct image data
-      imageUrl = responseData.image;
-    } else if (responseData.images && responseData.images[0]) {
-      // If response contains images array
-      imageUrl = responseData.images[0].url || responseData.images[0];
-    } else if (responseData.url) {
-      // If response contains url field
-      imageUrl = responseData.url;
-    } else {
-      throw new Error('No image URL found in Fireworks response');
-    }
-    
-    // If we got a data URL, extract base64
-    if (imageUrl && imageUrl.startsWith('data:image/')) {
-      base64Image = imageUrl.split(',')[1];
-    } else if (imageUrl) {
-      // If we got a URL, fetch the image and convert to base64
-      try {
-        const imageResponse = await fetch(imageUrl);
-        const imageBuffer = await imageResponse.buffer();
-        base64Image = imageBuffer.toString('base64');
-        imageUrl = `data:image/jpeg;base64,${base64Image}`;
-      } catch (fetchError) {
-        console.warn('Could not fetch image from URL, using URL directly:', fetchError);
-        // Use the URL as-is if we can't fetch it
-      }
-    }
-    
-    const dataUrl = imageUrl;
+    // Convert to base64 and create data URL
+    const base64Image = imageBuffer.toString('base64');
+    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
     
     console.log('✅ Image generation successful');
     

@@ -635,7 +635,7 @@ Use professional but accessible language suitable for parents and educators.`;
     if (!user) return { allowed: false, remaining: 0, limit: 0 };
     
     // Initialize usage if missing (safety check)
-    if (!user.usage) {
+    if (!user.usage || !user.usage.aiPrompts) {
       console.log('🔧 User missing usage object, initializing...');
       const updatedUser = {
         ...user,
@@ -644,7 +644,7 @@ Use professional but accessible language suitable for parents and educators.`;
           imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
         }
       };
-      setUser(updatedUser);
+      setUserWithPersistence(updatedUser);
       return { allowed: true, remaining: 19, limit: 20 }; // Allow with default limits
     }
     
@@ -669,7 +669,7 @@ Use professional but accessible language suitable for parents and educators.`;
     if (!user) return { allowed: false, remaining: 0, limit: 0 };
     
     // Initialize usage if missing (safety check)
-    if (!user.usage) {
+    if (!user.usage || !user.usage.imageGeneration) {
       console.log('🔧 User missing usage object for image gen, initializing...');
       const updatedUser = {
         ...user,
@@ -678,7 +678,7 @@ Use professional but accessible language suitable for parents and educators.`;
           imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
         }
       };
-      setUser(updatedUser);
+      setUserWithPersistence(updatedUser);
       return { allowed: true, remaining: 1, limit: 2 }; // Allow with default limits
     }
     
