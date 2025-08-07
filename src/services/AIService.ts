@@ -95,6 +95,7 @@ class AIService {
   // Get tool definitions for the AI model
   private getToolDefinitions() {
     return [
+      // CLIENT-SIDE TOOLS (handled by ToolExecutorService)
       {
         "type": "function",
         "function": {
@@ -138,6 +139,89 @@ class AIService {
             "required": ["setting", "value"]
           }
         }
+      },
+      
+      // SERVER-SIDE TOOLS (handled by server.cjs)
+      {
+        "type": "function",
+        "function": {
+          "name": "generate_image",
+          "description": "Creates, generates, draws, or makes a visual image based on a user's textual description. Use this for any visual request.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string",
+                "description": "A detailed text description of the image to be generated. For example, 'a futuristic city with flying cars'."
+              },
+              "style": {
+                "type": "string",
+                "enum": ["photorealistic", "cartoon", "watercolor", "3d-render", "pixel-art", "child-friendly"],
+                "description": "Optional artistic style for the image."
+              }
+            },
+            "required": ["prompt"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "web_search",
+          "description": "Search the web for current information, news, or specific topics. Use this when users ask about current events, want to search for information, or need up-to-date data.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "The search query to look up on the web"
+              }
+            },
+            "required": ["query"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather information for a specific location. Use this when users ask about weather conditions.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "The city, state/country, or location to get weather for"
+              }
+            },
+            "required": ["location"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_math_diagram",
+          "description": "Create mathematical diagrams, charts, graphs, or visualizations. Use this for any mathematical, statistical, or data visualization request.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "concept": {
+                "type": "string",
+                "description": "The type of diagram to create (e.g., 'bar chart', 'pie chart', 'line graph', 'scatter plot', 'histogram')"
+              },
+              "data": {
+                "type": "object",
+                "description": "The data or mathematical concept to visualize"
+              },
+              "title": {
+                "type": "string",
+                "description": "Title for the diagram"
+              }
+            },
+            "required": ["concept"]
+          }
+        }
       }
     ];
   }
@@ -155,10 +239,7 @@ class AIService {
     // Image generation is now handled by the intelligent agentic tool-calling system
     // The GPT-OSS model decides when to call generate_image tool
 
-    // Use correct endpoint - server has /api/api route  
-    const apiEndpoint = '/api';
-    
-    console.log('🔍 AI Service Debug - API Endpoint:', apiEndpoint);
+    console.log('🔍 AI Service Debug - Will call apiBase + /api = /api/api');
     
     // Prepare system prompt with tool calling instructions and language context
     let systemPrompt = enableToolCalling 
@@ -202,7 +283,7 @@ class AIService {
       console.log('🧠 AI Service Debug - Total messages being sent to AI:', messages.length);
       console.log('🧠 AI Service Debug - Message structure:', messages.map(m => ({ role: m.role, contentLength: m.content?.length || 0 })));
 
-      const response = await this.apiCall(apiEndpoint, {
+      const response = await this.apiCall('/api', {
         method: 'POST',
         body: JSON.stringify({
           task_type: 'chat',
@@ -257,73 +338,11 @@ class AIService {
     }
   }
 
-  // REMOVED: Image detection is now handled by the intelligent agentic system
-  // The GPT-OSS model will decide when to call the generate_image tool
+  // Image generation is now handled by the intelligent agentic tool-calling system
+  // The GPT-OSS model will decide when to call the generate_image tool and the server handles execution
 
-  // Handle image generation
-  private async handleImageGeneration(text: string): Promise<string> {
-    // Extract the image prompt from the text
-    const prompt = this.extractImagePrompt(text);
-    
-    // Use the correct API endpoint for each platform
-    const apiEndpoint = '/api';
-
-    try {
-      const response = await this.apiCall(apiEndpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          task_type: 'image',
-          input_data: {
-            prompt: prompt,
-            size: '512x512'
-          }
-        })
-      });
-
-      // Return structured response with image data
-      if (response.image_url) {
-        return `IMAGE_GENERATED:${response.image_url}:Here's your generated image!`;
-      } else if (response.url) {
-        return `IMAGE_GENERATED:${response.url}:Here's your generated image!`;
-      } else {
-        return 'I generated an image for you, but there was an issue displaying it.';
-      }
-    } catch (error) {
-      console.error('Image generation failed:', error);
-      return 'Sorry, I encountered an error while generating the image. Please try again.';
-    }
-  }
-
-  // Extract image prompt from user text
-  private extractImagePrompt(text: string): string {
-    // Remove common image generation phrases
-    const phrasesToRemove = [
-      'generate an image of',
-      'create an image of',
-      'make an image of',
-      'draw a picture of',
-      'show me a picture of',
-      'generate an image',
-      'create an image',
-      'make an image',
-      'draw a picture',
-      'show me a picture',
-      'generate a picture of',
-      'create a picture of',
-      'make a picture of'
-    ];
-
-    let prompt = text.toLowerCase();
-    for (const phrase of phrasesToRemove) {
-      prompt = prompt.replace(phrase, '').trim();
-    }
-
-    // If nothing remains, use the original text
-    return prompt || text;
-  }
-
-  // Define available tools for the AI
-  private getAvailableTools() {
+  // REMOVED: Duplicate method - using getToolDefinitions() instead
+  /*private getAvailableTools() {
     return [
       {
         name: 'navigate_to_page',
@@ -402,7 +421,7 @@ class AIService {
         }
       }
     ];
-  }
+  }*/
 
   // Enhanced pedagogical system prompt with tool calling instructions
   private getToolCallingSystemPrompt(context?: any): string {
@@ -519,10 +538,8 @@ Current context: ${JSON.stringify(context || {})}`;
 
   // Test basic API call without tool calling
   async testBasicAPI(text: string): Promise<string> {
-    const apiEndpoint = '/api';
-    
     try {
-      const response = await this.apiCall(apiEndpoint, {
+      const response = await this.apiCall('/api', {
         method: 'POST',
         body: JSON.stringify({
           task_type: 'chat',
