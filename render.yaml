@@ -29,5 +29,9 @@ services:
         sync: false
       - key: ELEVENLABS_AGENT_ID
         value: agent_2201k13zjq5nf9faywz14701hyhb
+      - key: SMTP_USER
+        value: noreply@neuraplay.biz
+      - key: SMTP_APP_PASSWORD
+        sync: false # Use Google App Password here
     healthCheckPath: /
     autoDeploy: true 

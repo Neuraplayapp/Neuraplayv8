@@ -39,44 +39,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
       setUser(null);
       localStorage.removeItem('neuraplay_user');
 
-      // Secret Admin Access
-      if (formData.email.toLowerCase() === 'smt@neuraplay.biz' && formData.password === 'GH2300!') {
-        const adminUser = {
-          id: 'admin_2025',
-          username: 'NeuraPlay Admin',
-          email: 'smt@neuraplay.biz',
-          role: 'admin' as const,
-          isVerified: true,
-          subscription: {
-            tier: 'unlimited' as const,
-            startDate: new Date().toISOString(),
-            status: 'active' as const
-          },
-          usage: {
-            aiPrompts: { count: 0, lastReset: new Date().toISOString(), history: [] },
-            imageGeneration: { count: 0, lastReset: new Date().toISOString(), history: [] }
-          },
-          profile: {
-            avatar: '/assets/images/Mascot.png',
-            rank: 'System Administrator',
-            xp: 999999,
-            xpToNextLevel: 0,
-            stars: 999999,
-            about: 'NeuraPlay System Administrator',
-            gameProgress: {}
-          },
-          journeyLog: [],
-          hasPosted: true,
-          friends: [],
-          friendRequests: { sent: [], received: [] }
-        };
-        
-        setUser(adminUser);
-        onSuccess?.();
-        onClose();
-        navigate(redirectTo);
-        return;
-      }
+      // Admin login is now handled server-side
 
       // Call authentication API
       const response = await fetch('/api/auth/login', {
@@ -171,17 +134,18 @@ const LoginModal: React.FC<LoginModalProps> = ({
               <User className="w-5 h-5" />
               Email Address
             </label>
-            <input
-              type="email"
-              placeholder="Enter your email address"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className={`w-full p-4 rounded-xl border focus:ring-2 focus:ring-violet-400/20 transition-all ${
-                isDarkMode 
-                  ? 'bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-violet-400'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-violet-500'
-              }`}
-              required
+                          <input
+                type="email"
+                placeholder="Enter your email address"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className={`w-full p-4 rounded-xl border focus:ring-2 focus:ring-violet-400/20 transition-all ${
+                  isDarkMode 
+                    ? 'bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-violet-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-violet-500'
+                }`}
+                autoComplete="email"
+                required
             />
           </div>
 
@@ -203,6 +167,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                     ? 'bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-violet-400'
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-violet-500'
                 }`}
+                autoComplete="current-password"
                 required
               />
               <button

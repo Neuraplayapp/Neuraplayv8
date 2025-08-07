@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const databaseService = require('../services/database.cjs');
+const emailService = require('../services/email.cjs');
 const router = express.Router();
 
 // Security configuration
@@ -133,15 +134,25 @@ router.post('/send-verification', async (req, res) => {
       expiresAt: Date.now() + (10 * 60 * 1000)
     });
     
-    // In production, send actual email/SMS
-    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
+    // Send verification email
+    const emailResult = await emailService.sendEmail(
+      email,
+      'verification',
+      verificationCode
+    );
+
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email. Please try again.'
+      });
+    }
     
     res.json({ 
       success: true, 
       token,
-      message: `Verification code sent to your ${method}`,
-      // For development only - remove in production
-      devCode: verificationCode
+      message: `Verification code sent to your email address`
     });
     
   } catch (error) {
@@ -200,6 +211,17 @@ router.post('/verify', async (req, res) => {
     
     // Clean up verification code
     verificationCodes.delete(token);
+
+    // Send welcome email
+    const welcomeEmailResult = await emailService.sendEmail(
+      user.email,
+      'welcome',
+      user.username
+    );
+
+    if (!welcomeEmailResult.success) {
+      console.error('Failed to send welcome email:', welcomeEmailResult.error);
+    }
     
     res.json({ 
       success: true, 
