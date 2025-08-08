@@ -8,7 +8,7 @@ interface RichMessageRendererProps {
 }
 
   interface RichContent {
-  type: 'text' | 'image' | 'math_diagram' | 'chart' | 'table' | 'formula' | 'weather_table' | 'tool_result' | 'chart_request' | 'wiki_card' | 'news_card';
+  type: 'text' | 'image' | 'math_diagram' | 'chart' | 'table' | 'formula' | 'weather_table' | 'tool_result' | 'chart_request' | 'wiki_card' | 'news_card' | 'web_results';
   content: string;
   metadata?: any;
 }
@@ -101,6 +101,8 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
         content.push({ type: 'wiki_card', content: data.title || 'Wikipedia', metadata: data });
       } else if (data?.type === 'news_card') {
         content.push({ type: 'news_card', content: 'News', metadata: data });
+      } else if (data?.type === 'web_results') {
+        content.push({ type: 'web_results', content: 'Web Results', metadata: data });
       } else if (data?.image_url && data?.diagram_type) {
         console.log(`🔍 Adding math_diagram for result ${index}`);
         content.push({
@@ -236,6 +238,25 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
                   <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs mt-1`}>{n.source} • {n.date}</div>
                 </div>
               </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderWebResults = (metadata: any) => {
+    const container = isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white/70 border-black/10';
+    const results = metadata.results || [];
+    return (
+      <div className={`my-4 p-4 rounded-xl backdrop-blur-md border ${container}`}>
+        <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-3`}>Top Results</h4>
+        <div className="space-y-3">
+          {results.map((r: any, i: number) => (
+            <a key={i} href={r.link} target="_blank" rel="noopener noreferrer" className={`block rounded-lg p-3 border ${isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'} transition-colors`}>
+              <div className={`${isDarkMode ? 'text-blue-300' : 'text-blue-700'} font-medium`}>{r.title}</div>
+              <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm mt-1`}>{r.snippet}</div>
+              <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs mt-1`}>{r.source || new URL(r.link).hostname}</div>
             </a>
           ))}
         </div>
@@ -663,6 +684,8 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             return <div key={index}>{renderWikiCard(item.metadata)}</div>;
           case 'news_card':
             return <div key={index}>{renderNewsCard(item.metadata)}</div>;
+          case 'web_results':
+            return <div key={index}>{renderWebResults(item.metadata)}</div>;
           case 'math_diagram':
             return <div key={index}>{renderMathDiagram(item.content, item.metadata)}</div>;
           case 'image':

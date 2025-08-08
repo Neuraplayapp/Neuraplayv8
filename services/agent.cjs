@@ -387,17 +387,18 @@ async function performWebSearch(query) {
     console.log('🔍 DEBUG: Serper response data:', JSON.stringify(data, null, 2));
     
     if (data.organic && data.organic.length > 0) {
-      const results = data.organic.slice(0, 3).map(result => ({
+      const results = data.organic.slice(0, 5).map(result => ({
         title: result.title,
         snippet: result.snippet,
-        link: result.link
+        link: result.link,
+        source: result.source
       }));
       
       console.log('✅ DEBUG: Web search successful, returning', results.length, 'results');
       return {
         success: true,
         message: `Found ${results.length} search results for "${query}"`,
-        data: { query, results }
+        data: { type: 'web_results', query, results }
       };
     } else {
       console.log('❌ DEBUG: No organic results found in response');

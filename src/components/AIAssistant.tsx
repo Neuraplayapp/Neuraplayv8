@@ -2542,7 +2542,7 @@ Need help with anything specific? Just ask! 🌟`;
             const overlayItem = toolResultsForAssistant.find((r: any) => {
                 const parsed = typeof r === 'string' ? JSON.parse(r) : r;
                 const d = parsed?.data;
-                return d?.type === 'wiki_card' || d?.type === 'news_card';
+                return d?.type === 'wiki_card' || d?.type === 'news_card' || d?.type === 'web_results';
             });
             if (overlayItem) {
                 const parsed = typeof overlayItem === 'string' ? JSON.parse(overlayItem) : overlayItem;
@@ -2564,6 +2564,20 @@ Need help with anything specific? Just ask! 🌟`;
                                 {(d.items || []).slice(0,3).map((n: any, i: number) => (
                                     <a key={i} href={n.link} target="_blank" rel="noopener noreferrer" className="block text-sm underline">
                                         {n.title}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                    setIsSearchOverlayOpen(true);
+                } else if (d.type === 'web_results') {
+                    setOverlayContent(
+                        <div>
+                            <div className="mb-2 font-semibold">Top Results</div>
+                            <div className="space-y-2">
+                                {(d.results || []).slice(0,3).map((r: any, i: number) => (
+                                    <a key={i} href={r.link} target="_blank" rel="noopener noreferrer" className="block text-sm underline">
+                                        {r.title}
                                     </a>
                                 ))}
                             </div>
