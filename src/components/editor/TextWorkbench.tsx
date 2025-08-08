@@ -61,15 +61,22 @@ const Toolbar: React.FC<ToolbarProps> = ({ compact }) => {
     const onErase = (e: any) => erase(e?.detail?.text || '');
     const onReplace = (e: any) => replaceAt(e?.detail?.target || '', e?.detail?.with || '');
     const onNormalize = () => normalize();
+    const onScaffoldHypothesis = (e: any) => {
+      const a = e?.detail?.a || 'Hypothesis A: ...';
+      const b = e?.detail?.b || 'Hypothesis B: ...';
+      setText([a, b, '', 'Evidence:', '', 'Expected outcome:'].join('\n'));
+    };
     window.addEventListener('scribble_editor_insert', onInsert as EventListener);
     window.addEventListener('scribble_editor_erase', onErase as EventListener);
     window.addEventListener('scribble_editor_replace', onReplace as EventListener);
     window.addEventListener('scribble_editor_normalize', onNormalize as EventListener);
+    window.addEventListener('scribble_editor_scaffold_hypothesis', onScaffoldHypothesis as EventListener);
     return () => {
       window.removeEventListener('scribble_editor_insert', onInsert as EventListener);
       window.removeEventListener('scribble_editor_erase', onErase as EventListener);
       window.removeEventListener('scribble_editor_replace', onReplace as EventListener);
       window.removeEventListener('scribble_editor_normalize', onNormalize as EventListener);
+      window.removeEventListener('scribble_editor_scaffold_hypothesis', onScaffoldHypothesis as EventListener);
     };
   }, [text]);
 
@@ -146,12 +153,14 @@ interface TextWorkbenchProps { compact?: boolean }
 const TextWorkbench: React.FC<TextWorkbenchProps> = ({ compact }) => {
   return (
     <div className="w-full h-full flex flex-col">
-      <Toolbar compact={compact} />
-      <div className="flex-1 grid grid-cols-3">
-        <div className="col-span-1 border-r border-black/10 dark:border-white/10">
+      <div className="shrink-0">
+        <Toolbar compact={compact} />
+      </div>
+      <div className="flex-1 grid grid-cols-3 min-h-0">
+        <div className="col-span-1 border-r border-black/10 dark:border-white/10 min-h-0">
           <EditorPane />
         </div>
-        <div className="col-span-2">
+        <div className="col-span-2 min-h-0">
           <PreviewPane />
         </div>
       </div>

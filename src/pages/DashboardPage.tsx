@@ -64,6 +64,10 @@ import TaskManager from '../components/TaskManager';
 import StudyCalendar from '../components/StudyCalendar';
 import Diary from '../components/Diary';
 import TeachersRoom from '../components/TeachersRoom';
+// @ts-ignore
+import ScribbleModule from '../components/ScribbleModule';
+// @ts-ignore
+import ScribbleKonvaBoard from '../components/scribbleboard/ScribbleKonvaBoard';
 
 
 
@@ -511,7 +515,22 @@ const DashboardPage: React.FC = () => {
             ) : showDiary ? (
               <Diary onClose={() => setShowDiary(false)} />
             ) : showTeachersRoom ? (
-              <TeachersRoom onClose={() => setShowTeachersRoom(false)} />
+              <div className="space-y-6">
+                <TeachersRoom onClose={() => setShowTeachersRoom(false)} />
+                {/* Learning Squad: shared board preview */}
+                <div className={`${getCardBackgroundClasses()} rounded-2xl p-6`}>
+                  <h3 className={`text-xl font-semibold mb-3 ${getTextClasses('primary')}`}>Learning Squad Board</h3>
+                  {/* Konva + yjs shared board */}
+                  {/* @ts-ignore */}
+                  <ScribbleKonvaBoard room="squad-room" />
+                </div>
+                {/* Cleaned ScribbleModule as independent widget */}
+                <div className={`${getCardBackgroundClasses()} rounded-2xl p-6`}>
+                  <h3 className={`text-xl font-semibold mb-3 ${getTextClasses('primary')}`}>Personal Canvas</h3>
+                  {/* @ts-ignore */}
+                  <ScribbleModule isOpen={true} onClose={()=>{}} theme={{ isDarkMode }} />
+                </div>
+              </div>
             ) : activeTab === 'library' && (
               <div className="space-y-6">
                 {/* Search and Filters */}

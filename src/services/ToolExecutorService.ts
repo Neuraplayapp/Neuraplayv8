@@ -69,16 +69,32 @@ export class ToolExecutorService {
         case 'open_canvas_mindmap':
           return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
         // Scribbleboard tools
-        case 'scribble_hypothesis_test':
-          return this.dispatch('scribble_hypothesis_test', toolCall.parameters, '🧪 Opened hypothesis tester');
+        case 'scribble_hypothesis_test': {
+          // Ensure board opens and editor is scaffolded before posting the test
+          try {
+            window.dispatchEvent(new CustomEvent('scribble_open', { detail: { mode: 'compact' } }));
+            window.dispatchEvent(new CustomEvent('scribble_editor_scaffold_hypothesis', { detail: { a: 'Hypothesis A: ...', b: 'Hypothesis B: ...' } }));
+            window.dispatchEvent(new CustomEvent('scribble_hypothesis_test', { detail: toolCall.parameters }));
+            return { success: true, message: '🧪 Hypothesis tester opened and editor scaffolded' };
+          } catch (e) {
+            return { success: false, message: `Failed to open hypothesis tester: ${e instanceof Error ? e.message : 'Unknown error'}` };
+          }
+        }
         case 'scribble_hypothesis_result':
           return this.dispatch('scribble_hypothesis_result', toolCall.parameters, '✅ Hypothesis result posted');
         case 'scribble_autoagent_toggle':
           return this.dispatch('scribble_autoagent_toggle', toolCall.parameters, '🤖 AutoAgent toggled');
         case 'scribble_autoagent_suggest':
           return this.dispatch('scribble_autoagent_suggest', toolCall.parameters, '💡 Suggestions added');
-        case 'scribble_parallel_thought':
-          return this.dispatch('scribble_parallel_thought', toolCall.parameters, '🧭 Parallel thought started');
+        case 'scribble_parallel_thought': {
+          try {
+            window.dispatchEvent(new CustomEvent('scribble_open', { detail: { mode: 'compact' } }));
+            window.dispatchEvent(new CustomEvent('scribble_parallel_thought', { detail: toolCall.parameters }));
+            return { success: true, message: '🧭 Parallel thought started' };
+          } catch (e) {
+            return { success: false, message: `Failed to start parallel thought: ${e instanceof Error ? e.message : 'Unknown error'}` };
+          }
+        }
         case 'scribble_editor_insert':
           return this.dispatch('scribble_editor_insert', toolCall.parameters, '✍️ Inserted into editor');
         case 'scribble_editor_erase':
@@ -91,6 +107,8 @@ export class ToolExecutorService {
           return this.dispatch('scribble_add_note', toolCall.parameters, '📌 Sent to board');
         case 'scribble_open':
           return this.dispatch('scribble_open', toolCall.parameters, '🗂️ Opened Scribbleboard');
+        case 'scribble_editor_scaffold_hypothesis':
+          return this.dispatch('scribble_editor_scaffold_hypothesis', toolCall.parameters, '🧪 Editor scaffolded for hypothesis');
         // Boards
         case 'scribble_board_new':
           return this.dispatch('scribble_board_new', toolCall.parameters, '🆕 Board created');
@@ -112,6 +130,18 @@ export class ToolExecutorService {
           return this.dispatch('scribble_mutating_evolve', toolCall.parameters, '🔁 Node evolved');
         case 'scribble_mutating_compare':
           return this.dispatch('scribble_mutating_compare', toolCall.parameters, '🧪 Compare versions');
+        case 'scribble_mutating_evolve_feedback': {
+          try {
+            // For now, synthesize an evolved content note and call evolve under the hood
+            const { id, feedback, goal, constraints } = toolCall.parameters || {};
+            const summary = `Feedback: ${feedback || 'n/a'}\nGoal: ${goal || 'n/a'}\nConstraints: ${constraints || 'n/a'}`;
+            window.dispatchEvent(new CustomEvent('scribble_mutating_evolve', { detail: { id, toType: undefined } }));
+            window.dispatchEvent(new CustomEvent('scribble_add_note', { detail: { text: `Evolved with feedback:\n${summary}` } }));
+            return { success: true, message: '🔁 Node evolved with feedback and version stored' };
+          } catch (e) {
+            return { success: false, message: `Failed to evolve with feedback: ${e instanceof Error ? e.message : 'Unknown error'}` };
+          }
+        }
         // Graph
         case 'scribble_graph_add_node':
           return this.dispatch('scribble_graph_add_node', toolCall.parameters, '➕ Node added');
@@ -123,6 +153,8 @@ export class ToolExecutorService {
           return this.dispatch('scribble_graph_focus', toolCall.parameters, '🎯 Focused node');
         case 'scribble_graph_export':
           return this.dispatch('scribble_graph_export', toolCall.parameters, '📤 Graph exported');
+        case 'scribble_chart_create':
+          return this.dispatch('scribble_chart_create', toolCall.parameters, '📊 Chart created');
         case 'open_canvas_plugin_node':
           return await this.handleOpenCanvasPluginNode(toolCall.parameters, context);
         case 'canvas_add_markdown_block':

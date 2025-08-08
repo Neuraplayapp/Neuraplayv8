@@ -21,8 +21,27 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
 
   if (!open) return null;
 
+  // Dedicated fullscreen rendering to avoid centered/padded container artifacts
+  if (mode === 'fullscreen') {
+    return (
+      <div className="fixed inset-0 z-[1000] pointer-events-auto">
+        <div className="w-full h-full flex flex-col bg-transparent">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-white/80 dark:bg-black/60 border-black/10 dark:border-white/10">
+            <div className="font-medium text-lg">{title}</div>
+            <button onClick={onClose} className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:opacity-80" aria-label="Close">✕</button>
+          </div>
+          {/* Body fills the remaining space fully */}
+          <div className="flex-1 overflow-hidden">
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const sizeClass = mode === 'compact'
-    ? 'max-w-md mt-2 px-2'
+    ? 'max-w-md mt-2 px-2 max-h-[90vh]'
     : mode === 'fullscreen'
       ? 'w-full h-full px-0 mt-0'
       : 'max-w-3xl mt-6 px-4';

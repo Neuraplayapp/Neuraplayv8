@@ -28,6 +28,236 @@ const tools = [
   {
     "type": "function",
     "function": {
+      "name": "scribble_open",
+      "description": "Open the Scribbleboard/Text Workbench UI on the client in compact or fullscreen mode.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": { "type": "string", "enum": ["compact", "fullscreen"], "description": "Display mode" }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_hypothesis_test",
+      "description": "Add a hypothesis tester card to the active Scribbleboard and start a simulation.",
+      "parameters": {
+        "type": "object",
+        "properties": { "prompt": { "type": "string" } },
+        "required": ["prompt"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_hypothesis_result",
+      "description": "Post a result to a hypothesis card on the Scribbleboard.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "estimate": { "type": "string" },
+          "confidence": { "type": "string" },
+          "title": { "type": "string" }
+        },
+        "required": ["id", "estimate", "confidence"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_autoagent_toggle",
+      "description": "Enable or disable AutoAgent suggestions on the Scribbleboard.",
+      "parameters": { "type": "object", "properties": { "enabled": { "type": "boolean" } } }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_autoagent_suggest",
+      "description": "Push AutoAgent suggestion strings to the board.",
+      "parameters": { "type": "object", "properties": { "suggestions": { "type": "array", "items": { "type": "string" } } }, "required": ["suggestions"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_parallel_thought",
+      "description": "Start a parallel thought split with left and right prompts.",
+      "parameters": { "type": "object", "properties": { "leftPrompt": { "type": "string" }, "rightPrompt": { "type": "string" } } }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_board_new",
+      "description": "Create a new board and switch to it.",
+      "parameters": { "type": "object", "properties": { "name": { "type": "string" } } }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_board_switch",
+      "description": "Switch active board by id.",
+      "parameters": { "type": "object", "properties": { "id": { "type": "string" } }, "required": ["id"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_board_rename",
+      "description": "Rename a board by id.",
+      "parameters": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" } }, "required": ["id", "name"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_board_delete",
+      "description": "Delete a board by id.",
+      "parameters": { "type": "object", "properties": { "id": { "type": "string" } }, "required": ["id"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_mutating_create",
+      "description": "Create a mutating node with a title.",
+      "parameters": { "type": "object", "properties": { "title": { "type": "string" } } }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_mutating_evolve",
+      "description": "Evolve a mutating node by id to a new type.",
+      "parameters": { "type": "object", "properties": { "id": { "type": "string" }, "toType": { "type": "string" } }, "required": ["id"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_mutating_compare",
+      "description": "Open versions/compare UI for a mutating node.",
+      "parameters": { "type": "object", "properties": { "id": { "type": "string" }, "versionIndex": { "type": "number" } }, "required": ["id"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_mutating_evolve_feedback",
+      "description": "Evolve a mutating node using structured feedback and goals, storing a new version.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "feedback": { "type": "string" },
+          "goal": { "type": "string" },
+          "constraints": { "type": "string" }
+        },
+        "required": ["id", "feedback"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_graph_add_node",
+      "description": "Add a graph node to board graph.",
+      "parameters": { "type": "object", "properties": { "id": { "type": "string" }, "label": { "type": "string" }, "type": { "type": "string" } }, "required": ["label"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_graph_add_edge",
+      "description": "Add a graph edge.",
+      "parameters": { "type": "object", "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "label": { "type": "string" } }, "required": ["from", "to"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_graph_layout",
+      "description": "Request graph layout.",
+      "parameters": { "type": "object", "properties": {} }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_graph_focus",
+      "description": "Focus a graph node by id.",
+      "parameters": { "type": "object", "properties": { "nodeId": { "type": "string" } }, "required": ["nodeId"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_graph_export",
+      "description": "Export graph as png or svg.",
+      "parameters": { "type": "object", "properties": { "format": { "type": "string", "enum": ["png", "svg"] } }, "required": ["format"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_editor_insert",
+      "description": "Insert text into the Text Workbench.",
+      "parameters": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_editor_erase",
+      "description": "Erase a substring from the Text Workbench contents.",
+      "parameters": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_editor_replace",
+      "description": "Replace substring in the Text Workbench contents.",
+      "parameters": { "type": "object", "properties": { "target": { "type": "string" }, "with": { "type": "string" } }, "required": ["target", "with"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_editor_normalize",
+      "description": "Normalize markdown/cleanup in the Text Workbench.",
+      "parameters": { "type": "object", "properties": {} }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_editor_send_to_board",
+      "description": "Send current editor text as a note/card to the Scribbleboard.",
+      "parameters": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_editor_scaffold_hypothesis",
+      "description": "Prepare the Text Workbench with two hypothesis lines and basic structure.",
+      "parameters": {
+        "type": "object",
+        "properties": { "a": { "type": "string" }, "b": { "type": "string" } }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "get_wikipedia_summary",
       "description": "Fetch a concise Wikipedia summary (with thumbnail if available) for a topic or entity.",
       "parameters": {
@@ -408,6 +638,26 @@ const TOOL_ROUTING_CONFIG = {
     'scribble_autoagent_toggle': { reason: 'Toggle autoagent on board', requires: ['ui_manipulation'] },
     'scribble_autoagent_suggest': { reason: 'Add suggestions to board', requires: ['ui_manipulation'] },
     'scribble_parallel_thought': { reason: 'Start two visible branches', requires: ['ui_manipulation'] },
+    'scribble_open': { reason: 'Opens Scribbleboard/Workbench overlay on client', requires: ['ui_manipulation', 'browser_api'] },
+    'scribble_board_new': { reason: 'Create new board', requires: ['ui_manipulation'] },
+    'scribble_board_switch': { reason: 'Switch board', requires: ['ui_manipulation'] },
+    'scribble_board_rename': { reason: 'Rename board', requires: ['ui_manipulation'] },
+    'scribble_board_delete': { reason: 'Delete board', requires: ['ui_manipulation'] },
+    'scribble_mutating_create': { reason: 'Create mutating node', requires: ['ui_manipulation'] },
+    'scribble_mutating_evolve': { reason: 'Evolve node', requires: ['ui_manipulation'] },
+    'scribble_mutating_compare': { reason: 'Compare versions', requires: ['ui_manipulation'] },
+    'scribble_mutating_evolve_feedback': { reason: 'Evolve node with feedback/goals', requires: ['ui_manipulation'] },
+    'scribble_graph_add_node': { reason: 'Add graph node', requires: ['ui_manipulation'] },
+    'scribble_graph_add_edge': { reason: 'Add graph edge', requires: ['ui_manipulation'] },
+    'scribble_graph_layout': { reason: 'Layout graph', requires: ['ui_manipulation'] },
+    'scribble_graph_focus': { reason: 'Focus graph node', requires: ['ui_manipulation'] },
+    'scribble_graph_export': { reason: 'Export graph', requires: ['ui_manipulation'] },
+    'scribble_editor_insert': { reason: 'Insert into TextWorkbench', requires: ['ui_manipulation'] },
+    'scribble_editor_erase': { reason: 'Erase from TextWorkbench', requires: ['ui_manipulation'] },
+    'scribble_editor_replace': { reason: 'Replace in TextWorkbench', requires: ['ui_manipulation'] },
+    'scribble_editor_normalize': { reason: 'Normalize TextWorkbench', requires: ['ui_manipulation'] },
+    'scribble_editor_send_to_board': { reason: 'Send editor text to board', requires: ['ui_manipulation'] },
+    'scribble_editor_scaffold_hypothesis': { reason: 'Preload hypothesis lines in editor', requires: ['ui_manipulation'] },
     'open_canvas_plugin_node': {
       reason: 'Opens canvas and inserts a plugin node via client event',
       requires: ['ui_manipulation', 'browser_api']

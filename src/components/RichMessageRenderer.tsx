@@ -522,12 +522,12 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
           </h4>
         </div>
         <div className={`table-content ${contentBg} ${compact ? 'rounded-md p-2' : 'rounded-lg md:rounded-xl p-3 md:p-4'} border ${contentBorder} backdrop-blur-sm overflow-x-auto`}>
-          <table className={`w-full ${compact ? 'text-[11px]' : 'text-xs md:text-sm'} min-w-full`}>
+          <table className={`w-full ${compact ? 'text-[11px]' : 'text-xs md:text-sm'} min-w-full table-auto`}>
             <thead>
               <tr className={`border-b ${headerRowBorder}`}>
                 {headers.map((header, i) => (
-                  <th key={i} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} text-left font-medium ${headerCellText} ${headerCellBg} break-words`}>
-                    <span className="break-words">{header}</span>
+                  <th key={i} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} text-left font-medium ${headerCellText} ${headerCellBg} break-words whitespace-nowrap`}>
+                    <span className="break-words whitespace-nowrap">{header}</span>
                   </th>
                 ))}
               </tr>
@@ -536,10 +536,10 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
               {rows.map((row, i) => (
                 <tr key={i} className={`border-b ${rowBorder} ${rowHover} transition-colors`}>
                   {row.map((cell, j) => (
-                    <td key={j} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} ${cellText} break-words max-w-0`}>
+                    <td key={j} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} ${cellText} break-words max-w-0 whitespace-pre-wrap`}>
                       {/* Highlight numbers and units with theme-aware colors */}
                       <span className="break-words" dangerouslySetInnerHTML={{
-                        __html: cell.replace(/(\d+(?:\.\d+)?)\s*(°C|°F|%|kph|mph)/g,
+                        __html: cell.replace(/(\d+(?:\.\d+)?)\s*(km|miles|°C|°F|%|kph|mph|meters|feet|seconds|minutes|hours)/g,
                           isDarkMode 
                             ? '<span class="px-2 py-1 bg-green-800/40 border border-green-600/50 rounded text-green-300 font-semibold">$1</span><span class="text-green-400 text-xs ml-1">$2</span>'
                             : '<span class="px-2 py-1 bg-green-200/60 border border-green-400/50 rounded text-green-700 font-semibold">$1</span><span class="text-green-600 text-xs ml-1">$2</span>'
@@ -703,7 +703,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   const richContent = parseRichContent(text, toolResults);
   
     return (
-      <div className={`rich-message-content ${compact ? 'prose-sm' : ''} prose prose-invert max-w-none break-words overflow-hidden`}>
+      <div className={`rich-message-content ${compact ? 'prose-sm' : ''} prose prose-invert max-w-full break-words overflow-hidden`}>
       {richContent.map((item, index) => {
         switch (item.type) {
           case 'wiki_card':

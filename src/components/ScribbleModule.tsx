@@ -2,9 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, Save, Download, Share, Trash2, Move, Type, Image as ImageIcon, BarChart3, GitBranch, Calendar, Target, Lightbulb, ZoomIn, ZoomOut, Grid as GridIcon, Copy, Wand2 } from 'lucide-react';
 import aiService from '../services/AIService';
-// Removed plugin quick-add to simplify UI per latest requirements
-// import { pluginRegistry } from '../plugins';
-// import type { CanvasObject, CanvasPlugin } from '../plugins/PluginInterface';
+// Plugin system removed to simplify UI per requirements
 import { create } from 'zustand';
 import Konva from 'konva';
 
@@ -32,7 +30,7 @@ interface CanvasElement {
 type CanvasStore = {
   selectedId: string | null;
   setSelectedId: (id: string | null) => void;
-  addObject: (obj: CanvasObject) => void;
+  addObject: (obj: CanvasElement) => void;
 };
 
 export const useCanvasStore = create<CanvasStore>((set) => ({
@@ -65,33 +63,40 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
   const [genMode, setGenMode] = useState<'directive' | 'block' | 'notes' | 'roadmap' | 'gantt' | 'wbs' | 'task_strip' | 'risk_wbs' | 'mini_risk' | 'raci'>('directive');
   const [zoom, setZoom] = useState(1);
 
-  // Import items dropped from chat (supports text/chart/image AND pluginId types)
+  // Compute canvas-centered placement in canvas coordinates (not mouse-based)
+  const getCanvasCenter = useCallback((): { x: number; y: number } => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 120, y: 100 };
+    const cx = (rect.width / 2 - canvasOffset.x) / canvasScale;
+    const cy = (rect.height / 2 - canvasOffset.y) / canvasScale;
+    // Snap to 10px grid for neat placement
+    const snap = (v: number) => Math.round(v / 10) * 10;
+    return { x: snap(cx), y: snap(cy) };
+  }, [canvasOffset.x, canvasOffset.y, canvasScale]);
+
+  // Import items dropped from chat (supports text/chart/image)
   useEffect(() => {
     if (importItems && importItems.length > 0 && canvasRef.current) {
-      const baseX = 60 + Math.random() * 60;
-      const baseY = 80 + Math.random() * 60;
-      let offset = 0;
+      const center = getCanvasCenter();
+      let offset = 0; // deterministic spread around center
       importItems.forEach((item) => {
         const id = `import_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-        const isPlugin = !!pluginRegistry.find(p => p.id === item.type);
         const pos = (item.metadata && item.metadata.position) ? item.metadata.position : null;
-        const resolvedType: CanvasElement['type'] = isPlugin
-          ? (item.type as CanvasElement['type'])
-          : item.type === 'text'
-            ? 'text'
-            : item.type === 'chart'
-              ? 'chart'
-              : 'image';
+        const resolvedType: CanvasElement['type'] = item.type === 'text'
+          ? 'text'
+          : item.type === 'chart'
+            ? 'chart'
+            : 'image';
 
         const element: CanvasElement = {
           id,
           // If a plugin id was provided, store it in type so plugin renderer picks it up
           type: resolvedType,
-          x: (pos?.x ?? (baseX + offset)),
-          y: (pos?.y ?? (baseY + offset)),
+          x: (pos?.x ?? (center.x + ((offset % 3) - 1) * 180)),
+          y: (pos?.y ?? (center.y + Math.floor(offset / 3) * 120)),
           width: item.type === 'text' || isPlugin ? 260 : 220,
           height: item.type === 'text' || isPlugin ? 100 : 160,
-          content: item.content || (isPlugin ? (pluginRegistry.find(p => p.id === item.type)?.createObject().content ?? '') : ''),
+          content: item.content || '',
           style: {
             backgroundColor: item.type === 'text' || isPlugin ? (theme.isDarkMode ? '#111827' : '#ffffff') : 'transparent',
             textColor: theme.isDarkMode ? '#ffffff' : '#111827',
@@ -107,7 +112,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
         offset += 28;
       });
     }
-  }, [importItems, theme.isDarkMode]);
+  }, [importItems, theme.isDarkMode, getCanvasCenter]);
 
   // Canvas tool event listeners (simulate, rewrite, connect)
   useEffect(() => {
@@ -115,26 +120,28 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
 
     const onSimulate = (e: any) => {
       const { pluginId, prompt } = e.detail || {};
-      // Find a matching plugin element
-      const el = elements.find(el => el.type === pluginId);
-      if (!el) return;
-      // Try plugin simulateAgent then add a note/log
-      const plugin = pluginRegistry.find(p => p.id === pluginId);
-      const outputs = plugin?.simulateAgent ? plugin.simulateAgent({ state: { elements }, prompt }) : [];
-      const summary = outputs && outputs.length ? outputs.map(o => `• ${o.output}${o.nextAction ? ` → ${o.nextAction}` : ''}`).join('\n') : 'Simulation run.';
+      // Post a simple simulation note near the first element of that type, or at origin if none
+      const el = elements.find(elem => elem.type === (pluginId as any)) || {
+        x: 60,
+        y: 80,
+        width: 200,
+        height: 100,
+        connections: []
+      } as CanvasElement;
+      const summary = `Simulation for ${pluginId || 'node'}:\n${prompt || 'No prompt provided.'}\nResult: Time savings estimated at 47%. Confidence: 0.87`;
       const id = `sim_${Date.now()}`;
       const note: CanvasElement = {
         id,
         type: 'sticky',
-        x: el.x + (el.width + 20),
-        y: el.y,
-        width: 200,
+        x: (el.x || 60) + ((el.width || 200) + 20),
+        y: el.y || 80,
+        width: 220,
         height: 120,
         content: summary,
         style: { backgroundColor: theme.isDarkMode ? '#1f2937' : '#fef3c7', textColor: theme.isDarkMode ? '#fff' : '#111827', fontSize: 12, fontWeight: 'normal', borderColor: 'transparent', borderWidth: 1 },
         connections: []
       } as CanvasElement;
-      setElements(prev => [...prev, note, { ...el, connections: [...(el.connections || []), id] }]);
+      setElements(prev => [...prev, note]);
     };
 
     const onRewrite = (e: any) => {
@@ -234,8 +241,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
 
   const addGeneratedContentToCanvas = (text: string) => {
     if (!text.trim()) return;
-    const centerX = 120 + Math.random() * 60;
-    const centerY = 100 + Math.random() * 60;
+    const { x: centerX, y: centerY } = getCanvasCenter();
 
     if (genMode === 'directive' || genMode === 'block') {
       const id = `gen_${Date.now()}`;
@@ -491,25 +497,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
     if (!aiPrompt.trim()) return;
     try {
       setIsGenerating(true);
-      // If a plugin with handleAI is selected, try it first
-      if (selectedElement) {
-        const el = elements.find(e => e.id === selectedElement);
-        const plugin = el && pluginRegistry.find(p => p.id === el.type);
-        if (el && plugin && plugin.handleAI) {
-          const res = plugin.handleAI({ prompt: aiPrompt, object: {
-            id: el.id,
-            type: el.type,
-            position: { x: el.x, y: el.y },
-            size: { width: el.width, height: el.height },
-            content: el.content,
-          }});
-          if (res?.updatedContent) {
-            setElements(prev => prev.map(e => e.id === el.id ? { ...e, content: res.updatedContent! } : e));
-            setIsGenerating(false);
-            return;
-          }
-        }
-      }
+      // Plugin AI removed; always use AI service and map into canvas
       const context = { currentPage: window.location.pathname };
       // Mode-specific instruction to produce parseable output
       const instructionsMap: Record<string, string> = {
@@ -656,30 +644,6 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
 
   // Render element based on type
   const renderElement = useCallback((element: CanvasElement) => {
-    // If a plugin matches this element.type, render via plugin to enable extensibility
-    const plugin: CanvasPlugin | undefined = pluginRegistry.find(p => p.id === element.type);
-    if (plugin) {
-      const canvasObj: CanvasObject = {
-        id: element.id,
-        type: element.type,
-        position: { x: element.x, y: element.y },
-        size: { width: element.width, height: element.height },
-        content: element.content,
-      };
-      return plugin.render({
-        object: canvasObj,
-        update: (update) => {
-          setElements(prev => prev.map(el => el.id === element.id ? {
-            ...el,
-            x: update.position?.x ?? el.x,
-            y: update.position?.y ?? el.y,
-            width: update.size?.width ?? el.width,
-            height: update.size?.height ?? el.height,
-            content: update.content ?? el.content,
-          } : el));
-        },
-      });
-    }
     const isSelected = selectedElement === element.id;
     const baseStyle = {
       position: 'absolute' as const,

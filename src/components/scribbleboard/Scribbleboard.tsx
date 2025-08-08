@@ -55,17 +55,33 @@ type Board = {
   parallel: { left: string[]; right: string[] } | null;
   mutating: Array<{ id: string; title: string; versions: string[]; type: string }>; // simple placeholder
   graph: { nodes: Array<{ id: string; label: string }>; edges: Array<{ from: string; to: string }> };
+  charts?: Array<{ id: string; title?: string; type: 'line'|'bar'|'area'; series: Array<{ name: string; data: Array<{ x: number|string; y: number }>; color?: string }> }>
 };
 
 const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
   const [boards, setBoards] = useState<Board[]>([{
-    id: 'board_1', name: 'Board 1', hypotheses: [], suggestions: [], parallel: null, mutating: [], graph: { nodes: [], edges: [] }
+    id: 'board_1', name: 'Board 1', hypotheses: [], suggestions: [], parallel: null, mutating: [], graph: { nodes: [], edges: [] }, charts: []
   }]);
   const [activeBoard, setActiveBoard] = useState('board_1');
   const [autoAgentEnabled, setAutoAgentEnabled] = useState(false);
 
   // Event listeners for tools
   useEffect(() => {
+    // Open with hypothesis scaffolding: pre-populate two branches and an empty hypothesis card
+    const onOpen = (e: any) => {
+      const modeReq = e?.detail?.mode as Mode | undefined;
+      // Optional mode-based behaviors; we already control layout in AIAssistant
+      const left = e?.detail?.left || 'Hypothesis A: ...';
+      const right = e?.detail?.right || 'Hypothesis B: ...';
+      const prompt = e?.detail?.prompt || 'State your hypothesis here...';
+      setBoards(prev => prev.map(b => b.id===activeBoard ? {
+        ...b,
+        parallel: { left: [left], right: [right] },
+        hypotheses: [{ id: `h_${Date.now()}`, prompt }, ...b.hypotheses]
+      } : b));
+      // Also add a starting suggestion
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, suggestions: [`Consider variables and expected outcome.`] } : b));
+    };
     const onOpenTest = (e: any) => {
       const prompt = e?.detail?.prompt || 'Untitled hypothesis';
       setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, hypotheses: [{ id: `h_${Date.now()}`, prompt }, ...b.hypotheses] } : b));
@@ -139,7 +155,17 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
     const onGraphLayout = () => {};
     const onGraphFocus = () => {};
     const onGraphExport = () => {};
+    // Charts: allow direct creation with provided series
+    const onChartCreate = (e: any) => {
+      const { title, type = 'line', series } = e?.detail || {};
+      if (!series || !Array.isArray(series) || !series.length) return;
+      setBoards(prev => prev.map(b => b.id===activeBoard ? {
+        ...b,
+        charts: [{ id: `chart_${Date.now()}`, title, type, series }, ...(b.charts || [])]
+      } : b));
+    };
 
+    window.addEventListener('scribble_open', onOpen as EventListener);
     window.addEventListener('scribble_hypothesis_test', onOpenTest as EventListener);
     window.addEventListener('scribble_hypothesis_result', onSetResult as EventListener);
     window.addEventListener('scribble_autoagent_toggle', onAutoAgentToggle as EventListener);
@@ -160,7 +186,9 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
     window.addEventListener('scribble_graph_layout', onGraphLayout as EventListener);
     window.addEventListener('scribble_graph_focus', onGraphFocus as EventListener);
     window.addEventListener('scribble_graph_export', onGraphExport as EventListener);
+    window.addEventListener('scribble_chart_create', onChartCreate as EventListener);
     return () => {
+      window.removeEventListener('scribble_open', onOpen as EventListener);
       window.removeEventListener('scribble_hypothesis_test', onOpenTest as EventListener);
       window.removeEventListener('scribble_hypothesis_result', onSetResult as EventListener);
       window.removeEventListener('scribble_autoagent_toggle', onAutoAgentToggle as EventListener);
@@ -181,12 +209,27 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
       window.removeEventListener('scribble_graph_layout', onGraphLayout as EventListener);
       window.removeEventListener('scribble_graph_focus', onGraphFocus as EventListener);
       window.removeEventListener('scribble_graph_export', onGraphExport as EventListener);
+      window.removeEventListener('scribble_chart_create', onChartCreate as EventListener);
     };
   }, [autoAgentEnabled, mode, activeBoard, boards.length]);
 
   const isCompact = mode === 'compact';
   const board = boards.find(b => b.id === activeBoard)!;
   const containerClass = useMemo(() => (isCompact ? 'p-2 space-y-2' : 'p-4 space-y-3'), [isCompact]);
+
+  const downloadJSON = () => {
+    try {
+      const blob = new Blob([JSON.stringify(boards.find(b=>b.id===activeBoard), null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(boards.find(b=>b.id===activeBoard)?.name || 'board').replace(/\s+/g,'_')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {}
+  };
 
   const content = (
     <div className={containerClass}>
@@ -213,6 +256,7 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
           const name = prompt('Board name?', board.name) || board.name; window.dispatchEvent(new CustomEvent('scribble_board_rename',{detail:{id:activeBoard,name}}));
         }}>Rename</button>
         {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_delete',{detail:{id:activeBoard}}))}>Delete</button>}
+        <button className="ml-auto px-2 py-1 text-xs rounded border" onClick={downloadJSON}>Export JSON</button>
       </div>
 
       {/* Suggestions */}
@@ -249,6 +293,27 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
       <div className="grid grid-cols-1 gap-2">
         {board.hypotheses.map(h => (
           <HypothesisCard key={h.id} prompt={h.prompt} mode={mode} result={h.result} />
+        ))}
+        {/* Mutating node versions panel (compact summary) */}
+        {board.mutating.length > 0 && !isCompact && (
+          <div className="p-3 border rounded bg-white/60 dark:bg-black/30 border-black/10 dark:border-white/10">
+            <div className="text-sm font-semibold mb-2">🧬 Mutating Nodes</div>
+            <div className="space-y-1 text-xs">
+              {board.mutating.map(m => (
+                <div key={m.id} className="flex items-center justify-between">
+                  <div className="truncate mr-2">{m.title} <span className="opacity-60">(v{m.versions.length})</span></div>
+                  <div className="flex gap-2">
+                    <button className="px-2 py-0.5 border rounded" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_compare',{ detail: { id: m.id, versionIndex: 0 } }))}>Compare</button>
+                    <button className="px-2 py-0.5 border rounded" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_evolve',{ detail: { id: m.id } }))}>Evolve</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Render any explicitly created charts */}
+        {(board.charts || []).map(c => (
+          <ChartCard key={c.id} title={c.title} type={c.type} series={c.series} compact={mode==='compact'} />
         ))}
         {/* Example: if graph contains a series node, render it */}
         {board.graph.nodes.filter(n=>n.label?.startsWith('chart:')).map((n,i)=>{
