@@ -231,6 +231,13 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       try { await navigator.clipboard.writeText(content); } catch {}
     };
 
+    const handleOpenCanvas = () => {
+      try {
+        const event = new CustomEvent('openScribbleModule', { detail: { items: [{ type: 'chart', title: metadata.title || 'Diagram', content, metadata }] } });
+        window.dispatchEvent(event);
+      } catch {}
+    };
+
     return (
       <div className={`math-diagram-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-2xl border shadow-xl backdrop-blur-sm overflow-hidden`}> 
         <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
@@ -248,6 +255,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             <button onClick={handleOpen} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>View</button>
             <button onClick={handleDownload} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Download</button>
             <button onClick={handleCopy} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Copy</button>
+            <button onClick={handleOpenCanvas} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-blue-900/40 border-blue-700 text-blue-200 hover:bg-blue-800/50' : 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'}`}>Open in Canvas</button>
           </div>
         </div>
 
@@ -299,6 +307,12 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const handleCopy = async () => {
       try { await navigator.clipboard.writeText(content); } catch {}
     };
+    const handleOpenCanvas = () => {
+      try {
+        const event = new CustomEvent('openScribbleModule', { detail: { items: [{ type: 'image', title: metadata.title || 'Image', content, metadata }] } });
+        window.dispatchEvent(event);
+      } catch {}
+    };
 
     return (
       <div className={`image-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-2xl border shadow-xl backdrop-blur-sm`}>
@@ -311,6 +325,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             <button onClick={handleOpen} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>View</button>
             <button onClick={handleDownload} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Download</button>
             <button onClick={handleCopy} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Copy</button>
+            <button onClick={handleOpenCanvas} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-blue-900/40 border-blue-700 text-blue-200 hover:bg-blue-800/50' : 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'}`}>Open in Canvas</button>
           </div>
         </div>
         

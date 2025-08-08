@@ -1,6 +1,6 @@
 // ScribbleModule - Interactive Canvas for Project Plans, Mind Maps, Charts & Roadmaps
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Plus, Save, Download, Share, Trash2, Move, Type, Image, BarChart3, GitBranch, Calendar, Target, Lightbulb } from 'lucide-react';
+import { Plus, Save, Download, Share, Trash2, Move, Type, Image as ImageIcon, BarChart3, GitBranch, Calendar, Target, Lightbulb, ZoomIn, ZoomOut, Grid as GridIcon, Copy, Wand2 } from 'lucide-react';
 
 interface CanvasElement {
   id: string;
@@ -26,9 +26,10 @@ interface ScribbleModuleProps {
   isOpen: boolean;
   onClose: () => void;
   theme: { isDarkMode: boolean };
+  importItems?: Array<{ type: 'image' | 'chart' | 'text'; title?: string; content: string; metadata?: any }>;
 }
 
-const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme }) => {
+const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme, importItems = [] }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [elements, setElements] = useState<CanvasElement[]>([]);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -37,6 +38,41 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
   const [tool, setTool] = useState<'select' | 'text' | 'sticky' | 'chart' | 'roadmap' | 'mindmap'>('select');
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+
+  // Import items dropped from chat (images/charts/text)
+  useEffect(() => {
+    if (importItems && importItems.length > 0 && canvasRef.current) {
+      const baseX = 60 + Math.random() * 60;
+      const baseY = 80 + Math.random() * 60;
+      let offset = 0;
+      importItems.forEach((item) => {
+        const id = `import_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        const element: CanvasElement = {
+          id,
+          type: item.type === 'text' ? 'text' : item.type === 'chart' ? 'chart' : 'image',
+          x: baseX + offset,
+          y: baseY + offset,
+          width: item.type === 'text' ? 260 : 220,
+          height: item.type === 'text' ? 80 : 160,
+          content: item.content,
+          style: {
+            backgroundColor: item.type === 'text' ? (theme.isDarkMode ? '#111827' : '#ffffff') : 'transparent',
+            textColor: theme.isDarkMode ? '#ffffff' : '#111827',
+            fontSize: 14,
+            fontWeight: 'normal',
+            borderColor: item.type === 'text' ? (theme.isDarkMode ? '#111827' : '#ffffff') : 'transparent',
+            borderWidth: 1
+          },
+          data: item.metadata || {},
+          connections: []
+        };
+        setElements(prev => [...prev, element]);
+        offset += 28;
+      });
+    }
+  }, [importItems, theme.isDarkMode]);
 
   // Predefined Templates
   const templates = {
@@ -82,11 +118,11 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
       height: type === 'text' ? 40 : 100,
       content: type === 'text' ? 'New Text' : type === 'sticky' ? 'New Note' : `New ${type}`,
       style: {
-        backgroundColor: type === 'sticky' ? '#fef3c7' : 'transparent',
+        backgroundColor: type === 'sticky' ? (theme.isDarkMode ? '#1f2937' : '#fef3c7') : 'transparent',
         textColor: theme.isDarkMode ? '#ffffff' : '#000000',
         fontSize: 14,
         fontWeight: 'normal',
-        borderColor: '#d1d5db',
+        borderColor: type === 'sticky' ? (theme.isDarkMode ? '#1f2937' : '#fef3c7') : 'transparent',
         borderWidth: 1
       },
       connections: []
@@ -139,15 +175,20 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
     if (draggedElement) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
-        const x = (e.clientX - rect.left - canvasOffset.x) / canvasScale - dragOffset.x;
-        const y = (e.clientY - rect.top - canvasOffset.y) / canvasScale - dragOffset.y;
+        let x = (e.clientX - rect.left - canvasOffset.x) / canvasScale - dragOffset.x;
+        let y = (e.clientY - rect.top - canvasOffset.y) / canvasScale - dragOffset.y;
+        if (snapToGrid) {
+          const grid = 10;
+          x = Math.round(x / grid) * grid;
+          y = Math.round(y / grid) * grid;
+        }
         
         setElements(prev => prev.map(el => 
           el.id === draggedElement ? { ...el, x, y } : el
         ));
       }
     }
-  }, [draggedElement, dragOffset, canvasScale, canvasOffset]);
+  }, [draggedElement, dragOffset, canvasScale, canvasOffset, snapToGrid]);
 
   const handleMouseUp = useCallback(() => {
     setDraggedElement(null);
@@ -190,7 +231,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
       color: element.style.textColor,
       fontSize: element.style.fontSize,
       fontWeight: element.style.fontWeight,
-      border: `${element.style.borderWidth}px solid ${isSelected ? '#3b82f6' : element.style.borderColor}`,
+      border: `${element.style.borderWidth}px solid ${isSelected ? (theme.isDarkMode ? '#2563eb' : '#3b82f6') : element.style.borderColor}`,
       borderRadius: element.type === 'sticky' ? '8px' : '4px',
       padding: '8px',
       cursor: 'move',
@@ -218,7 +259,17 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
             onMouseDown={(e) => handleMouseDown(e, element.id)}
             onClick={handleElementClick}
           >
-            {element.content}
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const value = (e.target as HTMLElement).innerText;
+                setElements(prev => prev.map(el => el.id === element.id ? { ...el, content: value } : el));
+              }}
+              className="w-full h-full outline-none"
+            >
+              {element.content}
+            </div>
           </div>
         );
 
@@ -228,14 +279,43 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
             key={element.id}
             style={{
               ...baseStyle,
-              backgroundColor: element.style.backgroundColor || '#fef3c7',
+              backgroundColor: element.style.backgroundColor || (theme.isDarkMode ? '#1f2937' : '#fef3c7'),
               transform: `rotate(${Math.random() * 6 - 3}deg) ${isSelected ? 'scale(1.02)' : 'scale(1)'}`,
               boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
             }}
             onMouseDown={(e) => handleMouseDown(e, element.id)}
             onClick={handleElementClick}
           >
-            <div className="text-center break-words">{element.content}</div>
+            <div
+              className="text-center break-words w-full h-full outline-none"
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const value = (e.target as HTMLElement).innerText;
+                setElements(prev => prev.map(el => el.id === element.id ? { ...el, content: value } : el));
+              }}
+            >
+              {element.content}
+            </div>
+          </div>
+        );
+
+      case 'image':
+        return (
+          <div
+            key={element.id}
+            style={{
+              ...baseStyle,
+              backgroundColor: theme.isDarkMode ? '#111827' : '#ffffff',
+              border: `1px solid ${theme.isDarkMode ? '#111827' : '#ffffff'}`,
+              borderRadius: '12px',
+              padding: '6px'
+            }}
+            onMouseDown={(e) => handleMouseDown(e, element.id)}
+            onClick={handleElementClick}
+          >
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <img src={element.content} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8 }} />
           </div>
         );
 
@@ -246,7 +326,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
             style={{
               ...baseStyle,
               backgroundColor: theme.isDarkMode ? '#1f2937' : '#ffffff',
-              border: `2px solid ${isSelected ? '#3b82f6' : '#e5e7eb'}`,
+              border: `2px solid ${isSelected ? (theme.isDarkMode ? '#2563eb' : '#3b82f6') : (theme.isDarkMode ? '#1f2937' : '#ffffff')}`,
               borderRadius: '12px',
               padding: '16px'
             }}
@@ -270,7 +350,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
               width: element.width || 300,
               height: element.height || 60,
               backgroundColor: theme.isDarkMode ? '#374151' : '#f9fafb',
-              border: `2px solid ${isSelected ? '#3b82f6' : '#d1d5db'}`,
+              border: `2px solid ${isSelected ? (theme.isDarkMode ? '#2563eb' : '#3b82f6') : (theme.isDarkMode ? '#374151' : '#f9fafb')}`,
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
@@ -285,10 +365,19 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                   {index + 1}
                 </div>
-                <div className="ml-2 text-xs font-medium">{phase}</div>
+                <input
+                  className="ml-2 text-xs font-medium bg-transparent border-b border-transparent focus:border-blue-400 outline-none"
+                  defaultValue={phase}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    setElements(prev => prev.map(el => el.id === element.id ? { ...el, data: { ...el.data, phases: el.data.phases.map((p: string, i: number) => i === index ? value : p) } } : el));
+                  }}
+                />
                 {index < element.data.phases.length - 1 && (
                   <div className="ml-4 w-6 h-0.5 bg-gray-400"></div>
                 )}
+                <button className="ml-2 text-gray-400 hover:text-red-400" onClick={(e) => { e.stopPropagation(); setElements(prev => prev.map(el => el.id === element.id ? { ...el, data: { ...el.data, phases: el.data.phases.filter((_: any, i: number) => i !== index) } } : el)); }}>✕</button>
+                <button className="ml-1 text-gray-400 hover:text-blue-400" onClick={(e) => { e.stopPropagation(); setElements(prev => prev.map(el => el.id === element.id ? { ...el, data: { ...el.data, phases: [...el.data.phases.slice(0, index + 1), 'New Phase', ...el.data.phases.slice(index + 1)] } } : el)); }}>＋</button>
               </div>
             )) || <div>Roadmap</div>}
           </div>
@@ -313,7 +402,21 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
             onMouseDown={(e) => handleMouseDown(e, element.id)}
             onClick={handleElementClick}
           >
-            <div className="text-sm">{element.content}</div>
+            <div className="text-sm outline-none" contentEditable suppressContentEditableWarning onBlur={(e) => {
+              const value = (e.target as HTMLElement).innerText;
+              setElements(prev => prev.map(el => el.id === element.id ? { ...el, content: value } : el));
+            }}>{element.content}</div>
+            {/* Add child button */}
+            <button
+              className="absolute -bottom-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                const childId = createElement('mindmap', element.x + 160, element.y);
+                setElements(prev => prev.map(el => el.id === element.id ? { ...el, connections: [...(el.connections || []), childId] } : el));
+              }}
+            >
+              +
+            </button>
           </div>
         );
 
@@ -321,6 +424,42 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme 
         return null;
     }
   }, [selectedElement, handleMouseDown, theme.isDarkMode]);
+
+  // Duplicate and delete helpers
+  const duplicateSelected = useCallback(() => {
+    if (!selectedElement) return;
+    setElements(prev => {
+      const el = prev.find(e => e.id === selectedElement);
+      if (!el) return prev;
+      const copy: CanvasElement = { ...el, id: `copy_${Date.now()}`, x: el.x + 20, y: el.y + 20, connections: [] };
+      return [...prev, copy];
+    });
+  }, [selectedElement]);
+
+  const deleteSelected = useCallback(() => {
+    if (!selectedElement) return;
+    setElements(prev => prev.filter(e => e.id !== selectedElement).map(e => ({ ...e, connections: (e.connections || []).filter(id => id !== selectedElement) })));
+    setSelectedElement(null);
+  }, [selectedElement]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSelected(); }
+      if (selectedElement && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const delta = 5;
+        setElements(prev => prev.map(el => el.id === selectedElement ? { ...el,
+          y: el.y + (e.key === 'ArrowDown' ? delta : e.key === 'ArrowUp' ? -delta : 0),
+          x: el.x + (e.key === 'ArrowRight' ? delta : e.key === 'ArrowLeft' ? -delta : 0)
+        } : el));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, selectedElement, deleteSelected, duplicateSelected]);
 
   if (!isOpen) return null;
 
