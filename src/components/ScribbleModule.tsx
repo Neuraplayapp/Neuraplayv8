@@ -28,9 +28,10 @@ interface ScribbleModuleProps {
   onClose: () => void;
   theme: { isDarkMode: boolean };
   importItems?: Array<{ type: 'image' | 'chart' | 'text'; title?: string; content: string; metadata?: any }>;
+  template?: string | null;
 }
 
-const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme, importItems = [] }) => {
+const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme, importItems = [], template = null }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [elements, setElements] = useState<CanvasElement[]>([]);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -515,7 +516,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
         textColor: theme.isDarkMode ? '#ffffff' : '#000000',
         fontSize: el.style?.fontSize || 14,
         fontWeight: el.style?.fontWeight || 'normal',
-        borderColor: '#d1d5db',
+        borderColor: el.style?.backgroundColor || (theme.isDarkMode ? '#111827' : '#ffffff'),
         borderWidth: 1,
         ...el.style
       },
@@ -525,6 +526,13 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
     setElements(newElements);
     setSelectedElement(null);
   }, [theme.isDarkMode]);
+
+  // Auto-load template if provided from outside
+  useEffect(() => {
+    if (template && templates[template as keyof typeof templates]) {
+      loadTemplate(template as keyof typeof templates);
+    }
+  }, [template, loadTemplate]);
 
   // Render element based on type
   const renderElement = useCallback((element: CanvasElement) => {
@@ -641,10 +649,16 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
             onMouseDown={(e) => handleMouseDown(e, element.id)}
             onClick={handleElementClick}
           >
-            <div className="text-center">
-              <BarChart3 size={24} className="mx-auto mb-2" />
-              <div className="text-sm font-medium">{element.content}</div>
-              <div className="text-xs opacity-70">Chart Visualization</div>
+            <div className="w-[520px] h-[360px]">
+              <div className="text-xs mb-2 opacity-70">Interactive Graph</div>
+              <div className="w-full h-full bg-white rounded-md overflow-hidden">
+                {/* @ts-ignore - dynamic import only when used */}
+                <iframe
+                  srcDoc={`<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css'></head><body><div id='root'></div><script crossorigin src='https://unpkg.com/react@18/umd/react.production.min.js'></script><script crossorigin src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script><script src='https://unpkg.com/recharts/umd/Recharts.min.js'></script><script>const {useState}=React;const {ResponsiveContainer,LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,BarChart,Bar,AreaChart,Area,ScatterChart,Scatter}=Recharts;function App(){const [chartType,setChartType]=React.useState('line');const [dataset,setDataset]=React.useState('sales');const datasets={sales:[{name:'Jan',value:4000,secondary:2400},{name:'Feb',value:3000,secondary:1398},{name:'Mar',value:2000,secondary:9800},{name:'Apr',value:2780,secondary:3908},{name:'May',value:1890,secondary:4800},{name:'Jun',value:2390,secondary:3800},{name:'Jul',value:3490,secondary:4300}],performance:[{name:'Q1',value:85,secondary:78},{name:'Q2',value:92,secondary:85},{name:'Q3',value:78,secondary:90},{name:'Q4',value:96,secondary:88}],growth:[{name:'2020',value:100,secondary:120},{name:'2021',value:120,secondary:140},{name:'2022',value:180,secondary:200},{name:'2023',value:250,secondary:280},{name:'2024',value:320,secondary:350}],scatter:[{x:100,y:200,z:200},{x:120,y:100,z:260},{x:170,y:300,z:400},{x:140,y:250,z:280},{x:150,y:400,z:500},{x:110,y:280,z:200}]};const labels={sales:{primary:'Revenue',secondary:'Profit',title:'Monthly Sales Data'},performance:{primary:'Team A',secondary:'Team B',title:'Quarterly Performance'},growth:{primary:'Company A',secondary:'Company B',title:'Annual Growth Comparison'},scatter:{primary:'Performance',secondary:'Efficiency',title:'Performance vs Efficiency'}};const data=datasets[dataset];const l=labels[dataset];const common={data:data,margin:{top:5,right:30,left:20,bottom:5}};const render=()=>{switch(chartType){case'line':return React.createElement(LineChart,common,React.createElement(CartesianGrid,{strokeDasharray:'3 3'}),React.createElement(XAxis,{dataKey:'name'}),React.createElement(YAxis,null),React.createElement(Tooltip,null),React.createElement(Legend,null),React.createElement(Line,{type:'monotone',dataKey:'value',stroke:'#2563eb',strokeWidth:3,name:l.primary,dot:{fill:'#2563eb',strokeWidth:2,r:6}}),dataset!=='scatter'&&React.createElement(Line,{type:'monotone',dataKey:'secondary',stroke:'#dc2626',strokeWidth:3,name:l.secondary,dot:{fill:'#dc2626',strokeWidth:2,r:6}}));case'bar':return React.createElement(BarChart,common,React.createElement(CartesianGrid,{strokeDasharray:'3 3'}),React.createElement(XAxis,{dataKey:'name'}),React.createElement(YAxis,null),React.createElement(Tooltip,null),React.createElement(Legend,null),React.createElement(Bar,{dataKey:'value',fill:'#2563eb',name:l.primary}),dataset!=='scatter'&&React.createElement(Bar,{dataKey:'secondary',fill:'#dc2626',name:l.secondary}));case'area':return React.createElement(AreaChart,common,React.createElement(CartesianGrid,{strokeDasharray:'3 3'}),React.createElement(XAxis,{dataKey:'name'}),React.createElement(YAxis,null),React.createElement(Tooltip,null),React.createElement(Legend,null),React.createElement(Area,{type:'monotone',dataKey:'value',stackId:'1',stroke:'#2563eb',fill:'#2563eb',fillOpacity:0.6,name:l.primary}),dataset!=='scatter'&&React.createElement(Area,{type:'monotone',dataKey:'secondary',stackId:'1',stroke:'#dc2626',fill:'#dc2626',fillOpacity:0.6,name:l.secondary}));case'scatter':return React.createElement(ScatterChart,common,React.createElement(CartesianGrid,{strokeDasharray:'3 3'}),React.createElement(XAxis,{dataKey:'x',type:'number'}),React.createElement(YAxis,{dataKey:'y',type:'number'}),React.createElement(Tooltip,{cursor:{strokeDasharray:'3 3'}}),React.createElement(Scatter,{name:'Data Points',data:datasets.scatter,fill:'#2563eb'}));default:return null;}};return React.createElement('div',{className:'w-full h-full p-2'},React.createElement('div',{className:'flex gap-2 mb-2'},React.createElement('select',{value:chartType,onChange:e=>setChartType(e.target.value),className:'px-2 py-1 border rounded'},React.createElement('option',{value:'line'},'Line'),React.createElement('option',{value:'bar'},'Bar'),React.createElement('option',{value:'area'},'Area'),React.createElement('option',{value:'scatter'},'Scatter')),React.createElement('select',{value:dataset,onChange:e=>setDataset(e.target.value),className:'px-2 py-1 border rounded'},React.createElement('option',{value:'sales'},'Sales'),React.createElement('option',{value:'performance'},'Performance'),React.createElement('option',{value:'growth'},'Growth'),chartType==='scatter'&&React.createElement('option',{value:'scatter'},'Scatter'))),React.createElement('div',{className:'w-full h-[300px]'},React.createElement('div',{id:'chart',style:{width:'100%',height:'100%'}},React.createElement(ResponsiveContainer,{width:'100%',height:'100%'},render()))));}
+                ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));</script></body></html>`}
+                  style={{ border: 'none', width: '100%', height: '100%' }}
+                />
+              </div>
             </div>
           </div>
         );

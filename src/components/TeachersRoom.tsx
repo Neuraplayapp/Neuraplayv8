@@ -36,6 +36,12 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
     };
   }, []);
 
+  // Quick-add agile/kids templates to ScribbleModule via events
+  const openScribbleTemplate = (template: string) => {
+    const ev = new CustomEvent('openScribbleModule', { detail: { template } });
+    window.dispatchEvent(ev);
+  };
+
   // Attach robust event listeners to ElevenLabs widget (Web Component)
   useEffect(() => {
     const el = widgetRef.current as HTMLElement | null;
@@ -359,6 +365,23 @@ const TeachersRoom: React.FC<TeachersRoomProps> = ({ onClose }) => {
                     <Zap className="w-5 h-5" />
                     <span className={getTextClasses('primary')}>Quick Quiz</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Agile Tools (Kids & Classroom) */}
+              <div className={`${getCardBackgroundClasses()} rounded-2xl p-6`}>
+                <h3 className={`text-lg font-semibold mb-4 ${getTextClasses('primary')}`}>Agile Tools</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('productBacklog')}>🗂️ Product Backlog</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('sprintBacklog')}>🏁 Sprint Backlog</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsStandup')}>🌅 Morning Huddle</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsKanban')}>🎯 Kids Kanban Board</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsEstimation')}>📏 How Big Is The Fun?</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsDefinitionOfDone')}>✅ All Finished! Checklist</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsReview')}>🎤 Friday Show-and-Tell</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsRetro')}>😊😕 Happy/Sad Jar</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsUserStories')}>🧒 I want to… Cards</button>
+                  <button className="px-3 py-2 text-xs rounded-md border border-gray-300 hover:bg-gray-100" onClick={() => openScribbleTemplate('kidsBurndown')}>⏳ Countdown Chain</button>
                 </div>
               </div>
 

@@ -80,6 +80,7 @@ const AIAssistant: React.FC = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isScribbleModuleOpen, setIsScribbleModuleOpen] = useState(false);
     const [scribbleImports, setScribbleImports] = useState<any[]>([]);
+    const [scribbleTemplate, setScribbleTemplate] = useState<string | null>(null);
     // Use global conversation context instead of local state
     const {
         conversations,
@@ -97,6 +98,9 @@ const AIAssistant: React.FC = () => {
             setIsScribbleModuleOpen(true);
             if (e?.detail?.items && Array.isArray(e.detail.items)) {
                 setScribbleImports(e.detail.items);
+            }
+            if (e?.detail?.template) {
+                setScribbleTemplate(e.detail.template);
             }
         };
         window.addEventListener('openScribbleModule', handler as EventListener);
@@ -3846,9 +3850,10 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             {/* ScribbleModule Canvas */}
             <ScribbleModule 
                 isOpen={isScribbleModuleOpen}
-                onClose={() => { setIsScribbleModuleOpen(false); setScribbleImports([]); }}
+                onClose={() => { setIsScribbleModuleOpen(false); setScribbleImports([]); setScribbleTemplate(null); }}
                 theme={theme}
                 importItems={scribbleImports}
+                template={scribbleTemplate}
             />
 
         </>
