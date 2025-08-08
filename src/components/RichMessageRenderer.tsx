@@ -7,8 +7,8 @@ interface RichMessageRendererProps {
   toolResults?: any[];
 }
 
-interface RichContent {
-  type: 'text' | 'image' | 'math_diagram' | 'chart' | 'table' | 'formula' | 'weather_table' | 'tool_result' | 'chart_request';
+  interface RichContent {
+  type: 'text' | 'image' | 'math_diagram' | 'chart' | 'table' | 'formula' | 'weather_table' | 'tool_result' | 'chart_request' | 'wiki_card' | 'news_card';
   content: string;
   metadata?: any;
 }
@@ -97,7 +97,11 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       // Handle math diagrams (specific type)
       const data = normalized?.data || result?.data;
       const message = normalized?.message || result?.message;
-      if (data?.image_url && data?.diagram_type) {
+      if (data?.type === 'wiki_card') {
+        content.push({ type: 'wiki_card', content: data.title || 'Wikipedia', metadata: data });
+      } else if (data?.type === 'news_card') {
+        content.push({ type: 'news_card', content: 'News', metadata: data });
+      } else if (data?.image_url && data?.diagram_type) {
         console.log(`🔍 Adding math_diagram for result ${index}`);
         content.push({
           type: 'math_diagram',
@@ -187,6 +191,56 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     }
     
     return content;
+  };
+  const renderWikiCard = (metadata: any) => {
+    const container = isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white/70 border-black/10';
+    return (
+      <div className={`my-4 p-4 rounded-xl backdrop-blur-md border ${container}`}>
+        <div className="flex items-start gap-3">
+          {metadata.thumbnail && (
+            <img src={metadata.thumbnail} alt={metadata.title} className="w-16 h-16 rounded-md object-cover" />
+          )}
+          <div className="flex-1">
+            <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>{metadata.title}</h4>
+            {metadata.description && (
+              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm`}>{metadata.description}</p>
+            )}
+          </div>
+        </div>
+        {metadata.extract_html && (
+          <div className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'} mt-3 text-sm`} dangerouslySetInnerHTML={{ __html: metadata.extract_html }} />
+        )}
+        <div className="mt-3">
+          {metadata.canonical_url && (
+            <a href={metadata.canonical_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">Read on Wikipedia</a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderNewsCard = (metadata: any) => {
+    const container = isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white/70 border-black/10';
+    const items = metadata.items || [];
+    return (
+      <div className={`my-4 p-4 rounded-xl backdrop-blur-md border ${container}`}>
+        <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-3`}>Latest News</h4>
+        <div className="grid grid-cols-1 gap-3">
+          {items.map((n: any, i: number) => (
+            <a key={i} href={n.link} target="_blank" rel="noopener noreferrer" className={`rounded-lg p-3 border ${isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'} transition-colors`}>
+              <div className="flex items-start gap-3">
+                {n.imageUrl && <img src={n.imageUrl} alt="" className="w-16 h-16 rounded-md object-cover" />}
+                <div className="flex-1">
+                  <div className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-medium`}>{n.title}</div>
+                  <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm`}>{n.snippet}</div>
+                  <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs mt-1`}>{n.source} • {n.date}</div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   // Render mathematical diagrams with refined, interactive UI
@@ -605,6 +659,10 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     <div className="rich-message-content prose prose-invert max-w-none break-words overflow-hidden">
       {richContent.map((item, index) => {
         switch (item.type) {
+          case 'wiki_card':
+            return <div key={index}>{renderWikiCard(item.metadata)}</div>;
+          case 'news_card':
+            return <div key={index}>{renderNewsCard(item.metadata)}</div>;
           case 'math_diagram':
             return <div key={index}>{renderMathDiagram(item.content, item.metadata)}</div>;
           case 'image':

@@ -12,6 +12,7 @@ import { base64ToBinary } from '../utils/videoUtils';
 
 import RichMessageRenderer from './RichMessageRenderer';
 import ScribbleModule from './ScribbleModule';
+import SearchOverlay from './SearchOverlay';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
 
@@ -79,6 +80,8 @@ const AIAssistant: React.FC = () => {
     // Listen for search triggers from clickable cards - moved to after function definition
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isScribbleModuleOpen, setIsScribbleModuleOpen] = useState(false);
+    const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+    const [overlayContent, setOverlayContent] = useState<JSX.Element | null>(null);
     const [scribbleImports, setScribbleImports] = useState<any[]>([]);
     const [scribbleTemplate, setScribbleTemplate] = useState<string | null>(null);
     // Use global conversation context instead of local state
@@ -2534,6 +2537,43 @@ Need help with anything specific? Just ask! 🌟`;
         };
         addMessage(activeConversation, assistantMessage);
 
+        // Overlay for wiki/news cards
+        try {
+            const overlayItem = toolResultsForAssistant.find((r: any) => {
+                const parsed = typeof r === 'string' ? JSON.parse(r) : r;
+                const d = parsed?.data;
+                return d?.type === 'wiki_card' || d?.type === 'news_card';
+            });
+            if (overlayItem) {
+                const parsed = typeof overlayItem === 'string' ? JSON.parse(overlayItem) : overlayItem;
+                const d = parsed.data;
+                if (d.type === 'wiki_card') {
+                    setOverlayContent(
+                        <div>
+                            <div className="mb-2 font-semibold">{d.title}</div>
+                            {d.thumbnail && <img src={d.thumbnail} alt="" className="w-20 h-20 rounded-md object-cover mb-2" />}
+                            {d.extract_html && <div className="text-sm" dangerouslySetInnerHTML={{ __html: d.extract_html }} />}
+                        </div>
+                    );
+                    setIsSearchOverlayOpen(true);
+                } else if (d.type === 'news_card') {
+                    setOverlayContent(
+                        <div>
+                            <div className="mb-2 font-semibold">Latest News</div>
+                            <div className="space-y-2">
+                                {(d.items || []).slice(0,3).map((n: any, i: number) => (
+                                    <a key={i} href={n.link} target="_blank" rel="noopener noreferrer" className="block text-sm underline">
+                                        {n.title}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                    setIsSearchOverlayOpen(true);
+                }
+            }
+        } catch {}
+
                         // Execute CLIENT-SIDE tool calls if any
         if (toolCalls.length > 0 && toolExecutorService) {
             console.log('🔧 DEBUG: Found CLIENT-SIDE tool calls to execute:', toolCalls);
@@ -3855,6 +3895,15 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 importItems={scribbleImports}
                 template={scribbleTemplate}
             />
+
+            {/* Search/Wiki/News Overlay */}
+            <SearchOverlay 
+                isOpen={isSearchOverlayOpen}
+                onClose={() => setIsSearchOverlayOpen(false)}
+                isDarkMode={theme.isDarkMode}
+            >
+                {overlayContent}
+            </SearchOverlay>
 
         </>
     );

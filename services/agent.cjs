@@ -28,6 +28,45 @@ const tools = [
   {
     "type": "function",
     "function": {
+      "name": "get_wikipedia_summary",
+      "description": "Fetch a concise Wikipedia summary (with thumbnail if available) for a topic or entity.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Topic or entity name to look up on Wikipedia"
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "web_news_search",
+      "description": "Search recent news using Serper and return a curated list of articles.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "News query"
+          },
+          "timeRange": {
+            "type": "string",
+            "enum": ["day", "week", "month"],
+            "description": "Optional recency filter"
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "update_settings",
       "description": "Update user settings like theme, accessibility, or preferences. Use this when users want to change their experience.",
       "parameters": {
@@ -227,6 +266,14 @@ const TOOL_ROUTING_CONFIG = {
     'create_math_diagram': {
       reason: 'Requires server-side SVG generation and mathematical processing',
       requires: ['server_processing', 'svg_generation']
+    },
+    'get_wikipedia_summary': {
+      reason: 'Server fetch to Wikipedia REST API',
+      requires: ['external_api']
+    },
+    'web_news_search': {
+      reason: 'Server fetch to Serper News API',
+      requires: ['api_key', 'external_api']
     }
   },
   
@@ -299,6 +346,10 @@ async function executeTool(toolCall) {
       
     case 'create_math_diagram':
       return await createMathDiagram(parsedArgs);
+    case 'get_wikipedia_summary':
+      return await getWikipediaSummary(parsedArgs.query);
+    case 'web_news_search':
+      return await performNewsSearch(parsedArgs.query, parsedArgs.timeRange);
       
     default:
       return {
@@ -361,6 +412,57 @@ async function performWebSearch(query) {
       success: false,
       message: `Search failed: ${error.message}`
     };
+  }
+}
+
+// Wikipedia summary fetch
+async function getWikipediaSummary(query) {
+  try {
+    const title = encodeURIComponent(query.trim());
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`);
+    if (!res.ok) {
+      return { success: false, message: `Wikipedia fetch failed: ${res.status}` };
+    }
+    const data = await res.json();
+    const card = {
+      type: 'wiki_card',
+      title: data.title,
+      extract_html: data.extract_html || data.extract,
+      description: data.description,
+      thumbnail: data.thumbnail?.source || null,
+      canonical_url: data.content_urls?.desktop?.page || data.content_urls?.mobile?.page || null
+    };
+    return { success: true, message: `Wikipedia: ${data.title}`, data: card };
+  } catch (error) {
+    return { success: false, message: `Wikipedia error: ${error.message}` };
+  }
+}
+
+// Serper News search
+async function performNewsSearch(query, timeRange = 'week') {
+  try {
+    const SERPER_API_KEY = process.env.Serper_api;
+    if (!SERPER_API_KEY) {
+      return { success: false, message: 'Serper API key not configured' };
+    }
+    const body = { q: query, num: 6, tbs: timeRange === 'day' ? 'qdr:d' : timeRange === 'month' ? 'qdr:m' : 'qdr:w' };
+    const res = await fetch('https://google.serper.dev/news', {
+      method: 'POST',
+      headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    const items = (data.news || []).slice(0, 6).map(n => ({
+      title: n.title,
+      snippet: n.snippet,
+      source: n.source,
+      date: n.date,
+      link: n.link,
+      imageUrl: n.imageUrl || null
+    }));
+    return { success: true, message: `Found ${items.length} news results`, data: { type: 'news_card', items } };
+  } catch (error) {
+    return { success: false, message: `News search error: ${error.message}` };
   }
 }
 
