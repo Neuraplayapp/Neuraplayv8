@@ -1774,11 +1774,15 @@ async function handleElevenLabsConnection(clientWs, clientId) {
       throw new Error('ElevenLabs API key not found in environment variables');
     }
     
-    // FIXED: API key must be in URL as query parameter, not in headers
-    const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}&xi-api-key=${apiKey}`;
-    console.log('🌐 WebSocket URL constructed (API key hidden):', wsUrl.replace(/xi-api-key=[^&]+/, 'xi-api-key=***'));
-    
-    const elevenLabsWs = new ElevenLabsWS(wsUrl);
+    // Prefer header-based auth: agent_id as query param, API key in header
+    const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`;
+    console.log('🌐 WebSocket URL constructed:', wsUrl);
+
+    const elevenLabsWs = new ElevenLabsWS(wsUrl, {
+      headers: {
+        'xi-api-key': apiKey
+      }
+    });
     
     elevenLabsWs.on('open', () => {
       console.log('✅ Connected to ElevenLabs');
@@ -1850,9 +1854,10 @@ async function handleElevenLabsConnection(clientWs, clientId) {
     
     elevenLabsWs.on('error', (error) => {
       console.error('❌ ElevenLabs WebSocket error:', error);
+      const isAuthError = /401|403|Unauthorized|Forbidden/i.test(String(error?.message || error));
       clientWs.send(JSON.stringify({
         type: 'error',
-        message: 'ElevenLabs connection error'
+        message: isAuthError ? 'ElevenLabs authorization failed (check API key or agent permissions)' : 'ElevenLabs connection error'
       }));
     });
     

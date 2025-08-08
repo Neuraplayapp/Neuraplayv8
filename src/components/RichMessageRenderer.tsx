@@ -189,7 +189,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     return content;
   };
 
-  // Render mathematical diagrams with beautiful, theme-aware styling
+  // Render mathematical diagrams with refined, interactive UI
   const renderMathDiagram = (content: string, metadata: any) => {
     const containerClass = isDarkMode 
       ? 'bg-gradient-to-br from-gray-800/60 via-gray-900/40 to-gray-800/60 border-gray-600/40' 
@@ -218,37 +218,56 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
 
     const chartIcon = getChartIcon(metadata.diagramType);
 
+    const handleOpen = () => window.open(content, '_blank');
+    const handleDownload = () => {
+      const a = document.createElement('a');
+      a.href = content;
+      a.download = `${(metadata.title || 'diagram').replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    const handleCopy = async () => {
+      try { await navigator.clipboard.writeText(content); } catch {}
+    };
+
     return (
-      <div className={`math-diagram-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-xl md:rounded-2xl border shadow-lg backdrop-blur-sm overflow-hidden`}>
-        <div className="diagram-header mb-4 md:mb-6">
-          <h3 className={`text-lg md:text-2xl font-semibold ${headerClass} flex items-center flex-wrap`}>
-            <span className="mr-2 md:mr-3 text-xl md:text-3xl">{chartIcon}</span>
-            <span className="break-words flex-1">{metadata.title}</span>
-          </h3>
-          <p className={`text-xs md:text-sm ${subtitleClass} capitalize mt-2 flex items-center flex-wrap`}>
-            <span className="mr-2">🎯</span>
-            <span className="break-words">{metadata.diagramType} • {metadata.style} style • Educational chart</span>
-          </p>
+      <div className={`math-diagram-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-2xl border shadow-xl backdrop-blur-sm overflow-hidden`}> 
+        <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
+          <div>
+            <h3 className={`text-lg md:text-2xl font-semibold ${headerClass} flex items-center flex-wrap`}>
+              <span className="mr-2 md:mr-3 text-xl md:text-3xl">{chartIcon}</span>
+              <span className="break-words flex-1">{metadata.title}</span>
+            </h3>
+            <p className={`text-xs md:text-sm ${subtitleClass} capitalize mt-1 flex items-center flex-wrap`}>
+              <span className="mr-2">🎯</span>
+              <span className="break-words">{metadata.diagramType} • {metadata.style} style • Educational chart</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleOpen} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>View</button>
+            <button onClick={handleDownload} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Download</button>
+            <button onClick={handleCopy} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Copy</button>
+          </div>
         </div>
-        
-        <div className={`diagram-content ${contentBg} rounded-lg md:rounded-xl p-3 md:p-6 border ${contentBorder} backdrop-blur-sm`}>
-          <img 
-            src={content} 
+
+        <div className={`relative ${contentBg} rounded-xl p-2 md:p-4 border ${contentBorder} backdrop-blur-sm`}> 
+          <img
+            src={content}
             alt={metadata.title}
-            className="w-full max-w-full mx-auto rounded-md md:rounded-lg shadow-lg"
-            style={{ 
+            className="w-full max-w-full mx-auto rounded-lg shadow-lg cursor-zoom-in"
+            style={{
               imageRendering: 'crisp-edges',
-              filter: isDarkMode 
-                ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.3)) brightness(1.05)'
-                : 'drop-shadow(0 4px 12px rgba(0,0,0,0.1)) brightness(0.98)',
-              maxHeight: '600px',
+              filter: isDarkMode ? 'drop-shadow(0 6px 18px rgba(0,0,0,0.35)) brightness(1.04)' : 'drop-shadow(0 6px 18px rgba(0,0,0,0.12)) brightness(0.99)',
+              maxHeight: '640px',
               objectFit: 'contain'
             }}
+            onClick={handleOpen}
           />
         </div>
-        
+
         <div className={`diagram-footer mt-3 md:mt-4 text-xs ${footerClass} text-center break-words`}>
-          ✨ Interactive visualization designed for enhanced learning
+          ✨ Tap image to open in a new tab • Use toolbar to download or copy
         </div>
       </div>
     );
@@ -268,25 +287,44 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const contentBorder = isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50';
     const captionClass = isDarkMode ? 'text-gray-400' : 'text-gray-600';
 
+    const handleOpen = () => window.open(content, '_blank');
+    const handleDownload = () => {
+      const a = document.createElement('a');
+      a.href = content;
+      a.download = `${(metadata.title || 'image').replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    const handleCopy = async () => {
+      try { await navigator.clipboard.writeText(content); } catch {}
+    };
+
     return (
-      <div className={`image-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-xl md:rounded-2xl border shadow-lg backdrop-blur-sm`}>
-        <div className="image-header mb-3 md:mb-4">
+      <div className={`image-container my-6 md:my-8 p-4 md:p-6 ${containerClass} rounded-2xl border shadow-xl backdrop-blur-sm`}>
+        <div className="flex items-center justify-between mb-3 md:mb-4 gap-2">
           <h4 className={`text-base md:text-lg font-medium ${headerClass} flex items-center flex-wrap`}>
             <span className="mr-2 text-xl md:text-2xl">🎨</span>
             <span className="break-words">AI Generated Image</span>
           </h4>
+          <div className="flex items-center gap-2">
+            <button onClick={handleOpen} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>View</button>
+            <button onClick={handleDownload} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Download</button>
+            <button onClick={handleCopy} className={`px-2 py-1 rounded-md text-xs border ${isDarkMode ? 'bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/60' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Copy</button>
+          </div>
         </div>
         
-        <div className={`image-content ${contentBg} rounded-lg md:rounded-xl p-3 md:p-4 border ${contentBorder} backdrop-blur-sm`}>
+        <div className={`image-content ${contentBg} rounded-xl p-3 md:p-4 border ${contentBorder} backdrop-blur-sm`}>
           <img 
             src={content} 
-            alt={metadata.caption || "AI Generated image"}
-            className="w-full max-w-full md:max-w-3xl mx-auto rounded-md md:rounded-xl shadow-lg"
+            alt={metadata.caption || 'AI Generated image'}
+            className="w-full max-w-full md:max-w-3xl mx-auto rounded-lg md:rounded-xl shadow-lg cursor-zoom-in"
             style={{ 
               filter: isDarkMode 
-                ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.4)) brightness(1.05)'
-                : 'drop-shadow(0 4px 12px rgba(0,0,0,0.1)) brightness(0.98)'
+                ? 'drop-shadow(0 6px 18px rgba(0,0,0,0.4)) brightness(1.03)'
+                : 'drop-shadow(0 6px 18px rgba(0,0,0,0.12)) brightness(0.99)'
             }}
+            onClick={handleOpen}
           />
         </div>
         
