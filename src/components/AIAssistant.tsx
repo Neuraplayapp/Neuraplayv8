@@ -12,6 +12,11 @@ import { base64ToBinary } from '../utils/videoUtils';
 
 import RichMessageRenderer from './RichMessageRenderer';
 import ScribbleModule from './ScribbleModule';
+import Overlay from './Overlay';
+// @ts-ignore
+import Scribbleboard from './scribbleboard/Scribbleboard';
+// @ts-ignore
+import TextWorkbench from './editor/TextWorkbench';
 import SearchOverlay from './SearchOverlay';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
@@ -121,6 +126,14 @@ const AIAssistant: React.FC = () => {
         };
         window.addEventListener('openScribbleModule', handler as EventListener);
         return () => window.removeEventListener('openScribbleModule', handler as EventListener);
+    }, []);
+
+    // New: open Scribbleboard via tool
+    const [isScribbleboardOpen, setIsScribbleboardOpen] = useState(false);
+    useEffect(() => {
+        const openBoard = () => setIsScribbleboardOpen(true);
+        window.addEventListener('scribble_open', openBoard as EventListener);
+        return () => window.removeEventListener('scribble_open', openBoard as EventListener);
     }, []);
     
     // Use user context for usage limits and verification
@@ -3607,19 +3620,19 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* ScribbleModule */}
+                                {/* Open Scribbleboard (reusing legacy button slot) */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setIsScribbleModuleOpen(true);
+                                        setIsScribbleboardOpen(true);
+                                        window.dispatchEvent(new CustomEvent('scribble_open'));
                                     }}
                                     className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/10 text-black hover:bg-black/20'}`}
-                                    title="Open ScribbleModule - Project Plans & Mind Maps"
+                                    title="Open Scribbleboard"
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                        <path d="M2 17l10 5 10-5"/>
-                                        <path d="M2 12l10 5 10-5"/>
+                                        <rect x="3" y="4" width="18" height="14" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
                                     </svg>
                                 </button>
                                 
@@ -3929,6 +3942,31 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 template={scribbleTemplate}
             />
 
+            {/* Scribbleboard / Workbench Overlay */}
+            <Overlay
+                open={isScribbleboardOpen}
+                onClose={() => setIsScribbleboardOpen(false)}
+                mode={isFullscreen ? 'fullscreen' : 'compact'}
+                title="Scribbleboard"
+            >
+                {isFullscreen ? (
+                    <div className="w-full h-[calc(100vh-4rem)] grid grid-cols-3">
+                        <div className="col-span-1 border-r border-white/10">
+                            {/* Word-like editor */}
+                            {/* @ts-ignore */}
+                            <TextWorkbench compact={false} />
+                        </div>
+                        <div className="col-span-2">
+                            {/* @ts-ignore */}
+                            <Scribbleboard mode="fullscreen" />
+                        </div>
+                    </div>
+                ) : (
+                    // Compact board view
+                    // @ts-ignore
+                    <Scribbleboard mode="compact" />
+                )}
+            </Overlay>
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 
                 isOpen={isSearchOverlayOpen}

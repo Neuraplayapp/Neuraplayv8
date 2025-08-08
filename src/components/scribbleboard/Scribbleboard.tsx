@@ -1,0 +1,263 @@
+import React, { useEffect, useMemo, useState } from 'react';
+
+type Mode = 'fullscreen' | 'compact';
+
+export interface HypothesisResult {
+  title: string;
+  estimate: string; // e.g., "47% time saved"
+  confidence: string; // e.g., "0.87"
+}
+
+interface HypothesisCardProps {
+  prompt: string;
+  mode: Mode;
+  result?: HypothesisResult;
+}
+
+const HypothesisCard: React.FC<HypothesisCardProps> = ({ prompt, mode, result }) => {
+  const isCompact = mode === 'compact';
+  return (
+    <div className={`${isCompact ? 'p-2 rounded-md' : 'p-4 rounded-lg'} border ${isCompact ? 'text-sm' : 'text-base'} bg-white/80 dark:bg-black/40 border-black/10 dark:border-white/10 shadow-sm`}> 
+      <div className={`font-semibold ${isCompact ? 'mb-1' : 'mb-2'}`}>🧪 Hypothesis Tester</div>
+      <div className={`text-gray-700 dark:text-gray-300 ${isCompact ? 'mb-1' : 'mb-2'}`}>{prompt}</div>
+      {result ? (
+        <div className={`flex items-center gap-2 ${isCompact ? 'text-xs' : 'text-sm'}`}>
+          <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">{result.estimate}</span>
+          <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300">conf {result.confidence}</span>
+        </div>
+      ) : (
+        <div className={`text-gray-500 ${isCompact ? 'text-xs' : 'text-sm'}`}>Waiting for simulation…</div>
+      )}
+    </div>
+  );
+};
+
+interface SuggestionCardProps {
+  text: string;
+  mode: Mode;
+}
+
+const SuggestionCard: React.FC<SuggestionCardProps> = ({ text, mode }) => (
+  <div className={`${mode === 'compact' ? 'p-2 text-xs rounded-md' : 'p-3 text-sm rounded-lg'} border bg-white/80 dark:bg-black/40 border-black/10 dark:border-white/10`}>{text}</div>
+);
+
+interface ScribbleboardProps {
+  mode: Mode;
+}
+
+type Board = {
+  id: string;
+  name: string;
+  hypotheses: Array<{ id: string; prompt: string; result?: HypothesisResult; branches?: {A?: string; B?: string} }>;
+  suggestions: string[];
+  parallel: { left: string[]; right: string[] } | null;
+  mutating: Array<{ id: string; title: string; versions: string[]; type: string }>; // simple placeholder
+  graph: { nodes: Array<{ id: string; label: string }>; edges: Array<{ from: string; to: string }> };
+};
+
+const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
+  const [boards, setBoards] = useState<Board[]>([{
+    id: 'board_1', name: 'Board 1', hypotheses: [], suggestions: [], parallel: null, mutating: [], graph: { nodes: [], edges: [] }
+  }]);
+  const [activeBoard, setActiveBoard] = useState('board_1');
+  const [autoAgentEnabled, setAutoAgentEnabled] = useState(false);
+
+  // Event listeners for tools
+  useEffect(() => {
+    const onOpenTest = (e: any) => {
+      const prompt = e?.detail?.prompt || 'Untitled hypothesis';
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, hypotheses: [{ id: `h_${Date.now()}`, prompt }, ...b.hypotheses] } : b));
+    };
+    const onSetResult = (e: any) => {
+      const { id, estimate, confidence, title } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, hypotheses: b.hypotheses.map(h => h.id===id ? { ...h, result: { title: title || 'Result', estimate, confidence } } : h) } : b));
+    };
+    const onAutoAgentToggle = (e: any) => {
+      setAutoAgentEnabled(!!e?.detail?.enabled);
+    };
+    const onAutoAgentSuggest = (e: any) => {
+      if (!autoAgentEnabled) return;
+      const s = e?.detail?.suggestions as string[] | undefined;
+      if (s && s.length) setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, suggestions: [...s, ...b.suggestions].slice(0, mode==='compact'?3:8) } : b));
+    };
+    const onParallelThought = (e: any) => {
+      const { leftPrompt, rightPrompt } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, parallel: { left: [leftPrompt||'Branch A'], right: [rightPrompt||'Branch B'] } } : b));
+    };
+    const onBoardNew = (e: any) => {
+      const name = e?.detail?.name || `Board ${boards.length+1}`;
+      const id = `board_${Date.now()}`;
+      setBoards(prev => [...prev, { id, name, hypotheses: [], suggestions: [], parallel: null, mutating: [], graph: { nodes: [], edges: [] } }]);
+      setActiveBoard(id);
+    };
+    const onBoardSwitch = (e: any) => setActiveBoard(e?.detail?.id || activeBoard);
+    const onBoardRename = (e: any) => {
+      const { id, name } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===id ? { ...b, name: name || b.name } : b));
+    };
+    const onBoardDelete = (e: any) => {
+      const { id } = e?.detail || {};
+      setBoards(prev => prev.filter(b => b.id !== id));
+      if (activeBoard === id && boards.length>1) setActiveBoard(boards[0].id);
+    };
+    const onAddNote = (e: any) => {
+      const text = e?.detail?.text || '';
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, suggestions: [text, ...b.suggestions] } : b));
+    };
+    // Hypothesis branch actions
+    const onCombine = (e: any) => {
+      const { id } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, parallel: null, hypotheses: b.hypotheses.map(h=>h.id===id?{...h, prompt: `${h.prompt} (Combined)`}:h)}: b));
+    };
+    const onPrune = (e: any) => {
+      const { keep } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, parallel: { left: keep==='A'?b.parallel?.left||[]:[], right: keep==='B'?b.parallel?.right||[]:[] } } : b));
+    };
+    // Mutating
+    const onMutCreate = (e: any) => {
+      const { title } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, mutating: [{ id:`m_${Date.now()}`, title: title||'Mutable', versions:['v1'], type:'generic' }, ...b.mutating] } : b));
+    };
+    const onMutEvolve = (e: any) => {
+      const { id, toType } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, mutating: b.mutating.map(m => m.id===id?{...m, type: toType||m.type, versions:[...m.versions, `v${m.versions.length+1}`]}:m) } : b));
+    };
+    const onMutCompare = (e: any) => {
+      // no-op: UI shows versions; state already holds versions list
+    };
+    // Graph
+    const onGraphAddNode = (e: any) => {
+      const { id, label } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, graph: { ...b.graph, nodes: [...b.graph.nodes, { id: id||`n_${Date.now()}`, label: label||'Node' }] } } : b));
+    };
+    const onGraphAddEdge = (e: any) => {
+      const { from, to } = e?.detail || {};
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, graph: { ...b.graph, edges: [...b.graph.edges, { from, to }] } } : b));
+    };
+    const onGraphLayout = () => {};
+    const onGraphFocus = () => {};
+    const onGraphExport = () => {};
+
+    window.addEventListener('scribble_hypothesis_test', onOpenTest as EventListener);
+    window.addEventListener('scribble_hypothesis_result', onSetResult as EventListener);
+    window.addEventListener('scribble_autoagent_toggle', onAutoAgentToggle as EventListener);
+    window.addEventListener('scribble_autoagent_suggest', onAutoAgentSuggest as EventListener);
+    window.addEventListener('scribble_parallel_thought', onParallelThought as EventListener);
+    window.addEventListener('scribble_board_new', onBoardNew as EventListener);
+    window.addEventListener('scribble_board_switch', onBoardSwitch as EventListener);
+    window.addEventListener('scribble_board_rename', onBoardRename as EventListener);
+    window.addEventListener('scribble_board_delete', onBoardDelete as EventListener);
+    window.addEventListener('scribble_add_note', onAddNote as EventListener);
+    window.addEventListener('scribble_hypothesis_branch_combine', onCombine as EventListener);
+    window.addEventListener('scribble_hypothesis_branch_prune', onPrune as EventListener);
+    window.addEventListener('scribble_mutating_create', onMutCreate as EventListener);
+    window.addEventListener('scribble_mutating_evolve', onMutEvolve as EventListener);
+    window.addEventListener('scribble_mutating_compare', onMutCompare as EventListener);
+    window.addEventListener('scribble_graph_add_node', onGraphAddNode as EventListener);
+    window.addEventListener('scribble_graph_add_edge', onGraphAddEdge as EventListener);
+    window.addEventListener('scribble_graph_layout', onGraphLayout as EventListener);
+    window.addEventListener('scribble_graph_focus', onGraphFocus as EventListener);
+    window.addEventListener('scribble_graph_export', onGraphExport as EventListener);
+    return () => {
+      window.removeEventListener('scribble_hypothesis_test', onOpenTest as EventListener);
+      window.removeEventListener('scribble_hypothesis_result', onSetResult as EventListener);
+      window.removeEventListener('scribble_autoagent_toggle', onAutoAgentToggle as EventListener);
+      window.removeEventListener('scribble_autoagent_suggest', onAutoAgentSuggest as EventListener);
+      window.removeEventListener('scribble_parallel_thought', onParallelThought as EventListener);
+      window.removeEventListener('scribble_board_new', onBoardNew as EventListener);
+      window.removeEventListener('scribble_board_switch', onBoardSwitch as EventListener);
+      window.removeEventListener('scribble_board_rename', onBoardRename as EventListener);
+      window.removeEventListener('scribble_board_delete', onBoardDelete as EventListener);
+      window.removeEventListener('scribble_add_note', onAddNote as EventListener);
+      window.removeEventListener('scribble_hypothesis_branch_combine', onCombine as EventListener);
+      window.removeEventListener('scribble_hypothesis_branch_prune', onPrune as EventListener);
+      window.removeEventListener('scribble_mutating_create', onMutCreate as EventListener);
+      window.removeEventListener('scribble_mutating_evolve', onMutEvolve as EventListener);
+      window.removeEventListener('scribble_mutating_compare', onMutCompare as EventListener);
+      window.removeEventListener('scribble_graph_add_node', onGraphAddNode as EventListener);
+      window.removeEventListener('scribble_graph_add_edge', onGraphAddEdge as EventListener);
+      window.removeEventListener('scribble_graph_layout', onGraphLayout as EventListener);
+      window.removeEventListener('scribble_graph_focus', onGraphFocus as EventListener);
+      window.removeEventListener('scribble_graph_export', onGraphExport as EventListener);
+    };
+  }, [autoAgentEnabled, mode, activeBoard, boards.length]);
+
+  const isCompact = mode === 'compact';
+  const board = boards.find(b => b.id === activeBoard)!;
+  const containerClass = useMemo(() => (isCompact ? 'p-2 space-y-2' : 'p-4 space-y-3'), [isCompact]);
+
+  const content = (
+    <div className={containerClass}>
+      {/* AutoAgent Toggle */}
+      <div className={`flex items-center justify-between ${isCompact ? 'text-xs' : 'text-sm'}`}>
+        <div className="font-medium">🤖 AutoAgent</div>
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <span>{autoAgentEnabled ? 'Enabled' : 'Disabled'}</span>
+          <input
+            type="checkbox"
+            checked={autoAgentEnabled}
+            onChange={(e) => setAutoAgentEnabled(e.target.checked)}
+          />
+        </label>
+      </div>
+
+      {/* Boards Switcher */}
+      <div className={`flex items-center gap-2 ${isCompact?'text-xs':'text-sm'}`}>
+        <select className="px-2 py-1 rounded border" value={activeBoard} onChange={(e)=>setActiveBoard(e.target.value)}>
+          {boards.map(b=> <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_new',{detail:{}}))}>New</button>
+        <button className="px-2 py-1 text-xs rounded border" onClick={()=>{
+          const name = prompt('Board name?', board.name) || board.name; window.dispatchEvent(new CustomEvent('scribble_board_rename',{detail:{id:activeBoard,name}}));
+        }}>Rename</button>
+        {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_delete',{detail:{id:activeBoard}}))}>Delete</button>}
+      </div>
+
+      {/* Suggestions */}
+      {board.suggestions.length > 0 && (
+        <div className="grid grid-cols-1 gap-2">
+          {board.suggestions.map((s, i) => (
+            <SuggestionCard key={i} text={s} mode={mode} />
+          ))}
+        </div>
+      )}
+
+      {/* Parallel Thought */}
+      {board.parallel ? (
+        <div className={`grid ${isCompact ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+          <div className="space-y-2">
+            {board.parallel.left.map((p, i) => (
+              <SuggestionCard key={`pl_${i}`} text={`A: ${p}`} mode={mode} />
+            ))}
+            {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'A'}}))}>Keep A</button>}
+          </div>
+          {!isCompact && (
+            <div className="space-y-2">
+              {board.parallel.right.map((p, i) => (
+                <SuggestionCard key={`pr_${i}`} text={`B: ${p}`} mode={mode} />
+              ))}
+              <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'B'}}))}>Keep B</button>
+            </div>
+          )}
+          {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_combine',{detail:{id: (board.hypotheses[0]?.id)}}))}>Combine</button>}
+        </div>
+      ) : null}
+
+      {/* Hypothesis Cards */}
+      <div className="grid grid-cols-1 gap-2">
+        {board.hypotheses.map(h => (
+          <HypothesisCard key={h.id} prompt={h.prompt} mode={mode} result={h.result} />
+        ))}
+      </div>
+    </div>
+  );
+
+  if (isCompact) return content;
+
+  return (
+    <div className="w-full h-full overflow-auto">{content}</div>
+  );
+};
+
+export default Scribbleboard;
+

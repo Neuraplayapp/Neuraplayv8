@@ -68,6 +68,61 @@ export class ToolExecutorService {
 
         case 'open_canvas_mindmap':
           return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
+        // Scribbleboard tools
+        case 'scribble_hypothesis_test':
+          return this.dispatch('scribble_hypothesis_test', toolCall.parameters, '🧪 Opened hypothesis tester');
+        case 'scribble_hypothesis_result':
+          return this.dispatch('scribble_hypothesis_result', toolCall.parameters, '✅ Hypothesis result posted');
+        case 'scribble_autoagent_toggle':
+          return this.dispatch('scribble_autoagent_toggle', toolCall.parameters, '🤖 AutoAgent toggled');
+        case 'scribble_autoagent_suggest':
+          return this.dispatch('scribble_autoagent_suggest', toolCall.parameters, '💡 Suggestions added');
+        case 'scribble_parallel_thought':
+          return this.dispatch('scribble_parallel_thought', toolCall.parameters, '🧭 Parallel thought started');
+        case 'scribble_editor_insert':
+          return this.dispatch('scribble_editor_insert', toolCall.parameters, '✍️ Inserted into editor');
+        case 'scribble_editor_erase':
+          return this.dispatch('scribble_editor_erase', toolCall.parameters, '🧽 Erased from editor');
+        case 'scribble_editor_replace':
+          return this.dispatch('scribble_editor_replace', toolCall.parameters, '🔁 Replaced in editor');
+        case 'scribble_editor_normalize':
+          return this.dispatch('scribble_editor_normalize', toolCall.parameters, '🧹 Normalized editor content');
+        case 'scribble_editor_send_to_board':
+          return this.dispatch('scribble_add_note', toolCall.parameters, '📌 Sent to board');
+        case 'scribble_open':
+          return this.dispatch('scribble_open', toolCall.parameters, '🗂️ Opened Scribbleboard');
+        // Boards
+        case 'scribble_board_new':
+          return this.dispatch('scribble_board_new', toolCall.parameters, '🆕 Board created');
+        case 'scribble_board_switch':
+          return this.dispatch('scribble_board_switch', toolCall.parameters, '🔁 Switched board');
+        case 'scribble_board_rename':
+          return this.dispatch('scribble_board_rename', toolCall.parameters, '✏️ Board renamed');
+        case 'scribble_board_delete':
+          return this.dispatch('scribble_board_delete', toolCall.parameters, '🗑️ Board deleted');
+        // Hypothesis branching
+        case 'scribble_hypothesis_branch_combine':
+          return this.dispatch('scribble_hypothesis_branch_combine', toolCall.parameters, '🔗 Branches combined');
+        case 'scribble_hypothesis_branch_prune':
+          return this.dispatch('scribble_hypothesis_branch_prune', toolCall.parameters, '✂️ Branch pruned');
+        // Mutating node
+        case 'scribble_mutating_create':
+          return this.dispatch('scribble_mutating_create', toolCall.parameters, '🧬 Mutating node created');
+        case 'scribble_mutating_evolve':
+          return this.dispatch('scribble_mutating_evolve', toolCall.parameters, '🔁 Node evolved');
+        case 'scribble_mutating_compare':
+          return this.dispatch('scribble_mutating_compare', toolCall.parameters, '🧪 Compare versions');
+        // Graph
+        case 'scribble_graph_add_node':
+          return this.dispatch('scribble_graph_add_node', toolCall.parameters, '➕ Node added');
+        case 'scribble_graph_add_edge':
+          return this.dispatch('scribble_graph_add_edge', toolCall.parameters, '➡️ Edge added');
+        case 'scribble_graph_layout':
+          return this.dispatch('scribble_graph_layout', toolCall.parameters, '🗺️ Layout updated');
+        case 'scribble_graph_focus':
+          return this.dispatch('scribble_graph_focus', toolCall.parameters, '🎯 Focused node');
+        case 'scribble_graph_export':
+          return this.dispatch('scribble_graph_export', toolCall.parameters, '📤 Graph exported');
         case 'open_canvas_plugin_node':
           return await this.handleOpenCanvasPluginNode(toolCall.parameters, context);
         case 'canvas_add_markdown_block':
@@ -364,6 +419,16 @@ export class ToolExecutorService {
       return { success: true, message: '✍️ Updated canvas text.' };
     } catch (e) {
       return { success: false, message: `Failed to edit text: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  private async dispatch(name: string, detail: any, okMessage: string): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent(name, { detail });
+      window.dispatchEvent(event);
+      return { success: true, message: okMessage };
+    } catch (e) {
+      return { success: false, message: `Failed: ${e instanceof Error ? e.message : 'Unknown error'}` };
     }
   }
 

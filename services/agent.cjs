@@ -403,6 +403,11 @@ const TOOL_ROUTING_CONFIG = {
       reason: 'Opens ScribbleModule mindmap UI on the client',
       requires: ['ui_manipulation', 'browser_api']
     },
+    'scribble_hypothesis_test': { reason: 'Opens hypothesis tester card', requires: ['ui_manipulation'] },
+    'scribble_hypothesis_result': { reason: 'Post result to hypothesis card', requires: ['ui_manipulation'] },
+    'scribble_autoagent_toggle': { reason: 'Toggle autoagent on board', requires: ['ui_manipulation'] },
+    'scribble_autoagent_suggest': { reason: 'Add suggestions to board', requires: ['ui_manipulation'] },
+    'scribble_parallel_thought': { reason: 'Start two visible branches', requires: ['ui_manipulation'] },
     'open_canvas_plugin_node': {
       reason: 'Opens canvas and inserts a plugin node via client event',
       requires: ['ui_manipulation', 'browser_api']
