@@ -105,6 +105,19 @@ const AIAssistant: React.FC = () => {
             if (e?.detail?.template) {
                 setScribbleTemplate(e.detail.template);
             }
+            // Support plugin quick-add and content injection
+            if (e?.detail?.pluginId || e?.detail?.content) {
+                const detail = e.detail || {};
+                // Pass as a special import item the ScribbleModule understands
+                setScribbleImports([
+                    {
+                        type: detail.pluginId || 'text',
+                        title: detail.pluginId || 'plugin',
+                        content: detail.content || 'New Block',
+                        metadata: { position: detail.position || null }
+                    }
+                ]);
+            }
         };
         window.addEventListener('openScribbleModule', handler as EventListener);
         return () => window.removeEventListener('openScribbleModule', handler as EventListener);
@@ -3589,7 +3602,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                     {!isFullscreen && (
                         <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <h3 className="font-bold text-black flex items-center gap-2 flex-shrink-0" style={{ color: 'black !important', zIndex: 9999 }}>
+                                <h3 className={`font-bold flex items-center gap-2 flex-shrink-0 ${theme.isDarkMode ? 'text-white' : 'text-gray-900'}`} style={{ zIndex: 9999 }}>
                                     Neural AI
                                 </h3>
                             </div>
@@ -3600,7 +3613,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         e.stopPropagation();
                                         setIsScribbleModuleOpen(true);
                                     }}
-                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/10 text-black hover:bg-black/20'}`}
                                     title="Open ScribbleModule - Project Plans & Mind Maps"
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3616,7 +3629,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         e.stopPropagation();
                                         clearCurrentConversation();
                                     }}
-                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/10 text-black hover:bg-black/20'}`}
                                     title="Clear Conversation History"
                                 >
                                     <Trash2 size={16} />
@@ -3628,7 +3641,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         e.stopPropagation();
                                         toggleFullscreen();
                                     }}
-                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/10 text-black hover:bg-black/20'}`}
                                     title="Enter Fullscreen Mode"
                                 >
                                     <Maximize2 size={16} />
@@ -3641,7 +3654,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                             e.stopPropagation();
                                             toggleLanguageDropdown();
                                         }}
-                                        className="ai-language-selector flex items-center gap-1"
+                                        className={`ai-language-selector flex items-center gap-1 ${theme.isDarkMode ? 'text-white' : 'text-gray-800'}`}
                                         title="Select Language"
                                     >
                                         <Globe size={16} />
@@ -3676,7 +3689,9 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         className={`p-2 rounded-full transition-all duration-300 ${
                                             isReadingLastMessage 
                                                 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50 animate-pulse' 
-                                                : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-lg hover:shadow-white/20'
+                                                : theme.isDarkMode 
+                                                    ? 'bg-white/10 text-white hover:bg-white/20 hover:shadow-lg hover:shadow-white/20' 
+                                                    : 'bg-black/10 text-black hover:bg-black/20 hover:shadow-lg hover:shadow-black/10'
                                         }`}
                                         title="Read Last Message Aloud"
                                     >
@@ -3689,7 +3704,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                         e.stopPropagation();
                                         setIsOpen(false);
                                     }}
-                                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all"
+                                    className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/10 text-black hover:bg-black/20'}`}
                                     title="Close Chat"
                                 >
                                     <X size={16} />
@@ -3702,7 +3717,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {currentMessages.map((msg, index) => (
                              <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] ${msg.isUser ? 'ai-message-user' : 'ai-message-assistant'}`}>
+                                <div className={`${isFullscreen ? 'max-w-[80%]' : 'max-w-[90%]'} ${msg.isUser ? 'ai-message-user' : 'ai-message-assistant'}`}>
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1">
                                             <div className={`${msg.isUser ? 'text-white' : theme.isDarkMode ? 'text-white' : 'text-black'}`} style={{ zIndex: 9999, position: 'relative' }}>
@@ -3710,6 +3725,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                                     text={msg.text} 
                                                     isUser={msg.isUser}
                                                     isDarkMode={theme.isDarkMode}
+                                                    compact={!isFullscreen}
                                                     toolResults={msg.toolResults || []}
                                                 />
                                             </div>
@@ -3918,6 +3934,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 isOpen={isSearchOverlayOpen}
                 onClose={() => setIsSearchOverlayOpen(false)}
                 isDarkMode={theme.isDarkMode}
+                compact={!isFullscreen}
             >
                 {overlayContent}
             </SearchOverlay>

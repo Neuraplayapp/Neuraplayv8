@@ -45,6 +45,110 @@ const tools = [
   {
     "type": "function",
     "function": {
+      "name": "open_canvas_plugin_node",
+      "description": "Open the canvas and add a plugin node (markdown, goal-tree, auto-agent, etc.) at an optional position.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "plugin_id": {
+            "type": "string",
+            "description": "The plugin identifier to add",
+            "enum": [
+              "markdown","auto-agent","canvas-rewriter","agent-simulator","goal-tree","problem-resolver","parallel-thought","cog-map","hypothesis-tester"
+            ]
+          },
+          "content": { "type": "string", "description": "Optional initial content" },
+          "x": { "type": "number" },
+          "y": { "type": "number" }
+        },
+        "required": ["plugin_id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "canvas_add_markdown_block",
+      "description": "Open the canvas and add a Markdown block with provided content.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "string" },
+          "x": { "type": "number" },
+          "y": { "type": "number" }
+        },
+        "required": ["content"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "canvas_simulate_agent",
+      "description": "Simulate a plugin agent node with an optional prompt and surface results on canvas.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "plugin_id": { "type": "string" },
+          "prompt": { "type": "string" }
+        },
+        "required": ["plugin_id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "canvas_rewrite_layout",
+      "description": "Ask the agent to rewrite/organize the canvas layout based on a prompt.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": { "type": "string" }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "canvas_connect_nodes",
+      "description": "Connect two canvas nodes by id.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from_id": { "type": "string" },
+          "to_id": { "type": "string" }
+        },
+        "required": ["from_id","to_id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "canvas_edit_text",
+      "description": "Edit the currently selected text/markdown node on the canvas by inserting, erasing, or replacing text.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "insert": { "type": "string", "description": "Text to insert (appended to content if no target)" },
+          "erase": { "type": "string", "description": "Substring to remove from content" },
+          "replace": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string" },
+              "with": { "type": "string" }
+            },
+            "required": ["target","with"]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "web_news_search",
       "description": "Search recent news using Serper and return a curated list of articles.",
       "parameters": {
@@ -297,6 +401,26 @@ const TOOL_ROUTING_CONFIG = {
     },
     'open_canvas_mindmap': {
       reason: 'Opens ScribbleModule mindmap UI on the client',
+      requires: ['ui_manipulation', 'browser_api']
+    },
+    'open_canvas_plugin_node': {
+      reason: 'Opens canvas and inserts a plugin node via client event',
+      requires: ['ui_manipulation', 'browser_api']
+    },
+    'canvas_add_markdown_block': {
+      reason: 'Adds markdown block to canvas on client',
+      requires: ['ui_manipulation', 'browser_api']
+    },
+    'canvas_simulate_agent': {
+      reason: 'Triggers agent simulation for a plugin node on client',
+      requires: ['ui_manipulation', 'browser_api']
+    },
+    'canvas_rewrite_layout': {
+      reason: 'Triggers canvas rewriting action on client',
+      requires: ['ui_manipulation', 'browser_api']
+    },
+    'canvas_connect_nodes': {
+      reason: 'Connects two nodes on client',
       requires: ['ui_manipulation', 'browser_api']
     }
   }

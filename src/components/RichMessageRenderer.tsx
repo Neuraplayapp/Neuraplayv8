@@ -4,6 +4,7 @@ interface RichMessageRendererProps {
   text: string;
   isUser?: boolean;
   isDarkMode?: boolean;
+  compact?: boolean;
   toolResults?: any[];
 }
 
@@ -17,6 +18,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   text, 
   isUser, 
   isDarkMode, 
+  compact = false,
   toolResults = [] 
 }) => {
 
@@ -512,20 +514,19 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const cellText = isDarkMode ? 'text-gray-200' : 'text-gray-700';
 
     return (
-      <div className={`table-container my-6 md:my-8 p-4 md:p-6 rounded-xl md:rounded-2xl shadow-lg ${containerClass} overflow-hidden`}>
-              <div className="table-header mb-3 md:mb-4">
-        <h4 className={`text-base md:text-lg font-medium ${headerClass} flex items-center flex-wrap`}>
-          <span className="mr-2 text-xl md:text-2xl">{isWeatherTable ? '☀️☁️' : '📊'}</span>
-          <span className="break-words">{isWeatherTable ? 'Weather Data' : 'Data Table'}</span>
-        </h4>
-      </div>
-        
-        <div className={`table-content ${contentBg} rounded-lg md:rounded-xl p-3 md:p-4 border ${contentBorder} backdrop-blur-sm overflow-x-auto`}>
-          <table className="w-full text-xs md:text-sm min-w-full">
+      <div className={`table-container ${compact ? 'my-3 p-2 rounded-lg' : 'my-6 md:my-8 p-4 md:p-6 rounded-xl md:rounded-2xl'} shadow-lg ${containerClass} overflow-hidden`}>
+        <div className={`${compact ? 'mb-2' : 'mb-3 md:mb-4'} table-header`}>
+          <h4 className={`${compact ? 'text-sm' : 'text-base md:text-lg'} font-medium ${headerClass} flex items-center flex-wrap`}>
+            <span className={`${compact ? 'mr-1 text-base' : 'mr-2 text-xl md:text-2xl'}`}>{isWeatherTable ? '☀️☁️' : '📊'}</span>
+            <span className="break-words">{isWeatherTable ? 'Weather Data' : 'Data Table'}</span>
+          </h4>
+        </div>
+        <div className={`table-content ${contentBg} ${compact ? 'rounded-md p-2' : 'rounded-lg md:rounded-xl p-3 md:p-4'} border ${contentBorder} backdrop-blur-sm overflow-x-auto`}>
+          <table className={`w-full ${compact ? 'text-[11px]' : 'text-xs md:text-sm'} min-w-full`}>
             <thead>
               <tr className={`border-b ${headerRowBorder}`}>
                 {headers.map((header, i) => (
-                  <th key={i} className={`px-2 md:px-4 py-2 md:py-3 text-left font-medium ${headerCellText} ${headerCellBg} break-words`}>
+                  <th key={i} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} text-left font-medium ${headerCellText} ${headerCellBg} break-words`}>
                     <span className="break-words">{header}</span>
                   </th>
                 ))}
@@ -535,7 +536,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
               {rows.map((row, i) => (
                 <tr key={i} className={`border-b ${rowBorder} ${rowHover} transition-colors`}>
                   {row.map((cell, j) => (
-                    <td key={j} className={`px-2 md:px-4 py-2 md:py-3 ${cellText} break-words max-w-0`}>
+                    <td key={j} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} ${cellText} break-words max-w-0`}>
                       {/* Highlight numbers and units with theme-aware colors */}
                       <span className="break-words" dangerouslySetInnerHTML={{
                         __html: cell.replace(/(\d+(?:\.\d+)?)\s*(°C|°F|%|kph|mph)/g,
@@ -695,8 +696,8 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   // Parse content and render all components
   const richContent = parseRichContent(text, toolResults);
   
-  return (
-    <div className="rich-message-content prose prose-invert max-w-none break-words overflow-hidden">
+    return (
+      <div className={`rich-message-content ${compact ? 'prose-sm' : ''} prose prose-invert max-w-none break-words overflow-hidden`}>
       {richContent.map((item, index) => {
         switch (item.type) {
           case 'wiki_card':

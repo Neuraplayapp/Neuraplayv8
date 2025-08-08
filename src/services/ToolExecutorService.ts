@@ -68,6 +68,18 @@ export class ToolExecutorService {
 
         case 'open_canvas_mindmap':
           return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
+        case 'open_canvas_plugin_node':
+          return await this.handleOpenCanvasPluginNode(toolCall.parameters, context);
+        case 'canvas_add_markdown_block':
+          return await this.handleCanvasAddMarkdown(toolCall.parameters, context);
+        case 'canvas_simulate_agent':
+          return await this.handleCanvasSimulateAgent(toolCall.parameters, context);
+        case 'canvas_rewrite_layout':
+          return await this.handleCanvasRewriteLayout(toolCall.parameters, context);
+        case 'canvas_connect_nodes':
+          return await this.handleCanvasConnectNodes(toolCall.parameters, context);
+        case 'canvas_edit_text':
+          return await this.handleCanvasEditText(toolCall.parameters, context);
         
         default:
           console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
@@ -292,6 +304,66 @@ export class ToolExecutorService {
         success: false,
         message: `Failed to open canvas mindmap: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
+    }
+  }
+
+  private async handleOpenCanvasPluginNode(params: any, context?: any): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent('openScribbleModule', { detail: { pluginId: params?.plugin_id, content: params?.content, position: { x: params?.x, y: params?.y } } });
+      window.dispatchEvent(event);
+      return { success: true, message: `🧩 Added ${params?.plugin_id} to canvas.` };
+    } catch (e) {
+      return { success: false, message: `Failed to add plugin node: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  private async handleCanvasAddMarkdown(params: any): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent('openScribbleModule', { detail: { pluginId: 'markdown', content: params?.content, position: { x: params?.x, y: params?.y } } });
+      window.dispatchEvent(event);
+      return { success: true, message: '📝 Markdown block added to canvas.' };
+    } catch (e) {
+      return { success: false, message: `Failed to add markdown: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  private async handleCanvasSimulateAgent(params: any): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent('canvasSimulateAgent', { detail: { pluginId: params?.plugin_id, prompt: params?.prompt } });
+      window.dispatchEvent(event);
+      return { success: true, message: '🧪 Triggered agent simulation on canvas.' };
+    } catch (e) {
+      return { success: false, message: `Failed to simulate agent: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  private async handleCanvasRewriteLayout(params: any): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent('canvasRewriteLayout', { detail: { prompt: params?.prompt } });
+      window.dispatchEvent(event);
+      return { success: true, message: '🧭 Requested canvas layout rewrite.' };
+    } catch (e) {
+      return { success: false, message: `Failed to rewrite layout: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  private async handleCanvasConnectNodes(params: any): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent('canvasConnectNodes', { detail: { fromId: params?.from_id, toId: params?.to_id } });
+      window.dispatchEvent(event);
+      return { success: true, message: '🔗 Connected nodes on canvas.' };
+    } catch (e) {
+      return { success: false, message: `Failed to connect nodes: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  private async handleCanvasEditText(params: any): Promise<ToolResult> {
+    try {
+      const event = new CustomEvent('canvasEditText', { detail: params });
+      window.dispatchEvent(event);
+      return { success: true, message: '✍️ Updated canvas text.' };
+    } catch (e) {
+      return { success: false, message: `Failed to edit text: ${e instanceof Error ? e.message : 'Unknown error'}` };
     }
   }
 
