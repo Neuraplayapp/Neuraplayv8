@@ -524,12 +524,7 @@ const DashboardPage: React.FC = () => {
                   {/* @ts-ignore */}
                   <ScribbleKonvaBoard room="squad-room" />
                 </div>
-                {/* Cleaned ScribbleModule as independent widget */}
-                <div className={`${getCardBackgroundClasses()} rounded-2xl p-6`}>
-                  <h3 className={`text-xl font-semibold mb-3 ${getTextClasses('primary')}`}>Personal Canvas</h3>
-                  {/* @ts-ignore */}
-                  <ScribbleModule isOpen={true} onClose={()=>{}} theme={{ isDarkMode }} />
-                </div>
+                {/* Personal Canvas widget removed - launch via assistant overlay only */}
               </div>
             ) : activeTab === 'library' && (
               <div className="space-y-6">

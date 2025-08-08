@@ -384,6 +384,44 @@ const tools = [
       }
     }
   }
+  ,
+  {
+    "type": "function",
+    "function": {
+      "name": "scribble_chart_create",
+      "description": "Create a chart on the assistant's visual board. Client-executed tool.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "type": { "type": "string", "enum": ["line","bar","area","scatter","pie"] },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "color": { "type": "string" },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "x": { "oneOf": [{"type":"string"},{"type":"number"}] },
+                      "y": { "type": "number" }
+                    },
+                    "required": ["x","y"]
+                  }
+                }
+              },
+              "required": ["name","data"]
+            }
+          }
+        },
+        "required": ["type","series"]
+      }
+    }
+  }
 ];
 
 // INTELLIGENT TOOL ROUTING SYSTEM
@@ -431,6 +469,10 @@ const TOOL_ROUTING_CONFIG = {
 
 // Extract server-side tool names for quick lookup
 const SERVER_SIDE_TOOLS = Object.keys(TOOL_ROUTING_CONFIG.server);
+const CLIENT_SIDE_TOOLS = [
+  'navigate_to_page','update_settings','recommend_game','accessibility_support',
+  'scribble_chart_create'
+];
 
 // Tool execution functions (SERVER-SIDE ONLY)
 async function executeTool(toolCall) {

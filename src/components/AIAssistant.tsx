@@ -19,6 +19,7 @@ import Scribbleboard from './scribbleboard/Scribbleboard';
 import TextWorkbench from './editor/TextWorkbench';
 import SearchOverlay from './SearchOverlay';
 import { analyzeCommand as analyzeIntent } from '../services/IntentClassifier';
+import { AssistantConfig } from '../services/AssistantConfig';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
 
@@ -1688,8 +1689,28 @@ Need help with anything specific? Just ask! 🌟`;
             // Determine if we should enable tool calling based on mode
             const enableToolCalling = mode !== 'conversing'; // Enable for text mode, disable for pure conversation
             
+            // Optional: assemble educational predefines + personal memory context
+            let contextPrefix = '';
+            try {
+                const { AssistantConfig } = await import('../services/AssistantConfig');
+                if (AssistantConfig.useContextAssembler) {
+                    const { assembleContext } = await import('../services/ContextAssembler');
+                    const userId = contextUser?.id;
+                    const assembled = assembleContext(inputMessage, { userId });
+                    const predefs = assembled.predefines.map(p => `- ${p.title}`).join('\n');
+                    const personal = assembled.personal && Object.keys(assembled.personal).length > 0 ? 'Personal context detected.' : '';
+                    if (predefs || personal) {
+                        contextPrefix = [
+                            'CONTEXT:\n',
+                            predefs ? `Predefined references:\n${predefs}\n` : '',
+                            personal ? `${personal}\n` : ''
+                        ].join('');
+                    }
+                }
+            } catch {}
+
             // Send to AI service with tool calling capability
-            const response = await handleAIWithToolCalling(inputMessage, enableToolCalling);
+            const response = await handleAIWithToolCalling((contextPrefix ? `${contextPrefix}\n` : '') + inputMessage, enableToolCalling);
             
             // If this was triggered by voice recording, play the response back
             if (mode === 'single_recording' && response && response.textResponse) {
@@ -3285,38 +3306,15 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 template={scribbleTemplate}
             />
 
-            {/* Scribbleboard / Workbench Overlay */}
+            {/* Assistant Unified Surface Overlay */}
             <Overlay
                 open={isScribbleboardOpen}
                 onClose={() => setIsScribbleboardOpen(false)}
                 mode={isFullscreen ? 'fullscreen' : 'compact'}
-                title="Scribbleboard"
+                title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
             >
-                {isFullscreen ? (
-                    <div className="w-full h-[calc(100vh-4rem)] grid grid-cols-3">
-                        <div className="col-span-1 border-r border-white/10">
-                            {/* Word-like editor */}
-                            {/* @ts-ignore */}
-                            <TextWorkbench compact={false} />
-                        </div>
-                        <div className="col-span-2">
-                            {/* @ts-ignore */}
-                            <Scribbleboard mode="fullscreen" />
-                        </div>
-                    </div>
-                ) : (
-                    // Compact stacked editor (30%) + board (70%) for mobile usability
-                    <div className="w-full h-[70vh] min-h-[420px] flex flex-col">
-                        <div className="shrink-0 border-b border-white/10 h-[30%] min-h-[140px]">
-                            {/* @ts-ignore */}
-                            <TextWorkbench compact={true} />
-                        </div>
-                        <div className="flex-1 min-h-[240px]">
-                            {/* @ts-ignore */}
-                            <Scribbleboard mode="compact" />
-                        </div>
-                    </div>
-                )}
+                {/* @ts-ignore */}
+                <(await import('./assistant/AssistantSurface')).default compact={!isFullscreen} />
             </Overlay>
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 

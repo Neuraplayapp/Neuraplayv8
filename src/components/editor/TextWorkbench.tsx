@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { create } from 'zustand';
 
 type EditorState = {
@@ -81,7 +82,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ compact }) => {
   }, [text]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 p-2 border-b border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40">
+    <motion.div
+      className="flex flex-wrap items-center gap-2 p-2 border-b border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40"
+      initial={{ y: -8, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+    >
       {/* Font */}
       <select className="px-2 py-1 text-xs rounded border" value={fontFamily} onChange={(e)=>setLayout({ fontFamily: e.target.value })}>
         <option value="Inter, system-ui, Arial, sans-serif">Inter</option>
@@ -100,10 +106,10 @@ const Toolbar: React.FC<ToolbarProps> = ({ compact }) => {
       )}
       <input className="w-6 h-6" type="color" value={color} onChange={(e)=>setLayout({ color: e.target.value })} />
       {/* Text style */}
-      <button className={`px-2 py-1 text-xs rounded border ${bold?'bg-black text-white dark:bg-white dark:text-black':''}`} onClick={()=>setLayout({ bold: !bold })}>B</button>
-      <button className={`px-2 py-1 text-xs rounded border ${italic?'bg-black text-white dark:bg-white dark:text-black':''}`} onClick={()=>setLayout({ italic: !italic })}>I</button>
+      <motion.button whileTap={{ scale: 0.95 }} className={`px-2 py-1 text-xs rounded border ${bold?'bg-black text-white dark:bg-white dark:text-black':''}`} onClick={()=>setLayout({ bold: !bold })}>B</motion.button>
+      <motion.button whileTap={{ scale: 0.95 }} className={`px-2 py-1 text-xs rounded border ${italic?'bg-black text-white dark:bg-white dark:text-black':''}`} onClick={()=>setLayout({ italic: !italic })}>I</motion.button>
       {!compact && (
-        <button className={`px-2 py-1 text-xs rounded border ${underline?'bg-black text-white dark:bg-white dark:text-black':''}`} onClick={()=>setLayout({ underline: !underline })}>U</button>
+        <motion.button whileTap={{ scale: 0.95 }} className={`px-2 py-1 text-xs rounded border ${underline?'bg-black text-white dark:bg-white dark:text-black':''}`} onClick={()=>setLayout({ underline: !underline })}>U</motion.button>
       )}
       {/* Align */}
       <select className="px-2 py-1 text-xs rounded border" value={align} onChange={(e)=>setLayout({ align: e.target.value as any })}>
@@ -113,12 +119,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ compact }) => {
         {!compact && <option value="justify">Justify</option>}
       </select>
       {/* Markdown helpers */}
-      <button className="px-2 py-1 text-xs rounded border" onClick={() => insert('## Heading')}>H2</button>
-      <button className="px-2 py-1 text-xs rounded border" onClick={() => insert('- item')}>•</button>
-      <button className="px-2 py-1 text-xs rounded border" onClick={normalize}>Normalize</button>
-      <button className="px-2 py-1 text-xs rounded border" onClick={() => setPreview(text)}>Preview</button>
-      <button className="px-2 py-1 text-xs rounded border" onClick={clearAll}>Clear</button>
-    </div>
+      <motion.button whileTap={{ scale: 0.95 }} className="px-2 py-1 text-xs rounded border" onClick={() => insert('## Heading')}>H2</motion.button>
+      <motion.button whileTap={{ scale: 0.95 }} className="px-2 py-1 text-xs rounded border" onClick={() => insert('- item')}>•</motion.button>
+      <motion.button whileTap={{ scale: 0.95 }} className="px-2 py-1 text-xs rounded border" onClick={normalize}>Normalize</motion.button>
+      <motion.button whileTap={{ scale: 0.95 }} className="px-2 py-1 text-xs rounded border" onClick={() => setPreview(text)}>Preview</motion.button>
+      <motion.button whileTap={{ scale: 0.95 }} className="px-2 py-1 text-xs rounded border" onClick={clearAll}>Clear</motion.button>
+    </motion.div>
   );
 };
 
@@ -132,7 +138,7 @@ const EditorPane: React.FC = () => {
 const PreviewPane: React.FC = () => {
   const { preview, fontFamily, fontSize, lineHeight, align, bold, italic, underline, color } = useEditorStore();
   return (
-    <div className="w-full h-full overflow-auto p-3">
+    <motion.div className="w-full h-full overflow-auto p-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
       <div className="prose max-w-none" style={{
         fontFamily,
         fontSize: `${fontSize}px`,
@@ -145,7 +151,7 @@ const PreviewPane: React.FC = () => {
       }}>
         {preview.split('\n').map((line, i) => <div key={i}>{line}</div>)}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -157,12 +163,12 @@ const TextWorkbench: React.FC<TextWorkbenchProps> = ({ compact }) => {
         <Toolbar compact={compact} />
       </div>
       <div className="flex-1 grid grid-cols-3 min-h-0">
-        <div className="col-span-1 border-r border-black/10 dark:border-white/10 min-h-0">
+        <motion.div className="col-span-1 border-r border-black/10 dark:border-white/10 min-h-0" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }}>
           <EditorPane />
-        </div>
-        <div className="col-span-2 min-h-0">
+        </motion.div>
+        <motion.div className="col-span-2 min-h-0" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }}>
           <PreviewPane />
-        </div>
+        </motion.div>
       </div>
     </div>
   );

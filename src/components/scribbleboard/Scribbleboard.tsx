@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 // @ts-ignore
 import ChartCard from './ChartCard';
+import { selectionManager } from '../../services/SelectionManager';
+import { suggestLabel } from '../../services/labels/LabelingService';
 
 type Mode = 'fullscreen' | 'compact';
 
@@ -55,7 +58,7 @@ type Board = {
   parallel: { left: string[]; right: string[] } | null;
   mutating: Array<{ id: string; title: string; versions: string[]; type: string }>; // simple placeholder
   graph: { nodes: Array<{ id: string; label: string }>; edges: Array<{ from: string; to: string }> };
-  charts?: Array<{ id: string; title?: string; type: 'line'|'bar'|'area'; series: Array<{ name: string; data: Array<{ x: number|string; y: number }>; color?: string }> }>
+  charts?: Array<{ id: string; title?: string; type: 'line'|'bar'|'area'|'scatter'|'pie'|'graph'; series: Array<{ name: string; data: Array<{ x: number|string; y: number }>; color?: string }> }>
 };
 
 const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
@@ -64,6 +67,19 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
   }]);
   const [activeBoard, setActiveBoard] = useState('board_1');
   const [autoAgentEnabled, setAutoAgentEnabled] = useState(false);
+
+  // Wire SelectionManager minimally: remember last active board per view
+  useEffect(() => {
+    const last = selectionManager.getLastForView('scribbleboard');
+    if (last && boards.some(b => b.id === last)) {
+      setActiveBoard(last);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (activeBoard) selectionManager.setHard(activeBoard, 'scribbleboard');
+  }, [activeBoard]);
 
   // Event listeners for tools
   useEffect(() => {
@@ -134,7 +150,9 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
     // Mutating
     const onMutCreate = (e: any) => {
       const { title } = e?.detail || {};
-      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, mutating: [{ id:`m_${Date.now()}`, title: title||'Mutable', versions:['v1'], type:'generic' }, ...b.mutating] } : b));
+      const label = suggestLabel({ name: title || 'Mutable' });
+      const finalTitle = label.label || title || 'Mutable';
+      setBoards(prev => prev.map(b => b.id===activeBoard ? { ...b, mutating: [{ id:`m_${Date.now()}`, title: finalTitle, versions:['v1'], type:'generic' }, ...b.mutating] } : b));
     };
     const onMutEvolve = (e: any) => {
       const { id, toType } = e?.detail || {};
@@ -261,59 +279,74 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
 
       {/* Suggestions */}
       {board.suggestions.length > 0 && (
-        <div className="grid grid-cols-1 gap-2">
-          {board.suggestions.map((s, i) => (
-            <SuggestionCard key={i} text={s} mode={mode} />
-          ))}
-        </div>
+        <AnimatePresence>
+          <motion.div className="grid grid-cols-1 gap-2" initial="hidden" animate="visible" exit="exit"
+            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } }, exit: {} }}>
+            {board.suggestions.map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                <SuggestionCard text={s} mode={mode} />
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {/* Parallel Thought */}
       {board.parallel ? (
-        <div className={`grid ${isCompact ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+        <motion.div className={`grid ${isCompact ? 'grid-cols-1' : 'grid-cols-2'} gap-3`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="space-y-2">
             {board.parallel.left.map((p, i) => (
-              <SuggestionCard key={`pl_${i}`} text={`A: ${p}`} mode={mode} />
+              <motion.div key={`pl_${i}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}>
+                <SuggestionCard text={`A: ${p}`} mode={mode} />
+              </motion.div>
             ))}
             {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'A'}}))}>Keep A</button>}
           </div>
           {!isCompact && (
             <div className="space-y-2">
               {board.parallel.right.map((p, i) => (
-                <SuggestionCard key={`pr_${i}`} text={`B: ${p}`} mode={mode} />
+                <motion.div key={`pr_${i}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}>
+                  <SuggestionCard text={`B: ${p}`} mode={mode} />
+                </motion.div>
               ))}
               <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'B'}}))}>Keep B</button>
             </div>
           )}
           {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_combine',{detail:{id: (board.hypotheses[0]?.id)}}))}>Combine</button>}
-        </div>
+        </motion.div>
       ) : null}
 
       {/* Hypothesis Cards */}
       <div className="grid grid-cols-1 gap-2">
-        {board.hypotheses.map(h => (
-          <HypothesisCard key={h.id} prompt={h.prompt} mode={mode} result={h.result} />
-        ))}
+        <AnimatePresence>
+          {board.hypotheses.map(h => (
+            <motion.div key={h.id} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+              <HypothesisCard prompt={h.prompt} mode={mode} result={h.result} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
         {/* Mutating node versions panel (compact summary) */}
         {board.mutating.length > 0 && !isCompact && (
-          <div className="p-3 border rounded bg-white/60 dark:bg-black/30 border-black/10 dark:border-white/10">
+          <motion.div className="p-3 border rounded bg-white/60 dark:bg-black/30 border-black/10 dark:border-white/10" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="text-sm font-semibold mb-2">🧬 Mutating Nodes</div>
             <div className="space-y-1 text-xs">
               {board.mutating.map(m => (
-                <div key={m.id} className="flex items-center justify-between">
+                <motion.div key={m.id} className="flex items-center justify-between" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                   <div className="truncate mr-2">{m.title} <span className="opacity-60">(v{m.versions.length})</span></div>
                   <div className="flex gap-2">
                     <button className="px-2 py-0.5 border rounded" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_compare',{ detail: { id: m.id, versionIndex: 0 } }))}>Compare</button>
                     <button className="px-2 py-0.5 border rounded" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_evolve',{ detail: { id: m.id } }))}>Evolve</button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
         {/* Render any explicitly created charts */}
         {(board.charts || []).map(c => (
-          <ChartCard key={c.id} title={c.title} type={c.type} series={c.series} compact={mode==='compact'} />
+          <motion.div key={c.id} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+            <ChartCard title={c.title} type={c.type} series={c.series} compact={mode==='compact'} />
+          </motion.div>
         ))}
         {/* Example: if graph contains a series node, render it */}
         {board.graph.nodes.filter(n=>n.label?.startsWith('chart:')).map((n,i)=>{

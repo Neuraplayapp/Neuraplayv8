@@ -114,6 +114,32 @@ async function initDatabase() {
       )
     `);
 
+    // Scribble boards (persist entire board state compactly as JSON)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scribble_boards (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        data JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
+    // Tool and board events log (auditable stream of actions)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scribble_events (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        board_id VARCHAR(255),
+        event_name VARCHAR(100) NOT NULL,
+        detail JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
     client.release();
     databaseAvailable = true;
     console.log('✅ Database tables initialized successfully');
@@ -181,6 +207,24 @@ async function saveToDatabase(client, collection, data) {
       `, [data.id, data.userId, data.interactionType, data.input, data.output, JSON.stringify(data.toolsUsed), data.responseTime, data.sessionId]);
       break;
 
+    case 'scribble_boards':
+      await client.query(`
+        INSERT INTO scribble_boards (id, user_id, name, data, updated_at)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          data = EXCLUDED.data,
+          updated_at = EXCLUDED.updated_at
+      `, [data.id, data.userId, data.name, JSON.stringify(data.data || {}), timestamp]);
+      break;
+
+    case 'scribble_events':
+      await client.query(`
+        INSERT INTO scribble_events (id, user_id, board_id, event_name, detail)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [data.id, data.userId, data.boardId || null, data.eventName, JSON.stringify(data.detail || {})]);
+      break;
+
     default:
       throw new Error(`Unknown collection: ${collection}`);
   }
@@ -240,6 +284,31 @@ async function getFromDatabase(client, collection, key, filters = {}) {
       query = query.orderBy('timestamp', 'desc').limit(100);
       break;
 
+    case 'scribble_boards':
+      query = queryBuilder('scribble_boards').select('*');
+      if (key) {
+        query = query.where('user_id', key);
+      }
+      if (filters?.boardId) {
+        query = query.where('id', filters.boardId);
+      }
+      query = query.orderBy('updated_at', 'desc').limit(100);
+      break;
+
+    case 'scribble_events':
+      query = queryBuilder('scribble_events').select('*');
+      if (key) {
+        query = query.where('user_id', key);
+      }
+      if (filters?.boardId) {
+        query = query.where('board_id', filters.boardId);
+      }
+      if (filters?.eventName) {
+        query = query.where('event_name', filters.eventName);
+      }
+      query = query.orderBy('created_at', 'desc').limit(200);
+      break;
+
     default:
       throw new Error(`Unknown collection: ${collection}`);
   }
@@ -272,6 +341,12 @@ async function deleteFromDatabase(client, collection, key) {
       break;
     case 'ai_logs':
       await queryBuilder('ai_logs').where('id', key).del();
+      break;
+    case 'scribble_boards':
+      await queryBuilder('scribble_boards').where('id', key).del();
+      break;
+    case 'scribble_events':
+      await queryBuilder('scribble_events').where('id', key).del();
       break;
     default:
       throw new Error(`Unknown collection: ${collection}`);

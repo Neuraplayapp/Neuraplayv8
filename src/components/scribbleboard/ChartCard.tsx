@@ -1,12 +1,12 @@
 import React from 'react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area, BarChart, Bar, ScatterChart, Scatter, PieChart, Pie, Cell } from 'recharts';
 
 export type ChartSeriesPoint = { x: number|string; y: number };
 export type ChartSeries = { name: string; data: ChartSeriesPoint[]; color?: string };
 
 interface ChartCardProps {
   title?: string;
-  type?: 'line' | 'area' | 'bar';
+  type?: 'line' | 'area' | 'bar' | 'scatter' | 'pie';
   series: ChartSeries[];
   xLabel?: string;
   yLabel?: string;
@@ -56,6 +56,37 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, type='line', series, xLabe
             ))}
           </BarChart>
         );
+      case 'scatter': {
+        // Use first series for scatter points; additional series can be layered
+        return (
+          <ScatterChart margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" dataKey="x" name="x" label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -2 } : undefined} />
+            <YAxis type="number" dataKey="y" name="y" label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft' } : undefined} />
+            <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+            <Legend />
+            {series.map((s) => (
+              <Scatter key={s.name} name={s.name} data={s.data} fill={s.color || '#2563eb'} />
+            ))}
+          </ScatterChart>
+        );
+      }
+      case 'pie': {
+        // Interpret first series' data as pie slices
+        const s = series[0] || { name: 'Data', data: [] };
+        const colors = ['#2563eb','#dc2626','#16a34a','#f59e0b','#9333ea','#06b6d4','#f97316'];
+        return (
+          <PieChart>
+            <Tooltip />
+            <Legend />
+            <Pie data={s.data.map((p)=>({ name: String(p.x), value: p.y }))} dataKey="value" nameKey="name" outerRadius={Math.min(100, Math.floor(height/2))}>
+              {s.data.map((_, idx) => (
+                <Cell key={`cell-${idx}`} fill={colors[idx % colors.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        );
+      }
       default:
         return (
           <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
