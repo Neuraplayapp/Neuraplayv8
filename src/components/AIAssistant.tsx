@@ -3492,6 +3492,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        // Dedicated button opens ScribbleModule; clear chat should not
                                         setIsScribbleModuleOpen(true);
                                     }}
                                     className="ai-fullscreen-button"
@@ -3506,7 +3507,9 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        // Only clear chat; do not open ScribbleModule
                                         clearCurrentConversation();
+                                        setIsScribbleModuleOpen(false);
                                     }}
                                     className="ai-fullscreen-button"
                                     title="Clear Conversation History"
