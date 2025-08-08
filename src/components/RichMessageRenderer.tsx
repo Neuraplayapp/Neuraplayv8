@@ -197,25 +197,28 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   const renderWikiCard = (metadata: any) => {
     const container = isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white/70 border-black/10';
     return (
-      <div className={`my-4 p-4 rounded-xl backdrop-blur-md border ${container}`}>
+      <div className={`my-3 sm:my-4 p-3 sm:p-4 rounded-xl backdrop-blur-md border ${container}`}>
         <div className="flex items-start gap-3">
           {metadata.thumbnail && (
-            <img src={metadata.thumbnail} alt={metadata.title} className="w-16 h-16 rounded-md object-cover" />
+            <img src={metadata.thumbnail} alt={metadata.title} className="w-12 h-12 sm:w-16 sm:h-16 rounded-md object-cover flex-shrink-0" />
           )}
           <div className="flex-1">
-            <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold`}>{metadata.title}</h4>
+            <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold text-sm sm:text-base`}>{metadata.title}</h4>
             {metadata.description && (
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm`}>{metadata.description}</p>
+              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-xs sm:text-sm`}>{metadata.description}</p>
             )}
           </div>
         </div>
         {metadata.extract_html && (
-          <div className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'} mt-3 text-sm`} dangerouslySetInnerHTML={{ __html: metadata.extract_html }} />
+          <div className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'} mt-2 sm:mt-3 text-xs sm:text-sm leading-relaxed`} dangerouslySetInnerHTML={{ __html: metadata.extract_html }} />
         )}
-        <div className="mt-3">
+        <div className="mt-2 sm:mt-3 flex flex-wrap gap-2">
           {metadata.canonical_url && (
-            <a href={metadata.canonical_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">Read on Wikipedia</a>
+            <a href={metadata.canonical_url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}>Read on Wikipedia</a>
           )}
+          <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
+            onClick={() => window.dispatchEvent(new CustomEvent('openScribbleModule', { detail: { template: 'mindMap' } }))}
+          >Add to Mindmap</button>
         </div>
       </div>
     );
@@ -225,21 +228,26 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const container = isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white/70 border-black/10';
     const items = metadata.items || [];
     return (
-      <div className={`my-4 p-4 rounded-xl backdrop-blur-md border ${container}`}>
-        <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-3`}>Latest News</h4>
+      <div className={`my-3 sm:my-4 p-3 sm:p-4 rounded-xl backdrop-blur-md border ${container}`}>
+        <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-2 sm:mb-3 text-sm sm:text-base`}>Latest News</h4>
         <div className="grid grid-cols-1 gap-3">
           {items.map((n: any, i: number) => (
-            <a key={i} href={n.link} target="_blank" rel="noopener noreferrer" className={`rounded-lg p-3 border ${isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'} transition-colors`}>
-              <div className="flex items-start gap-3">
-                {n.imageUrl && <img src={n.imageUrl} alt="" className="w-16 h-16 rounded-md object-cover" />}
+            <a key={i} href={n.link} target="_blank" rel="noopener noreferrer" className={`rounded-lg p-2 sm:p-3 border ${isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'} transition-colors`}>
+              <div className="flex items-start gap-2 sm:gap-3">
+                {n.imageUrl && <img src={n.imageUrl} alt="" className="w-12 h-12 sm:w-16 sm:h-16 rounded-md object-cover flex-shrink-0" />}
                 <div className="flex-1">
-                  <div className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-medium`}>{n.title}</div>
-                  <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm`}>{n.snippet}</div>
-                  <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs mt-1`}>{n.source} • {n.date}</div>
+                  <div className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-medium text-sm sm:text-base`}>{n.title}</div>
+                  <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-xs sm:text-sm`}>{n.snippet}</div>
+                  <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-[10px] sm:text-xs mt-1`}>{n.source} • {n.date}</div>
                 </div>
               </div>
             </a>
           ))}
+        </div>
+        <div className="mt-2 flex gap-2">
+          <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
+            onClick={() => window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Show more recent news' } }))}
+          >More News</button>
         </div>
       </div>
     );
@@ -249,16 +257,27 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const container = isDarkMode ? 'bg-black/30 border-white/10' : 'bg-white/70 border-black/10';
     const results = metadata.results || [];
     return (
-      <div className={`my-4 p-4 rounded-xl backdrop-blur-md border ${container}`}>
-        <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-3`}>Top Results</h4>
+      <div className={`my-3 sm:my-4 p-3 sm:p-4 rounded-xl backdrop-blur-md border ${container}`}>
+        <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-2 sm:mb-3 text-sm sm:text-base`}>Top Results</h4>
         <div className="space-y-3">
           {results.map((r: any, i: number) => (
-            <a key={i} href={r.link} target="_blank" rel="noopener noreferrer" className={`block rounded-lg p-3 border ${isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'} transition-colors`}>
-              <div className={`${isDarkMode ? 'text-blue-300' : 'text-blue-700'} font-medium`}>{r.title}</div>
-              <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm mt-1`}>{r.snippet}</div>
-              <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs mt-1`}>{r.source || new URL(r.link).hostname}</div>
+            <a key={i} href={r.link} target="_blank" rel="noopener noreferrer" className={`block rounded-lg p-2 sm:p-3 border ${isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'} transition-colors`}>
+              <div className={`${isDarkMode ? 'text-blue-300' : 'text-blue-700'} font-medium text-sm sm:text-base`}>{r.title}</div>
+              <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-xs sm:text-sm mt-1`}>{r.snippet}</div>
+              <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-[10px] sm:text-xs mt-1`}>{r.source || new URL(r.link).hostname}</div>
             </a>
           ))}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
+            onClick={() => window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Search images for this topic' } }))}
+          >Images</button>
+          <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
+            onClick={() => window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Search videos for this topic' } }))}
+          >Videos</button>
+          <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
+            onClick={() => window.dispatchEvent(new CustomEvent('openScribbleModule', { detail: { template: 'projectPlan' } }))}
+          >Plan this</button>
         </div>
       </div>
     );
