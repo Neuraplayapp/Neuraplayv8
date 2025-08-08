@@ -1,6 +1,7 @@
 // ScribbleModule - Interactive Canvas for Project Plans, Mind Maps, Charts & Roadmaps
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, Save, Download, Share, Trash2, Move, Type, Image as ImageIcon, BarChart3, GitBranch, Calendar, Target, Lightbulb, ZoomIn, ZoomOut, Grid as GridIcon, Copy, Wand2 } from 'lucide-react';
+import aiService from '../services/AIService';
 
 interface CanvasElement {
   id: string;
@@ -40,6 +41,9 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genMode, setGenMode] = useState<'block' | 'notes' | 'roadmap'>('block');
 
   // Import items dropped from chat (images/charts/text)
   useEffect(() => {
@@ -104,6 +108,130 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
         { type: 'chart', content: 'Market Share', x: 350, y: 120, data: { type: 'pie', data: [40, 30, 20, 10] }},
         { type: 'sticky', content: '💡 Key Insights', x: 50, y: 350, style: { backgroundColor: '#fef3c7' }}
       ]
+    }
+  };
+
+  // AI generation helpers
+  const parseAIResponseToText = (result: any): string => {
+    try {
+      if (Array.isArray(result)) {
+        const first = result[0];
+        if (!first) return '';
+        return first.generated_text || first.text || first.response || first.message || '';
+      }
+      if (typeof result === 'string') return result;
+      if (result && typeof result === 'object') {
+        return result.generated_text || result.text || result.response || result.message || '';
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  };
+
+  const addGeneratedContentToCanvas = (text: string) => {
+    if (!text.trim()) return;
+    const centerX = 120 + Math.random() * 60;
+    const centerY = 100 + Math.random() * 60;
+
+    if (genMode === 'block') {
+      const id = `gen_${Date.now()}`;
+      const element: CanvasElement = {
+        id,
+        type: 'text',
+        x: centerX,
+        y: centerY,
+        width: 480,
+        height: 280,
+        content: text,
+        style: {
+          backgroundColor: theme.isDarkMode ? '#0b1220' : '#ffffff',
+          textColor: theme.isDarkMode ? '#ffffff' : '#111827',
+          fontSize: 14,
+          fontWeight: 'normal',
+          borderColor: theme.isDarkMode ? '#0b1220' : '#ffffff',
+          borderWidth: 1
+        },
+        connections: []
+      };
+      setElements(prev => [...prev, element]);
+      setSelectedElement(id);
+      return;
+    }
+
+    if (genMode === 'notes') {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      let offset = 0;
+      lines.forEach((line, idx) => {
+        // Skip headings if prefixed with #
+        const content = line.replace(/^#+\s*/, '').replace(/^[-•]\s*/, '');
+        const element: CanvasElement = {
+          id: `note_${Date.now()}_${idx}`,
+          type: 'sticky',
+          x: centerX + (offset % 3) * 180,
+          y: centerY + Math.floor(offset / 3) * 120,
+          width: 160,
+          height: 90,
+          content,
+          style: {
+            backgroundColor: theme.isDarkMode ? '#1f2937' : '#fef3c7',
+            textColor: theme.isDarkMode ? '#ffffff' : '#111827',
+            fontSize: 13,
+            fontWeight: 'normal',
+            borderColor: theme.isDarkMode ? '#1f2937' : '#fef3c7',
+            borderWidth: 1
+          },
+          connections: []
+        };
+        setElements(prev => [...prev, element]);
+        offset++;
+      });
+      return;
+    }
+
+    if (genMode === 'roadmap') {
+      const phases = text.split('\n')
+        .map(l => l.trim())
+        .filter(Boolean)
+        .map(l => l.replace(/^\d+\.|^-\s*|•\s*/, ''))
+        .slice(0, 8);
+      const element: CanvasElement = {
+        id: `road_${Date.now()}`,
+        type: 'roadmap',
+        x: centerX,
+        y: centerY,
+        width: 520,
+        height: 80,
+        content: 'Generated Roadmap',
+        style: {
+          backgroundColor: theme.isDarkMode ? '#374151' : '#f9fafb',
+          textColor: theme.isDarkMode ? '#ffffff' : '#111827',
+          fontSize: 14,
+          fontWeight: 'normal',
+          borderColor: theme.isDarkMode ? '#374151' : '#f9fafb',
+          borderWidth: 2
+        },
+        data: { phases: phases.length ? phases : ['Phase 1', 'Phase 2', 'Phase 3'] },
+        connections: []
+      };
+      setElements(prev => [...prev, element]);
+      setSelectedElement(element.id);
+      return;
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim()) return;
+    try {
+      setIsGenerating(true);
+      const context = { currentPage: window.location.pathname };
+      const result = await aiService.sendMessage(aiPrompt, context, false);
+      const text = parseAIResponseToText(result);
+      addGeneratedContentToCanvas(text || '');
+    } catch (e) {
+      // optional: surface error later
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -487,6 +615,33 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
                   {template.name}
                 </button>
               ))}
+            </div>
+
+            {/* AI Generate */}
+            <div className="hidden md:flex items-center space-x-2 ml-2">
+              <input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Describe what to generate (e.g., project directives)"
+                className={`px-3 py-1 text-xs rounded-md border outline-none w-72 ${theme.isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-400'}`}
+              />
+              <select
+                value={genMode}
+                onChange={(e) => setGenMode(e.target.value as any)}
+                className={`px-2 py-1 text-xs rounded-md border ${theme.isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-gray-300 text-gray-700'}`}
+              >
+                <option value="block">Text Block</option>
+                <option value="notes">Sticky Notes</option>
+                <option value="roadmap">Roadmap</option>
+              </select>
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className={`px-3 py-1 text-xs rounded-md flex items-center space-x-1 ${theme.isDarkMode ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'} disabled:opacity-60`}
+              >
+                <Wand2 size={14} />
+                <span>{isGenerating ? 'Generating…' : 'Generate'}</span>
+              </button>
             </div>
           </div>
 
