@@ -612,7 +612,13 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       listBullet: isDarkMode ? 'text-blue-400' : 'text-black'
     };
 
-    return text
+    // Normalize asterisks before markdown transformations
+    const cleaned = text
+      .replace(/\*{3,}/g, '')
+      .replace(/(^|\s)\*(?!\s)/g, '$1')
+      .replace(/\s+\*/g, ' *');
+
+    return cleaned
       // Clean up asterisks and markdown remnants FIRST
       .replace(/\*\*\*/g, '') // Remove triple asterisks
       .replace(/\*\*/g, '')   // Remove remaining double asterisks  

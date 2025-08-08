@@ -2,8 +2,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, Save, Download, Share, Trash2, Move, Type, Image as ImageIcon, BarChart3, GitBranch, Calendar, Target, Lightbulb, ZoomIn, ZoomOut, Grid as GridIcon, Copy, Wand2 } from 'lucide-react';
 import aiService from '../services/AIService';
-import { pluginRegistry } from '../plugins';
-import type { CanvasObject, CanvasPlugin } from '../plugins/PluginInterface';
+// Removed plugin quick-add to simplify UI per latest requirements
+// import { pluginRegistry } from '../plugins';
+// import type { CanvasObject, CanvasPlugin } from '../plugins/PluginInterface';
 import { create } from 'zustand';
 import Konva from 'konva';
 
@@ -211,33 +212,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
     }
   };
 
-  // Quick-add from plugin registry
-  const addFromPlugin = (pluginId: string) => {
-    const plugin = pluginRegistry.find(p => p.id === pluginId);
-    if (!plugin) return;
-    const obj = plugin.createObject();
-    const id = `${plugin.id}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-    const newElement: CanvasElement = {
-      id,
-      type: obj.type as any,
-      x: obj.position.x,
-      y: obj.position.y,
-      width: obj.size.width,
-      height: obj.size.height,
-      content: obj.content,
-      style: {
-        backgroundColor: theme.isDarkMode ? '#0b1220' : '#ffffff',
-        textColor: theme.isDarkMode ? '#ffffff' : '#111827',
-        fontSize: 14,
-        fontWeight: 'normal',
-        borderColor: theme.isDarkMode ? '#0b1220' : '#e5e7eb',
-        borderWidth: 1,
-      },
-      connections: [],
-    };
-    setElements(prev => [...prev, newElement]);
-    setSelectedElement(id);
-  };
+  // Removed plugin quick-add
 
   // AI generation helpers
   const parseAIResponseToText = (result: any): string => {
@@ -1039,19 +1014,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
             <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setShowGrid(v => !v)}>
               <GridIcon size={16} />
             </button>
-            {/* Plugins quick-add */}
-            <div className="flex items-center space-x-1">
-              {pluginRegistry.slice(0, 6).map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => addFromPlugin(p.id)}
-                  className={`px-2 py-1 text-[10px] rounded border ${theme.isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                  title={`Add ${p.label}`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            {/* Plugin quick-add removed */}
             <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setSnapToGrid(v => !v)}>
               Snap
             </button>
@@ -1079,6 +1042,7 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
             <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'} transition-all`} onClick={deleteSelected} disabled={!selectedElement}>
               <Trash2 size={16} />
             </button>
+            <button className={`px-3 py-1 text-xs rounded-lg ${theme.isDarkMode ? 'bg-red-600/80 text-white hover:bg-red-600' : 'bg-red-500/90 text-white hover:bg-red-500'} transition-all`} onClick={()=>{ if (confirm('Clear all elements on the board?')) { setElements([]); setSelectedElement(null); } }}>Clear Board</button>
           </div>
         </div>
 

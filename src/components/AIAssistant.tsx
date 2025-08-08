@@ -3518,16 +3518,15 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        // Dedicated button opens ScribbleModule; clear chat should not
-                                        setIsScribbleModuleOpen(true);
+                                        setIsScribbleboardOpen(true);
+                                        window.dispatchEvent(new CustomEvent('scribble_open'));
                                     }}
                                     className="ai-fullscreen-button"
-                                    title="Open ScribbleModule - Project Plans & Mind Maps"
+                                    title="Open Scribbleboard"
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                        <path d="M2 17l10 5 10-5"/>
-                                        <path d="M2 12l10 5 10-5"/>
+                                        <rect x="3" y="4" width="18" height="14" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
                                     </svg>
                                 </button>
                                 <button

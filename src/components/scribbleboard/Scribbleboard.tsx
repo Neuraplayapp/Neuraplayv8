@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+// @ts-ignore
+import ChartCard from './ChartCard';
 
 type Mode = 'fullscreen' | 'compact';
 
@@ -248,6 +250,12 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
         {board.hypotheses.map(h => (
           <HypothesisCard key={h.id} prompt={h.prompt} mode={mode} result={h.result} />
         ))}
+        {/* Example: if graph contains a series node, render it */}
+        {board.graph.nodes.filter(n=>n.label?.startsWith('chart:')).map((n,i)=>{
+          const label = n.label.replace('chart:','');
+          const series = [{ name: label, data: Array.from({length:11}).map((_,k)=>({x:k-5,y: Math.pow((k-5)+1,2)}))}];
+          return <ChartCard key={`c_${i}`} title={`Chart: ${label}`} type="line" series={series} compact={mode==='compact'} />
+        })}
       </div>
     </div>
   );
