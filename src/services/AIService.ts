@@ -288,6 +288,35 @@ class AIService {
       {
         "type": "function",
         "function": {
+          "name": "get_wikipedia_summary",
+          "description": "Fetch a concise Wikipedia summary (with thumbnail if available) for a topic or entity.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Topic or entity to look up" }
+            },
+            "required": ["query"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "web_news_search",
+          "description": "Search recent news using Serper and return a curated list of articles.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "News query" },
+              "timeRange": { "type": "string", "enum": ["day", "week", "month"], "description": "Optional recency filter" }
+            },
+            "required": ["query"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
           "name": "open_canvas_mindmap",
           "description": "Open the interactive canvas mindmap tool to plan, organize, and act on user prompts (ScribbleModule).",
           "parameters": {
@@ -537,6 +566,9 @@ class AIService {
 - **Context-Aware Tools**: Use conversation history to provide more relevant responses
 - **Educational Enhancement**: When explaining concepts, create visual aids automatically
 - **Accessibility First**: Use accessibility tools preemptively when needed
+ - **Accessibility First**: Use accessibility tools preemptively when needed
+ - **Wikipedia**: When the user mentions "wiki" or "wikipedia", or asks "what is X" about a notable entity/topic, CALL get_wikipedia_summary with the entity/topic string
+ - **News**: When the user asks about current events, latest updates, or recent happenings on a topic/person, CALL web_news_search (default timeRange=week)
 
 📊 VISUAL LEARNING SPECIALIZATION:
 - **Mathematical Illustrations**: Distance calculations → orbital diagrams with scale comparisons
