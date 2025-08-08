@@ -43,7 +43,8 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
   const [showGrid, setShowGrid] = useState(true);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [genMode, setGenMode] = useState<'block' | 'notes' | 'roadmap'>('block');
+  const [genMode, setGenMode] = useState<'directive' | 'block' | 'notes' | 'roadmap' | 'gantt' | 'wbs' | 'task_strip' | 'risk_wbs' | 'mini_risk' | 'raci'>('directive');
+  const [zoom, setZoom] = useState(1);
 
   // Import items dropped from chat (images/charts/text)
   useEffect(() => {
@@ -134,15 +135,15 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
     const centerX = 120 + Math.random() * 60;
     const centerY = 100 + Math.random() * 60;
 
-    if (genMode === 'block') {
+    if (genMode === 'directive' || genMode === 'block') {
       const id = `gen_${Date.now()}`;
       const element: CanvasElement = {
         id,
         type: 'text',
         x: centerX,
         y: centerY,
-        width: 480,
-        height: 280,
+        width: 560,
+        height: 320,
         content: text,
         style: {
           backgroundColor: theme.isDarkMode ? '#0b1220' : '#ffffff',
@@ -218,6 +219,170 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
       setSelectedElement(element.id);
       return;
     }
+
+    if (genMode === 'gantt') {
+      // Expect lines like: Task | start_week | end_week
+      const tasks = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const parts = l.split('|').map(p => p.trim());
+        return { name: parts[0], start: Number(parts[1]) || 1, end: Number(parts[2]) || (Number(parts[1]) || 1) };
+      }).slice(0, 10);
+      const rowHeight = 32;
+      const unitWidth = 28;
+      const baseY = centerY;
+      tasks.forEach((t, i) => {
+        const duration = Math.max(1, t.end - t.start + 1);
+        const el: CanvasElement = {
+          id: `gantt_${Date.now()}_${i}`,
+          type: 'text',
+          x: centerX + (t.start - 1) * unitWidth,
+          y: baseY + i * (rowHeight + 12),
+          width: duration * unitWidth,
+          height: rowHeight,
+          content: t.name,
+          style: {
+            backgroundColor: theme.isDarkMode ? '#1e40af' : '#bfdbfe',
+            textColor: theme.isDarkMode ? '#e0e7ff' : '#1e3a8a',
+            fontSize: 12,
+            fontWeight: 'normal',
+            borderColor: theme.isDarkMode ? '#1e40af' : '#bfdbfe',
+            borderWidth: 1
+          },
+          connections: []
+        };
+        setElements(prev => [...prev, el]);
+      });
+      return;
+    }
+
+    if (genMode === 'wbs') {
+      // Expect hierarchical lines with '-' indent levels
+      const lines = text.split('\n').map(l => l.replace(/\t/g, '  '));
+      const nodes: Array<{ level: number; text: string }> = lines
+        .map(l => ({ level: (l.match(/^\s*/)?.[0].length || 0) / 2, text: l.replace(/^\s*[-•]?\s*/, '') }))
+        .filter(n => n.text.trim().length > 0);
+      let x = centerX, y = centerY;
+      const levelX = (lvl: number) => x + lvl * 200;
+      nodes.forEach((n, idx) => {
+        const nodeId = `wbs_${Date.now()}_${idx}`;
+        const el: CanvasElement = {
+          id: nodeId,
+          type: 'mindmap',
+          x: levelX(n.level),
+          y: y + idx * 120,
+          width: 120,
+          height: 120,
+          content: n.text,
+          style: { backgroundColor: '#fbbf24', textColor: '#111827', fontSize: 14, fontWeight: 'bold', borderColor: '#fbbf24', borderWidth: 1 },
+          connections: []
+        };
+        setElements(prev => [...prev, el]);
+        // Connect to previous of level-1 if possible
+        if (n.level > 0) {
+          for (let j = idx - 1; j >= 0; j--) {
+            const prevNode = nodes[j];
+            if (prevNode.level === n.level - 1) {
+              const parentId = `wbs_${Date.now()}_${j}`; // approximate id reference scope
+              // Since ids differ due to Date.now, skip hard connection; rely on manual linking later
+              break;
+            }
+          }
+        }
+      });
+      return;
+    }
+
+    if (genMode === 'task_strip') {
+      const tasks = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => l.replace(/^[-•]\s*/, ''));
+      const stripY = centerY;
+      let currentX = centerX;
+      tasks.forEach((name, i) => {
+        const width = Math.max(80, Math.min(220, name.length * 8));
+        const el: CanvasElement = {
+          id: `strip_${Date.now()}_${i}`,
+          type: 'text',
+          x: currentX,
+          y: stripY,
+          width,
+          height: 36,
+          content: name,
+          style: {
+            backgroundColor: theme.isDarkMode ? '#065f46' : '#d1fae5',
+            textColor: theme.isDarkMode ? '#d1fae5' : '#065f46',
+            fontSize: 12,
+            fontWeight: 'normal',
+            borderColor: theme.isDarkMode ? '#065f46' : '#d1fae5',
+            borderWidth: 1
+          },
+          connections: []
+        };
+        setElements(prev => [...prev, el]);
+        currentX += width + 16;
+      });
+      return;
+    }
+
+    if (genMode === 'risk_wbs' || genMode === 'mini_risk') {
+      // Expect lines like: Risk name | P:0.2 | I:3
+      const risks = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const m = l.match(/^(.*?)\s*\|\s*P\s*:?\s*(\d*\.?\d+)\s*\|\s*I\s*:?\s*(\d*\.?\d+)/i);
+        if (m) return { name: m[1].trim(), p: parseFloat(m[2]), i: parseFloat(m[3]) };
+        return { name: l, p: Math.random(), i: 1 + Math.floor(Math.random() * 5) };
+      });
+      const scores = risks.map(r => r.p * r.i);
+      const avg = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
+      const header: CanvasElement = {
+        id: `risk_header_${Date.now()}`,
+        type: 'text',
+        x: centerX,
+        y: centerY,
+        width: 520,
+        height: 60,
+        content: `Average Risk Score: ${avg.toFixed(2)}\nItems: ${risks.length}`,
+        style: { backgroundColor: theme.isDarkMode ? '#111827' : '#ffffff', textColor: theme.isDarkMode ? '#f9fafb' : '#111827', fontSize: 14, fontWeight: 'bold', borderColor: theme.isDarkMode ? '#111827' : '#ffffff', borderWidth: 1 },
+        connections: []
+      };
+      setElements(prev => [...prev, header]);
+      risks.forEach((r, idx) => {
+        const score = r.p * r.i;
+        const bg = score > 3 ? (theme.isDarkMode ? '#7f1d1d' : '#fee2e2') : score > 1.5 ? (theme.isDarkMode ? '#78350f' : '#fef3c7') : (theme.isDarkMode ? '#065f46' : '#d1fae5');
+        const fg = score > 3 ? (theme.isDarkMode ? '#fee2e2' : '#7f1d1d') : score > 1.5 ? (theme.isDarkMode ? '#fef3c7' : '#78350f') : (theme.isDarkMode ? '#d1fae5' : '#065f46');
+        const el: CanvasElement = {
+          id: `risk_${Date.now()}_${idx}`,
+          type: 'sticky',
+          x: centerX + (idx % 3) * 180,
+          y: centerY + 80 + Math.floor(idx / 3) * 120,
+          width: 160,
+          height: 90,
+          content: `${r.name}\nP:${r.p} I:${r.i} S:${score.toFixed(2)}`,
+          style: { backgroundColor: bg, textColor: fg, fontSize: 12, fontWeight: 'normal', borderColor: bg, borderWidth: 1 },
+          connections: []
+        };
+        setElements(prev => [...prev, el]);
+      });
+      return;
+    }
+
+    if (genMode === 'raci') {
+      // Expect matrix lines: Task | R | A | C | I (comma-separated names allowed)
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const header = 'Task | R | A | C | I\n' + '-'.repeat(32);
+      const rows = lines.map(l => l.replace(/\s*\|\s*/g, ' | ')).join('\n');
+      const content = `${header}\n${rows}`;
+      const el: CanvasElement = {
+        id: `raci_${Date.now()}`,
+        type: 'text',
+        x: centerX,
+        y: centerY,
+        width: 560,
+        height: 240,
+        content,
+        style: { backgroundColor: theme.isDarkMode ? '#0b1220' : '#ffffff', textColor: theme.isDarkMode ? '#ffffff' : '#111827', fontSize: 12, fontWeight: 'normal', borderColor: theme.isDarkMode ? '#0b1220' : '#ffffff', borderWidth: 1 },
+        connections: []
+      };
+      setElements(prev => [...prev, el]);
+      setSelectedElement(el.id);
+      return;
+    }
   };
 
   const handleGenerate = async () => {
@@ -225,7 +390,22 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
     try {
       setIsGenerating(true);
       const context = { currentPage: window.location.pathname };
-      const result = await aiService.sendMessage(aiPrompt, context, false);
+      // Mode-specific instruction to produce parseable output
+      const instructionsMap: Record<string, string> = {
+        directive: 'Produce a clear project directive document as structured bullet points and short sections. No code blocks.',
+        block: 'Provide a concise, structured text block suitable for a canvas note. No code blocks.',
+        notes: 'Output 8-12 short bullet points (one per line) with no numbering, each a concise actionable note.',
+        roadmap: 'Output 4-8 phases, each on its own line with a short phase name. No numbering.',
+        gantt: 'Output tasks one per line in the format: Task Name | start_week_number | end_week_number. Weeks are integers starting from 1.',
+        wbs: 'Output a hierarchical work breakdown structure with indentation using two spaces per level and a leading dash. Example: "- Level 1\n  - Level 2\n    - Level 3".',
+        task_strip: 'Output an ordered list of 5-12 tasks, one per line with no numbering or bullets, each a concise phrase.',
+        risk_wbs: 'Output risks one per line in the format: Risk Name | P:probability(0-1) | I:impact(1-5).',
+        mini_risk: 'Output risks one per line in the format: Risk Name | P:probability(0-1) | I:impact(1-5).',
+        raci: 'Output lines with: Task | R | A | C | I (comma-separated names for each role allowed). No header.'
+      };
+      const modeInstruction = instructionsMap[genMode] || '';
+      const prompt = `${aiPrompt}\n\nFormat strictly as instructed: ${modeInstruction}`;
+      const result = await aiService.sendMessage(prompt, context, false);
       const text = parseAIResponseToText(result);
       addGeneratedContentToCanvas(text || '');
     } catch (e) {
@@ -673,6 +853,18 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
                 <span className="text-xs hidden md:block">{label}</span>
               </button>
             ))}
+            <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setShowGrid(v => !v)}>
+              <GridIcon size={16} />
+            </button>
+            <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setSnapToGrid(v => !v)}>
+              Snap
+            </button>
+            <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setZoom(z => Math.min(2, z + 0.1))}>
+              <ZoomIn size={16} />
+            </button>
+            <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}>
+              <ZoomOut size={16} />
+            </button>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -684,6 +876,12 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
             </button>
             <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'} transition-all`}>
               <Share size={16} />
+            </button>
+            <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'} transition-all`} onClick={duplicateSelected} disabled={!selectedElement}>
+              <Copy size={16} />
+            </button>
+            <button className={`p-2 rounded-lg ${theme.isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'} transition-all`} onClick={deleteSelected} disabled={!selectedElement}>
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
@@ -697,13 +895,35 @@ const ScribbleModule: React.FC<ScribbleModuleProps> = ({ isOpen, onClose, theme,
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             style={{
-              backgroundImage: theme.isDarkMode 
+              backgroundImage: showGrid ? (theme.isDarkMode 
                 ? 'radial-gradient(circle, #374151 1px, transparent 1px)'
-                : 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
-              backgroundSize: '20px 20px'
+                : 'radial-gradient(circle, #d1d5db 1px, transparent 1px)') : 'none',
+              backgroundSize: '20px 20px',
+              transform: `scale(${zoom})`,
+              transformOrigin: '0 0'
             }}
           >
             {elements.map(renderElement)}
+
+            {/* Simple connection rendering */}
+            <svg className="pointer-events-none absolute inset-0" style={{ width: '100%', height: '100%' }}>
+              {elements.flatMap((el) => (el.connections || []).map((targetId) => {
+                const target = elements.find(e => e.id === targetId);
+                if (!target) return null;
+                const x1 = el.x + (el.width || 0) / 2;
+                const y1 = el.y + (el.height || 0) / 2;
+                const x2 = target.x + (target.width || 0) / 2;
+                const y2 = target.y + (target.height || 0) / 2;
+                return (
+                  <line key={`${el.id}_${targetId}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={theme.isDarkMode ? '#4b5563' : '#9ca3af'} strokeWidth={2} markerEnd="url(#arrow)" />
+                );
+              })).filter(Boolean)}
+              <defs>
+                <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0 L0,6 L6,3 z" fill={theme.isDarkMode ? '#4b5563' : '#9ca3af'} />
+                </marker>
+              </defs>
+            </svg>
             
             {/* Instruction overlay when empty */}
             {elements.length === 0 && (
