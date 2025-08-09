@@ -114,7 +114,22 @@ const AIAssistant: React.FC = () => {
     useEffect(() => {
         const openBoard = () => setIsScribbleboardOpen(true);
         window.addEventListener('scribble_open', openBoard as EventListener);
-        return () => window.removeEventListener('scribble_open', openBoard as EventListener);
+        
+        // EMERGENCY RESET: Ctrl+Alt+R to force reset when stuck
+        const handleEmergencyReset = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.altKey && e.key === 'r') {
+                e.preventDefault();
+                console.log('🚨 Emergency reset triggered by user');
+                emergencyReset();
+            }
+        };
+        
+        window.addEventListener('keydown', handleEmergencyReset);
+        
+        return () => {
+            window.removeEventListener('scribble_open', openBoard as EventListener);
+            window.removeEventListener('keydown', handleEmergencyReset);
+        };
     }, []);
     
     // Use user context for usage limits and verification
@@ -132,6 +147,7 @@ const AIAssistant: React.FC = () => {
     const [isPlayingVoice, setIsPlayingVoice] = useState(false);
     const [promptCount, setPromptCount] = useState(0);
     const [isReadingLastMessage, setIsReadingLastMessage] = useState(false);
+    const [isProcessingVoice, setIsProcessingVoice] = useState(false);
     
     // WebSocket service for real-time communication  
     const webSocketService = useRef<WebSocketService>(WebSocketService.getInstance());
@@ -667,8 +683,20 @@ const AIAssistant: React.FC = () => {
         setActiveConversation(newId);
     };
 
-    // Clear current conversation history and ALL visual content
+    // Clear current conversation history and ALL visual content + RESET ALL STATES
     const clearCurrentConversation = () => {
+        console.log('🧹 Starting comprehensive conversation clear...');
+        
+        // CRITICAL: First reset all loading and processing states
+        setIsLoading(false);
+        setIsProcessingVoice(false);
+        setIsReadingLastMessage(false);
+        setInputMessage(''); // Clear any stuck input
+        
+        // Reset mode to idle to break any stuck processing
+        setMode('idle');
+        
+        // Clear conversation data
         clearConversation(activeConversation);
         
         // Clear any stuck visual content in scribbleboard
@@ -680,11 +708,39 @@ const AIAssistant: React.FC = () => {
         try {
             localStorage.removeItem('scribble_evolution_preferences');
             localStorage.removeItem('scribble_board_cache');
+            // Also clear any cached AI responses that might be causing issues
+            localStorage.removeItem('ai_processing_cache');
+            localStorage.removeItem('tool_results_cache');
         } catch (e) {
             console.warn('Failed to clear localStorage:', e);
         }
         
-        console.log('🧹 Cleared ALL conversation history AND visual content for:', activeConversation);
+        // Force a re-render by resetting surface preference
+        setSurfacePreference('auto');
+        
+        console.log('✅ Comprehensive clear completed - all states reset');
+    };
+
+    // EMERGENCY: Force reset all states when system gets stuck
+    const emergencyReset = () => {
+        console.log('🚨 EMERGENCY RESET - Forcing all states to safe defaults');
+        
+        // Reset ALL possible stuck states
+        setIsLoading(false);
+        setIsProcessingVoice(false);
+        setIsReadingLastMessage(false);
+        setIsPlayingVoice(false);
+        setMode('idle');
+        modeRef.current = 'idle';
+        
+        // Clear input and counters
+        setInputMessage('');
+        setPromptCount(0);
+        
+        // Clear conversation and visual content
+        clearCurrentConversation();
+        
+        console.log('✅ Emergency reset complete - system should be responsive now');
     };
 
     // updateConversationTitle function removed - not used in the component
@@ -1095,7 +1151,7 @@ Need help with anything specific? Just ask! 🌟`;
         return `❌ I didn't understand that command. Try asking for help!`;
     };
 
-    // NEW: Unified message handling function
+    // NEW: Unified message handling function with timeout protection
     const handleSendMessage = async (text: string) => {
         if (!text.trim() || isLoading) return;
         const currentMode = modeRef.current; // Use ref for more accurate mode
@@ -1106,6 +1162,18 @@ Need help with anything specific? Just ask! 🌟`;
         addMessage(activeConversation, userMessage);
         setInputMessage('');
         setIsLoading(true);
+
+        // CRITICAL: Set a timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+            console.error('⏰ AI processing timeout - forcing reset');
+            setIsLoading(false);
+            setMode('idle');
+            addMessage(activeConversation, {
+                text: '⏰ Request timed out. Please try again or clear the conversation if the issue persists.',
+                isUser: false,
+                timestamp: new Date()
+            });
+        }, 30000); // 30 second timeout
 
         // Apply prompt count restrictions for non-unlimited users
         if (!isUnlimitedUser) {
@@ -1156,7 +1224,10 @@ Need help with anything specific? Just ask! 🌟`;
                 timestamp: new Date() 
             });
         } finally {
+            // CRITICAL: Always clear timeout and reset loading state
+            clearTimeout(timeoutId);
             setIsLoading(false);
+            setMode('idle');
         }
     };
 
@@ -1751,20 +1822,21 @@ Need help with anything specific? Just ask! 🌟`;
 
     // Enhanced AI handler with tool calling support and usage limits
     const handleAIWithToolCalling = async (inputMessage: string, enableToolCalling: boolean = true) => {
-        // Check AI usage limits before proceeding
-        const aiUsage = canUseAI();
-        if (!aiUsage.allowed) {
-            const verificationMessage = contextUser?.isVerified 
-                ? `You've reached your AI chat limit (${aiUsage.limit} prompts/day). Upgrade to Premium for more access!` 
-                : `You've used your free AI chat limit (${aiUsage.limit} prompts/day). Verify your email for more access or upgrade to Premium!`;
-                
-            addMessage(activeConversation, {
-                text: `🚫 ${verificationMessage}`,
-                isUser: false,
-                timestamp: new Date()
-            });
-            return;
-        }
+        try {
+            // Check AI usage limits before proceeding
+            const aiUsage = canUseAI();
+            if (!aiUsage.allowed) {
+                const verificationMessage = contextUser?.isVerified 
+                    ? `You've reached your AI chat limit (${aiUsage.limit} prompts/day). Upgrade to Premium for more access!` 
+                    : `You've used your free AI chat limit (${aiUsage.limit} prompts/day). Verify your email for more access or upgrade to Premium!`;
+                    
+                addMessage(activeConversation, {
+                    text: `🚫 ${verificationMessage}`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                return;
+            }
         
         // Record AI usage at the start of the request
         recordAIUsage();
@@ -3021,6 +3093,20 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 >
                                     <Trash2 size={16} />
                                 </button>
+                                
+                                {/* Emergency Reset for fullscreen mode */}
+                                {isLoading && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            emergencyReset();
+                                        }}
+                                        className="ai-fullscreen-button bg-red-600/20 hover:bg-red-600/30 text-red-300 animate-pulse"
+                                        title="Emergency Reset - System Stuck"
+                                    >
+                                        <RefreshCw size={16} />
+                                    </button>
+                                )}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -3126,6 +3212,20 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 >
                                     <Trash2 size={16} />
                                 </button>
+                                
+                                {/* Emergency Reset (only show when loading seems stuck) */}
+                                {isLoading && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            emergencyReset();
+                                        }}
+                                        className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-red-600/20 text-red-300 hover:bg-red-600/30' : 'bg-red-100 text-red-700 hover:bg-red-200'} animate-pulse`}
+                                        title="Emergency Reset (Ctrl+Alt+R) - Use if system is stuck"
+                                    >
+                                        <RefreshCw size={16} />
+                                    </button>
+                                )}
                                 
                                 {/* Fullscreen Toggle */}
                                 <button
