@@ -81,12 +81,10 @@ export class NavigationService {
         console.log('🔍 NavigationService Debug - Using React Router navigate');
         this.navigate(path);
         return { success: true, message: `🚀 Taking you to ${page.name}! ${page.description} ✨` };
-      } else {
-        console.log('🔍 NavigationService Debug - Using window.location fallback');
-        // Fallback to window.location
-        window.location.href = path;
-        return { success: true, message: `🚀 Taking you to ${page.name}! ${page.description} ✨` };
       }
+      // No navigate available: DO NOT redirect implicitly
+      console.warn('🔍 NavigationService Debug - No navigate available; suppressing fallback redirect');
+      return { success: false, message: `Navigation suppressed (no router). Intended: ${page.name}` };
     } catch (error) {
       console.error('🔍 NavigationService Debug - Navigation error:', error);
       return { success: false, message: `Failed to navigate to "${page.name}"! 🚫` };

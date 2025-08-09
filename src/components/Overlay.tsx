@@ -33,12 +33,17 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
       const rect = el.getBoundingClientRect();
       setAnchorRect({ top: rect.top + window.scrollY, left: rect.left + window.scrollX, width: rect.width });
     };
+    // compute now and on next frames to catch layout changes
     compute();
+    const raf1 = requestAnimationFrame(compute);
+    const raf2 = requestAnimationFrame(compute);
     window.addEventListener('resize', compute);
     window.addEventListener('scroll', compute, { passive: true } as any);
     return () => {
       window.removeEventListener('resize', compute);
       window.removeEventListener('scroll', compute as any);
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
     };
   }, [open, anchorSelector, mode]);
 

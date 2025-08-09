@@ -1684,9 +1684,13 @@ Need help with anything specific? Just ask! 🌟`;
             setToolExecutorService(service);
             
             // Initialize navigation service with navigate function
-            const { NavigationService } = await import('../services/NavigationService');
-            const navService = NavigationService.getInstance();
-            navService.setNavigate(navigate); // Set the navigate function
+            try {
+                const { NavigationService } = await import('../services/NavigationService');
+                const navService = NavigationService.getInstance();
+                navService.setNavigate(navigate); // Set the navigate function
+            } catch (e) {
+                console.warn('NavigationService init failed:', e);
+            }
         };
         initToolExecutor();
     }, [navigate]);
