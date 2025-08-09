@@ -130,22 +130,15 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
           }
         });
       }
-      // Handle other successful tool results only if explicitly meant for chat
-      else if ((normalized?.success || result?.success) && data && data.displayInChat) {
-        console.log(`🔍 Adding tool_result for result ${index} (displayInChat)`);
+      // Handle other successful tool results
+      else if ((normalized?.success || result?.success) && (data)) {
+        console.log(`🔍 Adding tool_result for result ${index}`);
         content.push({
           type: 'tool_result',
           content: message || 'Tool executed successfully',
           metadata: data
         });
       } else {
-        // Default: route to canvas by dispatching events, not chat
-        try {
-          if (data?.eventName) {
-            const evt = new CustomEvent(data.eventName, { detail: data.detail || {} });
-            window.dispatchEvent(evt);
-          }
-        } catch {}
         console.log(`🔍 Skipping result ${index} - no matching conditions`);
       }
     });
@@ -226,7 +219,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             <a href={metadata.canonical_url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}>Read on Wikipedia</a>
           )}
           <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
-            onClick={() => window.dispatchEvent(new CustomEvent('openScribbleModule', { detail: { template: 'mindMap' } }))}
+            onClick={() => console.log('ScribbleModule not available')}
           >Add to Mindmap</button>
         </div>
       </div>
@@ -285,7 +278,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             onClick={() => window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Search videos for this topic' } }))}
           >Videos</button>
           <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
-            onClick={() => window.dispatchEvent(new CustomEvent('openScribbleModule', { detail: { template: 'projectPlan' } }))}
+            onClick={() => console.log('ScribbleModule not available')}
           >Plan this</button>
         </div>
       </div>
@@ -529,12 +522,12 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
           </h4>
         </div>
         <div className={`table-content ${contentBg} ${compact ? 'rounded-md p-2' : 'rounded-lg md:rounded-xl p-3 md:p-4'} border ${contentBorder} backdrop-blur-sm overflow-x-auto`}>
-          <table className={`w-full ${compact ? 'text-[11px]' : 'text-xs md:text-sm'} min-w-full table-auto`}>
+          <table className={`w-full ${compact ? 'text-[11px]' : 'text-xs md:text-sm'} min-w-full`}>
             <thead>
               <tr className={`border-b ${headerRowBorder}`}>
                 {headers.map((header, i) => (
-                  <th key={i} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} text-left font-medium ${headerCellText} ${headerCellBg} break-words whitespace-nowrap`}>
-                    <span className="break-words whitespace-nowrap">{header}</span>
+                  <th key={i} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} text-left font-medium ${headerCellText} ${headerCellBg} break-words`}>
+                    <span className="break-words">{header}</span>
                   </th>
                 ))}
               </tr>
@@ -543,10 +536,10 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
               {rows.map((row, i) => (
                 <tr key={i} className={`border-b ${rowBorder} ${rowHover} transition-colors`}>
                   {row.map((cell, j) => (
-                    <td key={j} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} ${cellText} break-words max-w-0 whitespace-pre-wrap`}>
+                    <td key={j} className={`${compact ? 'px-2 py-1' : 'px-2 md:px-4 py-2 md:py-3'} ${cellText} break-words max-w-0`}>
                       {/* Highlight numbers and units with theme-aware colors */}
                       <span className="break-words" dangerouslySetInnerHTML={{
-                        __html: cell.replace(/(\d+(?:\.\d+)?)\s*(km|miles|°C|°F|%|kph|mph|meters|feet|seconds|minutes|hours)/g,
+                        __html: cell.replace(/(\d+(?:\.\d+)?)\s*(°C|°F|%|kph|mph)/g,
                           isDarkMode 
                             ? '<span class="px-2 py-1 bg-green-800/40 border border-green-600/50 rounded text-green-300 font-semibold">$1</span><span class="text-green-400 text-xs ml-1">$2</span>'
                             : '<span class="px-2 py-1 bg-green-200/60 border border-green-400/50 rounded text-green-700 font-semibold">$1</span><span class="text-green-600 text-xs ml-1">$2</span>'
@@ -619,13 +612,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       listBullet: isDarkMode ? 'text-blue-400' : 'text-black'
     };
 
-    // Normalize asterisks before markdown transformations
-    const cleaned = text
-      .replace(/\*{3,}/g, '')
-      .replace(/(^|\s)\*(?!\s)/g, '$1')
-      .replace(/\s+\*/g, ' *');
-
-    return cleaned
+    return text
       // Clean up asterisks and markdown remnants FIRST
       .replace(/\*\*\*/g, '') // Remove triple asterisks
       .replace(/\*\*/g, '')   // Remove remaining double asterisks  
@@ -710,7 +697,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   const richContent = parseRichContent(text, toolResults);
   
     return (
-      <div className={`rich-message-content ${compact ? 'prose-sm' : ''} prose prose-invert max-w-full break-words overflow-hidden`}>
+      <div className={`rich-message-content ${compact ? 'prose-sm' : ''} prose prose-invert max-w-none break-words overflow-hidden`}>
       {richContent.map((item, index) => {
         switch (item.type) {
           case 'wiki_card':

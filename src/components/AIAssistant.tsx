@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Volume2, VolumeX, Sparkles, Crown, Star, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Zap, Target, TrendingUp, Lightbulb, RotateCcw, Play, Pause, HelpCircle, Award, Clock, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff, Bell, Globe, Shield, Calculator, BookOpen, Palette, Music, Heart, Trash2, RefreshCw } from 'lucide-react';
+import { X, Send, Volume2, VolumeX, Sparkles, Settings, Home, Gamepad2, Users, FileText, User, BarChart3, Info, Brain, Target, TrendingUp, Lightbulb, Activity, Maximize2, Minimize2, MessageSquare, History, Mic, MicOff, Bell, Globe, Shield, BookOpen, Heart, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useConversation } from '@elevenlabs/react';
@@ -11,15 +11,8 @@ import { useConversation as useGlobalConversation, type Message } from '../conte
 import { base64ToBinary } from '../utils/videoUtils';
 
 import RichMessageRenderer from './RichMessageRenderer';
-import { toolExecutorService } from '../services/ToolExecutorService';
-// Unified assistant surface (text + visual)
-import ScribbleModule from './ScribbleModule';
-import Overlay from './Overlay';
-// @ts-ignore
-import TextWorkbench from './editor/TextWorkbench';
+
 import SearchOverlay from './SearchOverlay';
-import { analyzeCommand as analyzeIntent } from '../services/IntentClassifier';
-import { AssistantConfig } from '../services/AssistantConfig';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
 
@@ -86,11 +79,9 @@ const AIAssistant: React.FC = () => {
 
     // Listen for search triggers from clickable cards - moved to after function definition
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isScribbleModuleOpen, setIsScribbleModuleOpen] = useState(false);
+
     const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
     const [overlayContent, setOverlayContent] = useState<JSX.Element | null>(null);
-    const [scribbleImports, setScribbleImports] = useState<any[]>([]);
-    const [scribbleTemplate, setScribbleTemplate] = useState<string | null>(null);
     // Use global conversation context instead of local state
     const {
         conversations,
@@ -102,35 +93,7 @@ const AIAssistant: React.FC = () => {
         getActiveConversation
     } = useGlobalConversation();
 
-    // Listen for tool-triggered canvas open requests
-    useEffect(() => {
-        const handler = (e: any) => {
-            setIsScribbleModuleOpen(true);
-            if (e?.detail?.items && Array.isArray(e.detail.items)) {
-                setScribbleImports(e.detail.items);
-            }
-            if (e?.detail?.template) {
-                setScribbleTemplate(e.detail.template);
-            }
-            // Support plugin quick-add and content injection
-            if (e?.detail?.pluginId || e?.detail?.content) {
-                const detail = e.detail || {};
-                // Pass as a special import item the ScribbleModule understands
-                setScribbleImports([
-                    {
-                        type: detail.pluginId || 'text',
-                        title: detail.pluginId || 'plugin',
-                        content: detail.content || 'New Block',
-                        metadata: { position: detail.position || null }
-                    }
-                ]);
-            }
-        };
-        window.addEventListener('openScribbleModule', handler as EventListener);
-        return () => window.removeEventListener('openScribbleModule', handler as EventListener);
-    }, []);
 
-    // Removed Scribbleboard surface/state
     
     // Use user context for usage limits and verification
     const { 
@@ -204,8 +167,8 @@ const AIAssistant: React.FC = () => {
             console.error('❌ Error properties:', Object.keys(error || {}));
             
             // Safe error property access
-            const errorObj = typeof error === 'object' && error !== null ? (error as any) : {};
-            const errorStr = typeof error === 'string' ? error : (error as any)?.toString?.() || 'Unknown error';
+            const errorObj = typeof error === 'object' && error !== null ? error as any : {};
+            const errorStr = typeof error === 'string' ? error : error?.toString?.() || 'Unknown error';
             
             console.error('❌ Error message:', errorObj?.message || errorStr);
             console.error('❌ Error stack:', errorObj?.stack || 'No stack');
@@ -771,9 +734,666 @@ const AIAssistant: React.FC = () => {
 
     // Enhanced AI Agency Functions - COMPREHENSIVE AGENCY
     const analyzeCommand = (text: string): { type: 'navigation' | 'settings' | 'chat' | 'info' | 'agent' | 'game' | 'accessibility' | 'development' | 'content' | 'read', action?: any } => {
-        // Delegate to centralized classifier service
-        // @ts-ignore
-        return analyzeIntent(text, { availablePages });
+        const lowerText = text.toLowerCase();
+        
+        // === PROACTIVE ACCESSIBILITY SUPPORT ===
+        // Color blindness detection and comprehensive assistance
+        const colorBlindnessKeywords = ['color blind', 'colorblind', 'color blindness', 'can\'t see colors', 'trouble with colors', 'colors look the same', 'colors look similar', 'red green', 'blue yellow'];
+        if (colorBlindnessKeywords.some(keyword => lowerText.includes(keyword))) {
+            return { type: 'accessibility', action: { 
+                type: 'color_blindness_support',
+                step: 'initial_assessment',
+                message: '🎨 I can help you with color vision! Let me set up some tests to determine what type of color vision you have and customize NeuraPlay for you.',
+                followUpActions: ['test_colors', 'determine_type', 'implement_settings']
+            }};
+        }
+        
+        // === DEVELOPMENT & LEARNING ASSISTANCE - EXPANDED NATURAL LANGUAGE ===
+        const developmentKeywords = [
+            // Direct learning requests
+            'help me learn', 'teach me', 'improve', 'get better at', 'develop', 'practice', 'training',
+            'struggle with', 'need help with', 'want to learn', 'want to improve', 'need practice',
+            
+            // Natural expressions
+            'i\'m bad at', 'i\'m not good at', 'i have trouble with', 'difficulty with', 'weak at',
+            'need to work on', 'want to master', 'want to understand', 'confused about',
+            'don\'t understand', 'hard for me', 'challenging for me', 'need improvement',
+            
+            // Question forms
+            'how can i get better at', 'what can help me with', 'how do i improve',
+            'any tips for', 'suggestions for', 'advice for', 'help with',
+            
+            // Skill development
+            'build skills', 'develop abilities', 'strengthen', 'enhance', 'boost',
+            'work on my', 'focus on', 'concentrate on', 'dedicate time to'
+        ];
+        
+        const skillKeywords = {
+            'math': [
+                'math', 'mathematics', 'numbers', 'counting', 'addition', 'subtraction', 'arithmetic', 'calculation',
+                'multiply', 'division', 'fractions', 'decimals', 'algebra', 'geometry', 'statistics',
+                'number sense', 'math facts', 'mental math', 'word problems', 'equations'
+            ],
+            'reading': [
+                'reading', 'read', 'letters', 'words', 'spelling', 'phonics', 'literacy', 'vocabulary',
+                'comprehension', 'fluency', 'decoding', 'sight words', 'phonemic awareness',
+                'reading comprehension', 'stories', 'books', 'text', 'writing', 'grammar'
+            ],
+            'memory': [
+                'memory', 'remember', 'forget', 'concentration', 'focus', 'attention', 'recall',
+                'working memory', 'short term memory', 'long term memory', 'memorization',
+                'retention', 'brain training', 'cognitive', 'mental', 'mindfulness'
+            ],
+            'coordination': [
+                'coordination', 'motor skills', 'balance', 'dexterity', 'hand-eye', 'fine motor',
+                'gross motor', 'movement', 'physical', 'agility', 'reflexes', 'body control',
+                'hand coordination', 'eye coordination', 'spatial awareness'
+            ],
+            'problem_solving': [
+                'problem solving', 'thinking', 'logic', 'puzzles', 'reasoning', 'critical thinking',
+                'analytical', 'strategy', 'planning', 'decision making', 'creativity',
+                'logical reasoning', 'deductive reasoning', 'inductive reasoning'
+            ],
+            'inhibition': [
+                'self control', 'focus', 'attention', 'impulse control', 'concentration', 'discipline',
+                'patience', 'waiting', 'stopping', 'restraint', 'regulation', 'calmness',
+                'executive function', 'behavioral control', 'emotional regulation'
+            ],
+            'spatial': [
+                'spatial', '3d', 'shapes', 'geometry', 'visual', 'patterns', 'visualization',
+                'spatial reasoning', 'mental rotation', 'perspective', 'directions',
+                'left and right', 'up and down', 'orientation', 'mapping'
+            ]
+        };
+        
+        if (developmentKeywords.some(keyword => lowerText.includes(keyword))) {
+            for (const [skill, keywords] of Object.entries(skillKeywords)) {
+                if (keywords.some(keyword => lowerText.includes(keyword))) {
+                    return { type: 'development', action: { 
+                        skill, 
+                        request: 'recommend_games',
+                        message: `🎮 I have perfect games to help you with ${skill}! Let me show you our specialized activities.`
+                    }};
+                }
+            }
+            return { type: 'development', action: { 
+                skill: 'general', 
+                request: 'assess_needs',
+                message: '🌟 I can help you improve! What specific skills would you like to work on?'
+            }};
+        }
+        
+        // === CONTENT CREATION AGENCY ===
+        const creationKeywords = ['create', 'make', 'add', 'write', 'post', 'schedule', 'new'];
+        if (creationKeywords.some(keyword => lowerText.includes(keyword))) {
+            if (lowerText.includes('diary') || lowerText.includes('journal') || lowerText.includes('reflection')) {
+                return { type: 'content', action: { 
+                    type: 'diary', 
+                    request: 'create_prompt',
+                    message: '📝 I\'ll create a personalized diary prompt for you! Let me set that up.'
+                }};
+            } else if (lowerText.includes('calendar') || lowerText.includes('event') || lowerText.includes('reminder') || lowerText.includes('schedule')) {
+                return { type: 'content', action: { 
+                    type: 'calendar', 
+                    request: 'create_entry',
+                    message: '📅 I\'ll help you create a calendar entry! What would you like to schedule?'
+                }};
+            } else if (lowerText.includes('forum') || lowerText.includes('discussion') || lowerText.includes('community') || lowerText.includes('post')) {
+                return { type: 'content', action: { 
+                    type: 'forum', 
+                    request: 'create_post',
+                    message: '💬 I\'ll help you create a forum post! What would you like to discuss?'
+                }};
+            }
+        }
+        
+        // === INFORMATION READING AGENCY ===
+        const readingKeywords = ['read', 'show', 'what\'s in', 'check', 'look at', 'see', 'view', 'display'];
+        if (readingKeywords.some(keyword => lowerText.includes(keyword))) {
+            if (lowerText.includes('notification') || lowerText.includes('alert') || lowerText.includes('message')) {
+                return { type: 'read', action: { 
+                    type: 'notifications',
+                    message: '🔔 Let me check your notifications for you!'
+                }};
+            } else if (lowerText.includes('forum') || lowerText.includes('discussion') || lowerText.includes('community')) {
+                return { type: 'read', action: { 
+                    type: 'forum',
+                    message: '💬 I\'ll show you the latest forum discussions!'
+                }};
+            } else if (lowerText.includes('diary') || lowerText.includes('journal') || lowerText.includes('reflection')) {
+                return { type: 'read', action: { 
+                    type: 'diary',
+                    message: '📖 Let me show you your diary entries!'
+                }};
+            } else if (lowerText.includes('playground') || lowerText.includes('games') || lowerText.includes('activities')) {
+                return { type: 'read', action: { 
+                    type: 'playground',
+                    message: '🎮 I\'ll show you all available games and activities!'
+                }};
+            }
+        }
+        
+        // ENHANCED AI Agent commands - COMPREHENSIVE NATURAL LANGUAGE
+        const agentKeywords = [
+            // Direct AI terms
+            'ai agent', 'agent', 'ai assistant', 'assistant', 'brain', 'synapse', 
+            'ai teacher', 'teacher', 'ai', 'bot', 'helper', 'guide', 'tutor',
+            
+            // Natural references
+            'smart assistant', 'virtual assistant', 'digital assistant', 'learning assistant',
+            'teaching assistant', 'study buddy', 'learning companion', 'ai buddy',
+            'virtual teacher', 'digital teacher', 'robot teacher', 'computer teacher',
+            
+            // Casual terms
+            'buddy', 'pal', 'friend', 'companion', 'coach', 'mentor', 'advisor'
+        ];
+        
+        const agentActionKeywords = [
+            // Show/open actions
+            'show', 'open', 'display', 'bring', 'activate', 'wake', 'call', 'summon', 'appear', 'come',
+            'bring up', 'pull up', 'turn on', 'switch on', 'fire up', 'boot up',
+            
+            // Hide/close actions  
+            'hide', 'close', 'remove', 'dismiss', 'stop', 'disappear', 'go away', 'leave',
+            'turn off', 'switch off', 'shut down', 'put away',
+            
+            // Trigger/start actions
+            'trigger', 'start', 'begin', 'launch', 'initiate', 'activate', 'enable',
+            
+            // Help actions
+            'help', 'assist', 'support', 'guide', 'teach', 'explain'
+        ];
+        
+        const agentIntentKeywords = [
+            // Polite requests
+            'want', 'need', 'like', 'would like', 'can you', 'could you', 'please', 'help me',
+            'i want', 'i need', 'i would like', 'i\'d like', 'may i', 'can i', 'could i',
+            
+            // Natural expressions
+            'make it', 'put it', 'set it', 'let me', 'show me', 'give me', 'bring me',
+            'i\'m looking for', 'looking for', 'where is', 'find me', 'get me',
+            
+            // Question forms
+            'how do i', 'where can i', 'is there a way to', 'can you help me'
+        ];
+        
+        // Enhanced agent detection - MUCH MORE SPECIFIC
+        const hasAgentIntent = (
+            // Must have explicit agent keywords AND action words
+            (agentKeywords.some(keyword => lowerText.includes(keyword)) && 
+             agentActionKeywords.some(action => lowerText.includes(action))) ||
+            // OR very specific command patterns
+            lowerText.includes('ai agent') || 
+            lowerText.includes('ai assistant') ||
+            lowerText.includes('show agent') ||
+            lowerText.includes('hide agent') ||
+            lowerText.includes('trigger agent')
+        );
+        
+        if (hasAgentIntent) {
+            // Show/hide agent commands with enhanced variations
+            if (lowerText.includes('show') || lowerText.includes('open') || lowerText.includes('display') || 
+                lowerText.includes('bring') || lowerText.includes('activate') || lowerText.includes('wake') ||
+                lowerText.includes('summon') || lowerText.includes('appear') || lowerText.includes('come') ||
+                lowerText.includes('help') || lowerText.includes('start')) {
+                return { type: 'agent', action: { command: 'show' } };
+            }
+            
+            if (lowerText.includes('hide') || lowerText.includes('close') || lowerText.includes('remove') || 
+                lowerText.includes('dismiss') || lowerText.includes('stop') || lowerText.includes('go away') ||
+                lowerText.includes('leave') || lowerText.includes('disappear')) {
+                return { type: 'agent', action: { command: 'hide' } };
+            }
+            
+            // Enhanced trigger agent commands with more variations
+            if (lowerText.includes('trigger') || lowerText.includes('start') || lowerText.includes('begin') || 
+                lowerText.includes('launch') || lowerText.includes('activate')) {
+                let triggerType = 'manual';
+                if (lowerText.includes('achievement') || lowerText.includes('success') || lowerText.includes('win')) {
+                    triggerType = 'achievement';
+                } else if (lowerText.includes('struggle') || lowerText.includes('difficulty') || lowerText.includes('problem') || lowerText.includes('stuck')) {
+                    triggerType = 'struggle';
+                } else if (lowerText.includes('milestone') || lowerText.includes('progress') || lowerText.includes('step')) {
+                    triggerType = 'milestone';
+                } else if (lowerText.includes('auto') || lowerText.includes('automatic')) {
+                    triggerType = 'auto';
+                } else if (lowerText.includes('stuck') || lowerText.includes('repeating')) {
+                    triggerType = 'stuck';
+                } else if (lowerText.includes('rapid') || lowerText.includes('fast') || lowerText.includes('quick')) {
+                    triggerType = 'rapid';
+                }
+                
+                return { type: 'agent', action: { command: 'trigger', triggerType } };
+            }
+            
+            // Enhanced personality commands with more natural language
+            const personalityKeywords = [
+                'coach', 'mentor', 'friend', 'analyst', 'teacher', 'guide', 'buddy', 'pal',
+                'instructor', 'advisor', 'companion', 'helper', 'tutor', 'trainer'
+            ];
+            
+            const personality = personalityKeywords.find(keyword => lowerText.includes(keyword));
+            if (personality) {
+                let personalityType = personality;
+                if (personality === 'teacher' || personality === 'instructor' || personality === 'trainer') {
+                    personalityType = 'coach';
+                } else if (personality === 'guide' || personality === 'advisor') {
+                    personalityType = 'mentor';
+                } else if (personality === 'buddy' || personality === 'pal' || personality === 'companion') {
+                    personalityType = 'friend';
+                }
+                
+                return { type: 'agent', action: { command: 'personality', personality: personalityType } };
+            }
+            
+            // Default agent command - show agent if no specific action detected
+            if (agentKeywords.some(keyword => lowerText.includes(keyword))) {
+                return { type: 'agent', action: { command: 'show' } };
+            }
+        }
+        
+        // Enhanced Navigation commands - MUCH MORE SPECIFIC
+        // ONLY block pure greetings that have no other intent
+        const pureGreetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'yo', 'greetings', 'goodbye', 'bye'];
+        
+        // *** PRIORITY 1: NAVIGATION COMMANDS - EXPANDED NATURAL LANGUAGE ***
+        const navigationKeywords = [
+            // Direct commands
+            'go to', 'take me to', 'navigate to', 'open', 'show me', 'visit', 'bring me to', 'get me to',
+            // Polite requests
+            'can you take me to', 'could you show me', 'please go to', 'i want to go to', 'i need to go to',
+            'i would like to go to', 'can you open', 'could you open', 'please open', 'i want to see',
+            // Casual expressions
+            'let me see', 'show me the', 'i want the', 'bring up', 'pull up', 'load up', 'switch to',
+            // Question forms
+            'how do i get to', 'where is the', 'where can i find', 'how do i access',
+            // Natural expressions
+            'i need the', 'i want to check', 'i want to look at', 'let me check', 'can i see'
+        ];
+        const hasNavigationKeyword = navigationKeywords.some(keyword => lowerText.includes(keyword));
+        
+        // Direct navigation phrases that should ALWAYS work
+        const directNavigation = 
+            lowerText.includes('take me to dashboard') ||
+            lowerText.includes('take me to forum') ||
+            lowerText.includes('take me to playground') ||
+            lowerText.includes('go to dashboard') ||
+            lowerText.includes('go to forum') ||
+            lowerText.includes('go to playground') ||
+            (hasNavigationKeyword && (
+                lowerText.includes('dashboard') ||
+                lowerText.includes('forum') ||
+                lowerText.includes('playground') ||
+                lowerText.includes('profile') ||
+                lowerText.includes('settings') ||
+                lowerText.includes('about')
+            ));
+        
+        // *** EXECUTE NAVIGATION COMMANDS IMMEDIATELY ***
+        if (directNavigation) {
+            console.log('🎯 DIRECT NAVIGATION DETECTED:', lowerText);
+            
+            // Match specific pages with priority order
+            if (lowerText.includes('dashboard')) {
+                console.log('✅ Navigation to DASHBOARD');
+                return { type: 'navigation', action: { path: '/dashboard', page: availablePages['/dashboard'] } };
+            }
+            if (lowerText.includes('forum')) {
+                console.log('✅ Navigation to FORUM');  
+                return { type: 'navigation', action: { path: '/forum', page: availablePages['/forum'] } };
+            }
+            if (lowerText.includes('playground')) {
+                console.log('✅ Navigation to PLAYGROUND');
+                return { type: 'navigation', action: { path: '/playground', page: availablePages['/playground'] } };
+            }
+            if (lowerText.includes('profile')) {
+                return { type: 'navigation', action: { path: '/profile', page: availablePages['/profile'] } };
+            }
+            if (lowerText.includes('about')) {
+                return { type: 'navigation', action: { path: '/about', page: availablePages['/about'] } };
+            }
+            
+            // Enhanced special navigation cases - ALL PAGES
+            if (lowerText.includes('home') || lowerText.includes('main') || lowerText.includes('landing') || lowerText.includes('homepage')) {
+                return { type: 'navigation', action: { path: '/', page: availablePages['/'] } };
+            }
+            
+            if (lowerText.includes('playground') || lowerText.includes('games') || lowerText.includes('activities')) {
+                return { type: 'navigation', action: { path: '/playground', page: availablePages['/playground'] } };
+            }
+            
+            if (lowerText.includes('learning central') || lowerText.includes('progress') || lowerText.includes('dashboard') || lowerText.includes('stats') || lowerText.includes('statistics')) {
+                return { type: 'navigation', action: { path: '/dashboard', page: availablePages['/dashboard'] } };
+            }
+            
+            if (lowerText.includes('forum') || lowerText.includes('community') || lowerText.includes('discussions')) {
+                return { type: 'navigation', action: { path: '/forum', page: availablePages['/forum'] } };
+            }
+            
+            if (lowerText.includes('register') || lowerText.includes('sign up') || lowerText.includes('create account')) {
+                // Check if it's specifically forum registration
+                if (lowerText.includes('forum')) {
+                    return { type: 'navigation', action: { path: '/forum-registration', page: availablePages['/forum-registration'] } };
+                }
+                return { type: 'navigation', action: { path: '/registration', page: availablePages['/registration'] } };
+            }
+            
+            if (lowerText.includes('forum registration') || lowerText.includes('join forum') || lowerText.includes('forum signup')) {
+                return { type: 'navigation', action: { path: '/forum-registration', page: availablePages['/forum-registration'] } };
+            }
+            
+            if (lowerText.includes('sign in') || lowerText.includes('login') || lowerText.includes('log in')) {
+                return { type: 'navigation', action: { path: '/signin', page: availablePages['/signin'] } };
+            }
+            
+            if (lowerText.includes('ai report') || lowerText.includes('analytics') || lowerText.includes('ai analytics')) {
+                return { type: 'navigation', action: { path: '/ai-report', page: availablePages['/ai-report'] } };
+            }
+            
+            if (lowerText.includes('about') || lowerText.includes('about us')) {
+                return { type: 'navigation', action: { path: '/about', page: availablePages['/about'] } };
+            }
+            
+            if (lowerText.includes('counting') || lowerText.includes('math') || lowerText.includes('numbers')) {
+                return { type: 'navigation', action: { path: '/counting-test', page: availablePages['/counting-test'] } };
+            }
+            
+            if (lowerText.includes('test') || lowerText.includes('testing')) {
+                return { type: 'navigation', action: { path: '/test', page: availablePages['/test'] } };
+            }
+            
+            if (lowerText.includes('text reveal') || lowerText.includes('animations') || lowerText.includes('text animations')) {
+                return { type: 'navigation', action: { path: '/text-reveal', page: availablePages['/text-reveal'] } };
+            }
+            
+            if (lowerText.includes('profile') || lowerText.includes('user profile')) {
+                return { type: 'navigation', action: { path: '/profile', page: availablePages['/profile'] } };
+            }
+            
+            if (lowerText.includes('streaming') || lowerText.includes('demo') || lowerText.includes('streaming demo')) {
+                return { type: 'navigation', action: { path: '/streaming-demo', page: availablePages['/streaming-demo'] } };
+            }
+        }
+        
+        // Settings and Notifications commands - EXPANDED NATURAL LANGUAGE
+        const settingsKeywords = [
+            // Direct terms
+            'settings', 'preferences', 'options', 'config', 'setup', 'configuration',
+            // Natural requests
+            'i want to change', 'how do i change', 'can i adjust', 'i need to adjust',
+            'i want to customize', 'how do i customize', 'can you help me change',
+            // Specific settings phrases
+            'open settings', 'show settings', 'go to settings', 'settings menu',
+            'preference panel', 'options menu', 'configuration panel',
+            // Question forms
+            'where are the settings', 'how do i configure', 'where can i change'
+        ];
+        if (settingsKeywords.some(keyword => lowerText.includes(keyword))) {
+            return { type: 'settings', action: 'open' };
+        }
+        
+        // Notifications commands - EXPANDED NATURAL LANGUAGE
+        const notificationKeywords = [
+            // Direct terms
+            'notifications', 'alerts', 'messages', 'notices', 'updates', 'reminders',
+            // Natural requests
+            'do i have any messages', 'any new alerts', 'what notifications do i have',
+            'check my notifications', 'show my alerts', 'any new messages',
+            'notification center', 'message center', 'alert panel',
+            // Question forms
+            'what did i miss', 'anything new', 'any updates for me',
+            'do i have mail', 'any new stuff', 'what\'s new',
+            // Action phrases
+            'check notifications', 'open notifications', 'show notifications',
+            'read my messages', 'view alerts', 'see my updates'
+        ];
+        if (notificationKeywords.some(keyword => lowerText.includes(keyword))) {
+            if (lowerText.includes('open') || lowerText.includes('show') || lowerText.includes('check') || 
+                lowerText.includes('view') || lowerText.includes('see') || lowerText.includes('access')) {
+                return { type: 'settings', action: 'notifications' };
+            } else {
+                return { type: 'read', action: { 
+                    type: 'notifications',
+                    message: '🔔 Let me check your notifications for you!'
+                }};
+            }
+        }
+        
+        // *** PRIORITY 2: THEME COMMANDS - EXPANDED NATURAL LANGUAGE ***
+        const themeKeywords = [
+            // Direct commands
+            'dark mode', 'light mode', 'dark theme', 'light theme', 'night mode', 'day mode',
+            // Natural requests
+            'make it dark', 'make it light', 'turn on dark mode', 'turn off dark mode',
+            'switch to dark', 'switch to light', 'change to dark', 'change to light',
+            'i want dark mode', 'i want light mode', 'i prefer dark', 'i prefer light',
+            // Casual expressions
+            'go dark', 'go light', 'darker please', 'lighter please', 'too bright', 'too dark',
+            'make it darker', 'make it brighter', 'it\'s too bright', 'it\'s too dark',
+            // Question forms
+            'can you make it dark', 'can you make it light', 'how do i change the theme',
+            'can i switch themes', 'is there a dark mode', 'is there a light mode',
+            // Natural expressions
+            'i like dark themes', 'i like light themes', 'dark is better', 'light is better',
+            'my eyes hurt', 'easier on the eyes', 'better for reading'
+        ];
+        
+        const themeActionKeywords = [
+            'make', 'put', 'bring', 'set', 'change', 'switch', 'turn', 'enable', 'use', 'activate',
+            'please', 'can you', 'could you', 'i want', 'i need', 'i would like'
+        ];
+        
+        // Enhanced theme detection
+        const hasThemeKeyword = themeKeywords.some(keyword => lowerText.includes(keyword));
+        const hasThemeAction = themeActionKeywords.some(action => lowerText.includes(action)) && 
+                              (lowerText.includes('dark') || lowerText.includes('light') || lowerText.includes('theme'));
+        
+        if (hasThemeKeyword || hasThemeAction) {
+            let themeValue = 'auto';
+            if (lowerText.includes('dark') || lowerText.includes('night')) themeValue = 'dark';
+            else if (lowerText.includes('light') || lowerText.includes('day') || lowerText.includes('bright')) themeValue = 'light';
+            return { type: 'settings', action: { setting: 'theme', value: themeValue } };
+        }
+        
+        // Font size settings with expanded variations
+        const fontKeywords = ['font', 'text size', 'text', 'size', 'bigger', 'smaller', 'spacing'];
+        const fontActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'increase', 'decrease'];
+        
+        if (fontKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (fontActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('large') || lowerText.includes('small') || lowerText.includes('big') || lowerText.includes('tiny') || lowerText.includes('wider') || lowerText.includes('spacing')))) {
+            let size = 'medium';
+            if (lowerText.includes('large') || lowerText.includes('big') || lowerText.includes('bigger') || lowerText.includes('wider')) {
+                size = 'large';
+            } else if (lowerText.includes('small') || lowerText.includes('tiny') || lowerText.includes('smaller')) {
+                size = 'small';
+            }
+            return { type: 'settings', action: { setting: 'fontSize', value: size } };
+        }
+        
+        // Animation settings with expanded variations
+        const animationKeywords = ['animation', 'motion', 'effects', 'transitions'];
+        const animationActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn'];
+        
+        if (animationKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (animationActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('animation') || lowerText.includes('motion')))) {
+            const enabled = !lowerText.includes('disable') && !lowerText.includes('off') && !lowerText.includes('stop');
+            return { type: 'settings', action: { setting: 'animations', value: enabled ? 'enabled' : 'disabled' } };
+        }
+        
+        // Sound settings with expanded variations
+        const soundKeywords = ['sound', 'audio', 'volume', 'noise', 'voice'];
+        const soundActionKeywords = ['make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn', 'mute'];
+        
+        if (soundKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (soundActionKeywords.some(action => lowerText.includes(action)) && (lowerText.includes('sound') || lowerText.includes('audio') || lowerText.includes('voice')))) {
+            const enabled = !lowerText.includes('mute') && !lowerText.includes('off') && !lowerText.includes('disable');
+            return { type: 'settings', action: { setting: 'sound', value: enabled ? 'enabled' : 'disabled' } };
+        }
+
+        // AI Agent settings
+        const aiAgentSettingKeywords = ['ai agent', 'agent', 'ai assistant', 'assistant'];
+        if (aiAgentSettingKeywords.some(keyword => lowerText.includes(keyword))) {
+            const enabled = !lowerText.includes('disable') && !lowerText.includes('off') && !lowerText.includes('stop');
+            return { type: 'settings', action: { setting: 'aiAgent', value: enabled ? 'enabled' : 'disabled' } };
+        }
+
+        // Notifications settings (using notificationKeywords from line 879)
+        if (notificationKeywords.some(keyword => lowerText.includes(keyword)) && 
+            (lowerText.includes('enable') || lowerText.includes('disable') || lowerText.includes('turn') || lowerText.includes('set'))) {
+            const enabled = !lowerText.includes('disable') && !lowerText.includes('off') && !lowerText.includes('stop');
+            return { type: 'settings', action: { setting: 'notifications', value: enabled ? 'enabled' : 'disabled' } };
+        }
+
+        // Auto save settings
+        const autoSaveKeywords = ['auto save', 'autosave', 'save'];
+        if (autoSaveKeywords.some(keyword => lowerText.includes(keyword))) {
+            const enabled = !lowerText.includes('disable') && !lowerText.includes('off') && !lowerText.includes('stop');
+            return { type: 'settings', action: { setting: 'autoSave', value: enabled ? 'enabled' : 'disabled' } };
+        }
+
+        // Enhanced Accessibility settings - COMPREHENSIVE NATURAL LANGUAGE
+        const accessibilityKeywords = [
+            // Color vision support
+            'colorblind', 'color blind', 'colour blind', 'protanopia', 'deuteranopia', 'tritanopia', 
+            'can\'t see colors', 'trouble with colors', 'colors look the same', 'red green blind',
+            'blue yellow blind', 'colors are hard', 'difficulty with colors',
+            
+            // Vision support
+            'can\'t see well', 'hard to see', 'text is too small', 'need bigger text', 'vision problems',
+            'blurry text', 'eye strain', 'my eyes hurt', 'hard to read', 'need better contrast',
+            'text is faint', 'background is too bright', 'need darker background',
+            
+            // Contrast and readability
+            'contrast', 'high contrast', 'better contrast', 'make it clearer', 'easier to see',
+            'text is too light', 'background is too dark', 'hard to distinguish',
+            
+            // Text and spacing
+            'spacing', 'text spacing', 'letter spacing', 'need more space', 'letters too close',
+            'words too close', 'cramped text', 'spread out text', 'more breathing room',
+            'bold', 'bolder text', 'thicker text', 'heavier text', 'stronger text',
+            
+            // General accessibility
+            'accessibility', 'accessible', 'disability', 'special needs', 'assistance',
+            'help me see', 'help me read', 'make it accessible', 'accessibility features',
+            
+            // Screen reader support
+            'screen reader', 'voice over', 'narrator', 'speech', 'read aloud', 'audio',
+            'blind', 'can\'t see', 'vision impaired', 'visually impaired',
+            
+            // Motor/keyboard support
+            'keyboard navigation', 'keyboard only', 'can\'t use mouse', 'motor disability',
+            'focus indicators', 'focus', 'tab navigation', 'keyboard shortcuts',
+            
+            // Motion sensitivity
+            'reduced motion', 'motion sickness', 'animations hurt', 'too much movement',
+            'dizzy', 'motion sensitive', 'less animation', 'stop moving'
+        ];
+        
+        const accessibilityActionKeywords = [
+            'make', 'put', 'bring', 'set', 'change', 'enable', 'disable', 'turn', 'use', 'need', 'want', 'have',
+            'help me', 'can you help', 'i need help', 'please help', 'assist me', 'i have trouble',
+            'i can\'t', 'it\'s hard to', 'difficult to', 'struggle with', 'problems with'
+        ];
+        
+        if (accessibilityKeywords.some(keyword => lowerText.includes(keyword)) || 
+            (accessibilityActionKeywords.some(action => lowerText.includes(action)) && 
+             (lowerText.includes('colorblind') || lowerText.includes('contrast') || lowerText.includes('spacing') || 
+              lowerText.includes('bold') || lowerText.includes('accessibility') || lowerText.includes('screen reader') || 
+              lowerText.includes('keyboard') || lowerText.includes('focus') || lowerText.includes('motion')))) {
+            
+            // Handle ALL accessibility requests
+            if (lowerText.includes('protanopia') || lowerText.includes('deuteranopia') || lowerText.includes('tritanopia')) {
+                return { type: 'settings', action: { setting: 'colorBlindMode', value: lowerText.includes('protanopia') ? 'protanopia' : lowerText.includes('deuteranopia') ? 'deuteranopia' : 'tritanopia' } };
+            }
+            
+            if (lowerText.includes('high contrast') || lowerText.includes('contrast')) {
+                const enabled = !lowerText.includes('disable') && !lowerText.includes('off');
+                return { type: 'settings', action: { setting: 'highContrast', value: enabled ? 'enabled' : 'disabled' } };
+            }
+            
+            if (lowerText.includes('screen reader')) {
+                const enabled = !lowerText.includes('disable') && !lowerText.includes('off');
+                return { type: 'settings', action: { setting: 'screenReader', value: enabled ? 'enabled' : 'disabled' } };
+            }
+            
+            if (lowerText.includes('keyboard navigation') || lowerText.includes('keyboard')) {
+                const enabled = !lowerText.includes('disable') && !lowerText.includes('off');
+                return { type: 'settings', action: { setting: 'keyboardNavigation', value: enabled ? 'enabled' : 'disabled' } };
+            }
+            
+            if (lowerText.includes('focus indicators') || lowerText.includes('focus')) {
+                const enabled = !lowerText.includes('disable') && !lowerText.includes('off');
+                return { type: 'settings', action: { setting: 'focusIndicators', value: enabled ? 'enabled' : 'disabled' } };
+            }
+            
+            if (lowerText.includes('reduced motion') || lowerText.includes('motion')) {
+                const enabled = !lowerText.includes('disable') && !lowerText.includes('off');
+                return { type: 'settings', action: { setting: 'reducedMotion', value: enabled ? 'enabled' : 'disabled' } };
+            }
+            
+            if (lowerText.includes('spacing') || lowerText.includes('space') || lowerText.includes('bold')) {
+                if (lowerText.includes('extra') || lowerText.includes('more')) {
+                    return { type: 'settings', action: { setting: 'textSpacing', value: 'extra' } };
+                } else if (lowerText.includes('increased') || lowerText.includes('more')) {
+                    return { type: 'settings', action: { setting: 'textSpacing', value: 'increased' } };
+                } else {
+                    return { type: 'settings', action: { setting: 'textSpacing', value: 'normal' } };
+                }
+            }
+            
+            if (lowerText.includes('accessibility')) {
+                const enabled = !lowerText.includes('disable') && !lowerText.includes('off');
+                return { type: 'settings', action: { setting: 'accessibility', value: enabled ? 'enabled' : 'disabled' } };
+            }
+            
+            // Default to chat for complex accessibility requests
+            return { type: 'chat' };
+        }
+        
+        // Info commands
+        if (lowerText.includes('what can you do') || lowerText.includes('help') || lowerText.includes('capabilities')) {
+            return { type: 'info', action: 'capabilities' };
+        }
+        
+        if (lowerText.includes('where am i') || lowerText.includes('current page')) {
+            return { type: 'info', action: 'location' };
+        }
+        
+        // === ENHANCED GAME RECOMMENDATIONS - COMPREHENSIVE NATURAL LANGUAGE ===
+        const gameKeywords = [
+            // Direct game terms
+            'game', 'games', 'play', 'playing', 'activity', 'activities', 'exercise', 'exercises', 'fun',
+            
+            // Learning activities
+            'learning game', 'educational game', 'brain game', 'puzzle', 'challenge', 'practice',
+            'training', 'drill', 'quiz', 'test', 'lesson', 'study game', 'skill game',
+            
+            // Natural requests
+            'something fun', 'something to do', 'want to play', 'need practice', 'want to learn',
+            'help me practice', 'help me learn', 'make learning fun', 'interactive learning',
+            
+            // Question forms
+            'what can i play', 'what games are there', 'any fun activities', 'what\'s available',
+            'show me games', 'recommend a game', 'suggest an activity', 'find me something fun',
+            
+            // Skill-specific requests
+            'math practice', 'reading practice', 'memory training', 'brain training', 'cognitive training',
+            'counting practice', 'number games', 'word games', 'logic games', 'pattern games',
+            
+            // Casual expressions
+            'let\'s play', 'i\'m bored', 'something engaging', 'keep me busy', 'entertain me',
+            'make me smarter', 'improve my skills', 'challenge my brain'
+        ];
+        
+        if (gameKeywords.some(keyword => lowerText.includes(keyword))) {
+            return { type: 'game', action: { 
+                request: 'recommend',
+                message: '🎮 Let me recommend perfect games for you based on your interests!'
+            }};
+        }
+        
+        // Default to chat with proactive analysis
+        return { type: 'chat' };
     };
 
     const executeCommand = async (command: { type: string, action?: any }): Promise<string> => {
@@ -1140,12 +1760,6 @@ Need help with anything specific? Just ask! 🌟`;
             } else {
                 // For text or single recordings, use enhanced AI with tool calling
                 await handleChatMode(text);
-                // Auto-open surface on visual intent
-                try {
-                    const { analyzeCommand } = await import('../services/IntentClassifier');
-                    const cmd = analyzeCommand(text);
-                    // Visual canvas removed
-                } catch {}
             }
         } catch (error: any) {
             console.error('Error in handleSendMessage:', error);
@@ -1673,13 +2287,9 @@ Need help with anything specific? Just ask! 🌟`;
             setToolExecutorService(service);
             
             // Initialize navigation service with navigate function
-            try {
-                const { NavigationService } = await import('../services/NavigationService');
-                const navService = NavigationService.getInstance();
-                navService.setNavigate(navigate); // Set the navigate function
-            } catch (e) {
-                console.warn('NavigationService init failed:', e);
-            }
+            const { NavigationService } = await import('../services/NavigationService');
+            const navService = NavigationService.getInstance();
+            navService.setNavigate(navigate); // Set the navigate function
         };
         initToolExecutor();
     }, [navigate]);
@@ -1693,28 +2303,8 @@ Need help with anything specific? Just ask! 🌟`;
             // Determine if we should enable tool calling based on mode
             const enableToolCalling = mode !== 'conversing'; // Enable for text mode, disable for pure conversation
             
-            // Optional: assemble educational predefines + personal memory context
-            let contextPrefix = '';
-            try {
-                const { AssistantConfig } = await import('../services/AssistantConfig');
-                if (AssistantConfig.useContextAssembler) {
-                    const { assembleContext } = await import('../services/ContextAssembler');
-                    const userId = contextUser?.id;
-                    const assembled = assembleContext(inputMessage, { userId });
-                    const predefs = assembled.predefines.map(p => `- ${p.title}`).join('\n');
-                    const personal = assembled.personal && Object.keys(assembled.personal).length > 0 ? 'Personal context detected.' : '';
-                    if (predefs || personal) {
-                        contextPrefix = [
-                            'CONTEXT:\n',
-                            predefs ? `Predefined references:\n${predefs}\n` : '',
-                            personal ? `${personal}\n` : ''
-                        ].join('');
-                    }
-                }
-            } catch {}
-
             // Send to AI service with tool calling capability
-            const response = await handleAIWithToolCalling((contextPrefix ? `${contextPrefix}\n` : '') + inputMessage, enableToolCalling);
+            const response = await handleAIWithToolCalling(inputMessage, enableToolCalling);
             
             // If this was triggered by voice recording, play the response back
             if (mode === 'single_recording' && response && response.textResponse) {
@@ -1839,7 +2429,6 @@ Need help with anything specific? Just ask! 🌟`;
                 // CLIENT-SIDE TOOLS: These need to be executed by ToolExecutorService
                 toolCalls = firstResponse.tool_calls || [];
                 console.log('🔧 DEBUG: CLIENT-SIDE tool calls to execute:', toolCalls);
-                // Visual canvas removed
                 
                 // SERVER-SIDE TOOL RESULTS: Already executed, add to conversation
                 if (firstResponse.tool_results && firstResponse.tool_results.length > 0) {
@@ -1985,11 +2574,8 @@ Need help with anything specific? Just ask! 🌟`;
         } catch {}
 
                         // Execute CLIENT-SIDE tool calls if any
-        const openCanvasAndResize = () => {};
-
         if (toolCalls.length > 0 && toolExecutorService) {
             console.log('🔧 DEBUG: Found CLIENT-SIDE tool calls to execute:', toolCalls);
-            // Visual canvas removed
             for (const toolCall of toolCalls) {
                 try {
                     console.log('🔧 DEBUG: Executing CLIENT-SIDE tool call:', toolCall);
@@ -2027,22 +2613,6 @@ Need help with anything specific? Just ask! 🌟`;
         } else {
             console.log('🔧 DEBUG: No tool calls to execute. toolCalls.length:', toolCalls.length);
             console.log('🔧 DEBUG: toolExecutorService available:', !!toolExecutorService);
-            // Fallback: detect chart intent and synthesize chart create
-            const textForIntent = `${inputMessage} ${aiResponse}`.toLowerCase();
-            if (/(chart|graph|line|bar|pie|scatter)/.test(textForIntent)) {
-                try {
-                    openCanvasAndResize();
-                    const normalizeType = (t: string): 'line'|'bar'|'area'|'scatter'|'pie' => {
-                        if (t.includes('pie') || t.includes('donut')) return 'pie';
-                        if (t.includes('bar') || t.includes('histogram')) return 'bar';
-                        if (t.includes('area')) return 'area';
-                        if (t.includes('scatter')) return 'scatter';
-                        return 'line';
-                    };
-                    const type = normalizeType(textForIntent);
-                    // Visual canvas removed
-                } catch (e) { console.error('Fallback chart create failed:', e); }
-            }
         }
 
         return {
@@ -2904,13 +3474,12 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <span>AI Assistant - Fullscreen Mode</span>
                             </div>
                             <div className="ai-fullscreen-controls">
-                                {/* Scribbleboard removed */}
+
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        // Only clear chat; do not open ScribbleModule
+                                        // Clear chat
                                         clearCurrentConversation();
-                                        setIsScribbleModuleOpen(false);
                                     }}
                                     className="ai-fullscreen-button"
                                     title="Clear Conversation History"
@@ -2995,7 +3564,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* Scribbleboard action removed */}
+
                                 
                                 {/* Clear Conversation */}
                                 <button
@@ -3228,7 +3797,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                             </button>
                             
                             {/* Input Field - Center (takes remaining space) */}
-                            <div className="flex-grow" id="assistant-chatbox-anchor">
+                            <div className="flex-grow">
                                 <label className="flex items-center gap-2">
                                     <input 
                                         type="text"
@@ -3294,16 +3863,8 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 </div>
             </aside>
 
-            {/* ScribbleModule Canvas */}
-            <ScribbleModule 
-                isOpen={isScribbleModuleOpen}
-                onClose={() => { setIsScribbleModuleOpen(false); setScribbleImports([]); setScribbleTemplate(null); }}
-                theme={theme}
-                importItems={scribbleImports}
-                template={scribbleTemplate}
-            />
 
-            {/* Visual canvas removed */}
+
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 
                 isOpen={isSearchOverlayOpen}

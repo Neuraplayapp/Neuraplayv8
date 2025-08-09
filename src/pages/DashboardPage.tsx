@@ -64,9 +64,6 @@ import TaskManager from '../components/TaskManager';
 import StudyCalendar from '../components/StudyCalendar';
 import Diary from '../components/Diary';
 import TeachersRoom from '../components/TeachersRoom';
-// @ts-ignore
-import ScribbleModule from '../components/ScribbleModule';
-// Scribbleboard removed
 
 
 
@@ -514,11 +511,7 @@ const DashboardPage: React.FC = () => {
             ) : showDiary ? (
               <Diary onClose={() => setShowDiary(false)} />
             ) : showTeachersRoom ? (
-              <div className="space-y-6">
-                <TeachersRoom onClose={() => setShowTeachersRoom(false)} />
-                {/* Learning Squad board removed */}
-                {/* Personal Canvas widget removed - launch via assistant overlay only */}
-              </div>
+              <TeachersRoom onClose={() => setShowTeachersRoom(false)} />
             ) : activeTab === 'library' && (
               <div className="space-y-6">
                 {/* Search and Filters */}

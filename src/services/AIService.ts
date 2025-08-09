@@ -317,8 +317,8 @@ class AIService {
       {
         "type": "function",
         "function": {
-          "name": "open_canvas_mindmap",
-          "description": "Open the interactive canvas mindmap tool to plan, organize, and act on user prompts (ScribbleModule).",
+          "name": "open_scribblemodule",
+          "description": "Canvas mindmap tool is not available (ScribbleModule removed).",
           "parameters": {
             "type": "object",
             "properties": {

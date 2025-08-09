@@ -51,18 +51,6 @@ export class ToolExecutorService {
           console.log(`🔧 DEBUG: ToolExecutor - Handling content creation`);
           return await this.handleContentCreation(toolCall.parameters, context);
         
-        case 'create_chart':
-          console.log(`🔧 DEBUG: ToolExecutor - Handling chart creation: ${toolCall.parameters.type}`);
-          return await this.handleChartCreation(toolCall.parameters, context);
-        
-        case 'create_hypothesis':
-          console.log(`🔧 DEBUG: ToolExecutor - Handling hypothesis creation`);
-          return await this.handleHypothesisCreation(toolCall.parameters, context);
-        
-        case 'open_canvas_mindmap':
-          console.log(`🔧 DEBUG: ToolExecutor - Handling canvas mindmap`);
-          return await this.handleCanvasOpen(toolCall.parameters, context);
-        
         case 'accessibility_support':
           console.log(`🔧 DEBUG: ToolExecutor - Handling accessibility support`);
           return await this.handleAccessibilitySupport(toolCall.parameters, context);
@@ -80,48 +68,6 @@ export class ToolExecutorService {
 
         case 'open_canvas_mindmap':
           return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
-        // Scribbleboard tools removed — return neutral responses
-        case 'scribble_hypothesis_test':
-        case 'scribble_hypothesis_result':
-        case 'scribble_autoagent_toggle':
-        case 'scribble_autoagent_suggest':
-        case 'scribble_parallel_thought':
-        case 'scribble_editor_insert':
-        case 'scribble_editor_erase':
-        case 'scribble_editor_replace':
-        case 'scribble_editor_normalize':
-        case 'scribble_editor_send_to_board':
-        case 'scribble_open':
-        case 'scribble_editor_scaffold_hypothesis':
-        case 'scribble_board_new':
-        case 'scribble_board_switch':
-        case 'scribble_board_rename':
-        case 'scribble_board_delete':
-        case 'scribble_hypothesis_branch_combine':
-        case 'scribble_hypothesis_branch_prune':
-        case 'scribble_mutating_create':
-        case 'scribble_mutating_evolve':
-        case 'scribble_mutating_compare':
-        case 'scribble_mutating_evolve_feedback':
-        case 'scribble_graph_add_node':
-        case 'scribble_graph_add_edge':
-        case 'scribble_graph_layout':
-        case 'scribble_graph_focus':
-        case 'scribble_graph_export':
-        case 'scribble_chart_create':
-          return { success: true, message: '🗒️ Visual canvas is disabled in this build.' };
-        case 'open_canvas_plugin_node':
-          return await this.handleOpenCanvasPluginNode(toolCall.parameters);
-        case 'canvas_add_markdown_block':
-          return await this.handleCanvasAddMarkdown(toolCall.parameters);
-        case 'canvas_simulate_agent':
-          return await this.handleCanvasSimulateAgent(toolCall.parameters);
-        case 'canvas_rewrite_layout':
-          return await this.handleCanvasRewriteLayout(toolCall.parameters);
-        case 'canvas_connect_nodes':
-          return await this.handleCanvasConnectNodes(toolCall.parameters);
-        case 'canvas_edit_text':
-          return await this.handleCanvasEditText(toolCall.parameters);
         
         default:
           console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
@@ -328,152 +274,13 @@ export class ToolExecutorService {
     };
   }
 
-  // Canvas Mindmap tool handler (client-side UI)
+  // Canvas Mindmap tool handler (disabled - ScribbleModule removed)
   private async handleOpenCanvasMindmap(params: any, context?: any): Promise<ToolResult> {
-    try {
-      // Fire a custom DOM event the UI listens to (AIAssistant toggles ScribbleModule)
-      const event = new CustomEvent('openScribbleModule', { detail: { template: params?.template || 'mindMap' } });
-      window.dispatchEvent(event);
-
-      return {
-        success: true,
-        message: `🧠 Opened canvas mindmap${params?.template ? ` with template "${params.template}"` : ''}.`,
-        data: { opened: true, template: params?.template || null }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to open canvas mindmap: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
-  }
-
-  private async handleOpenCanvasPluginNode(params: any, context?: any): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent('openScribbleModule', { detail: { pluginId: params?.plugin_id, content: params?.content, position: { x: params?.x, y: params?.y } } });
-      window.dispatchEvent(event);
-      return { success: true, message: `🧩 Added ${params?.plugin_id} to canvas.` };
-    } catch (e) {
-      return { success: false, message: `Failed to add plugin node: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
-  }
-
-  private async handleCanvasAddMarkdown(params: any): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent('openScribbleModule', { detail: { pluginId: 'markdown', content: params?.content, position: { x: params?.x, y: params?.y } } });
-      window.dispatchEvent(event);
-      return { success: true, message: '📝 Markdown block added to canvas.' };
-    } catch (e) {
-      return { success: false, message: `Failed to add markdown: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
-  }
-
-  private async handleCanvasSimulateAgent(params: any): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent('canvasSimulateAgent', { detail: { pluginId: params?.plugin_id, prompt: params?.prompt } });
-      window.dispatchEvent(event);
-      return { success: true, message: '🧪 Triggered agent simulation on canvas.' };
-    } catch (e) {
-      return { success: false, message: `Failed to simulate agent: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
-  }
-
-  private async handleCanvasRewriteLayout(params: any): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent('canvasRewriteLayout', { detail: { prompt: params?.prompt } });
-      window.dispatchEvent(event);
-      return { success: true, message: '🧭 Requested canvas layout rewrite.' };
-    } catch (e) {
-      return { success: false, message: `Failed to rewrite layout: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
-  }
-
-  private async handleCanvasConnectNodes(params: any): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent('canvasConnectNodes', { detail: { fromId: params?.from_id, toId: params?.to_id } });
-      window.dispatchEvent(event);
-      return { success: true, message: '🔗 Connected nodes on canvas.' };
-    } catch (e) {
-      return { success: false, message: `Failed to connect nodes: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
-  }
-
-  // NEW CANVAS TOOL HANDLERS
-  private async handleChartCreation(params: any, context?: any): Promise<ToolResult> {
-    try {
-      const { title, type, scenario, data } = params;
-      
-      console.log('🎯 Chart Creation Tool Called:', { title, type, scenario, data });
-      // Visual canvas removed; return a neutral message
-      return {
-        success: true,
-        message: `📊 Chart request acknowledged (visual canvas disabled).` ,
-        data: { title, type, scenario, chartCreated: false }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to create chart: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
-  }
-
-  private async handleHypothesisCreation(params: any, context?: any): Promise<ToolResult> {
-    try {
-      const { prompt, scenarioA, scenarioB, context: analysisContext } = params;
-      
-      console.log('🧪 Hypothesis Creation Tool Called:', { prompt, scenarioA, scenarioB });
-      // Visual canvas removed; return a neutral message
-      return {
-        success: true,
-        message: `🧪 Hypothesis request acknowledged (visual canvas disabled).`,
-        data: { prompt, scenarioA, scenarioB, hypothesisCreated: false }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to create hypothesis: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
-  }
-
-  private async handleCanvasOpen(params: any, context?: any): Promise<ToolResult> {
-    try {
-      const { template } = params;
-      
-      console.log('🎨 Canvas Open Tool Called:', { template });
-      // Visual canvas removed; return a neutral message
-      return {
-        success: true,
-        message: `🎨 Visual canvas is disabled in this build.`,
-        data: { template, canvasOpened: false }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to open canvas: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
-  }
-
-  private async handleCanvasEditText(params: any): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent('canvasEditText', { detail: params });
-      window.dispatchEvent(event);
-      return { success: true, message: '✍️ Updated canvas text.' };
-    } catch (e) {
-      return { success: false, message: `Failed to edit text: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
-  }
-
-  private async dispatch(name: string, detail: any, okMessage: string): Promise<ToolResult> {
-    try {
-      const event = new CustomEvent(name, { detail });
-      window.dispatchEvent(event);
-      return { success: true, message: okMessage };
-    } catch (e) {
-      return { success: false, message: `Failed: ${e instanceof Error ? e.message : 'Unknown error'}` };
-    }
+    return {
+      success: false,
+      message: "ScribbleModule has been removed. Please use text-based planning and organization instead.",
+      data: { opened: false, reason: 'component_removed' }
+    };
   }
 
   // Data reading handler
