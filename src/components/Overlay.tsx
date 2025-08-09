@@ -2,16 +2,19 @@ import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 type OverlayMode = 'compact' | 'default' | 'fullscreen';
+type OverlayAnchor = 'center' | 'top';
 
 interface OverlayProps {
   open: boolean;
   onClose: () => void;
   title?: string;
   mode?: OverlayMode;
+  anchor?: OverlayAnchor; // where to attach in non-fullscreen
+  closeOnBackdrop?: boolean; // allow backdrop to close in non-fullscreen
   children: React.ReactNode;
 }
 
-const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default', children }) => {
+const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default', anchor = 'center', closeOnBackdrop = true, children }) => {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -43,7 +46,13 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
     <AnimatePresence>
       {open && (
         <motion.div className="fixed inset-0 z-[1000]" initial="hidden" animate="visible" exit="exit" variants={backdropVariants}>
-          <div className="absolute inset-0 backdrop-blur-sm bg-black/20 dark:bg-black/40" onClick={onClose} aria-hidden />
+          <div
+            className="absolute inset-0 backdrop-blur-sm bg-black/20 dark:bg-black/40"
+            onClick={() => {
+              if (mode !== 'fullscreen' && closeOnBackdrop) onClose();
+            }}
+            aria-hidden
+          />
 
           {mode === 'fullscreen' ? (
             <motion.div className="relative w-full h-full pointer-events-auto" variants={panelVariants.fullscreen}>
@@ -61,9 +70,9 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
               </div>
             </motion.div>
           ) : (
-            <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
+            <div className={`absolute inset-0 flex ${anchor === 'top' ? 'items-start' : 'items-center'} justify-center pointer-events-none`}>
               <motion.div
-                className={`w-full ${mode === 'compact' ? 'max-w-md mt-2 px-2' : 'max-w-3xl mt-6 px-4'} pointer-events-auto`}
+                className={`w-full ${mode === 'compact' ? 'max-w-md px-2' : 'max-w-3xl px-4'} ${anchor === 'top' ? 'mt-2' : 'mt-6'} pointer-events-auto`}
                 initial={panelVariants[mode].hidden}
                 animate={panelVariants[mode].visible}
                 exit={panelVariants[mode].exit}

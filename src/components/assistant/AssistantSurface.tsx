@@ -14,6 +14,14 @@ interface AssistantSurfaceProps {
 // Unified assistant surface: top text panel, bottom visual panel on demand
 const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference = 'auto' }) => {
   const [showVisual, setShowVisual] = useState(preference === 'visual');
+  // Persist surface state in session storage
+  useEffect(() => {
+    const saved = sessionStorage.getItem('assistant_surface_show_visual');
+    if (saved !== null && preference === 'auto') setShowVisual(saved === '1');
+  }, [preference]);
+  useEffect(() => {
+    sessionStorage.setItem('assistant_surface_show_visual', showVisual ? '1' : '0');
+  }, [showVisual]);
 
   // Any visual-oriented event should reveal the visual panel
   useEffect(() => {
@@ -45,7 +53,7 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
   }, [preference]);
 
   if (compact) {
-    // Compact: top text (~33%), bottom visual if needed
+    // Compact: anchored mini-surface ~33vh
     return (
       <div className="w-full h-[33vh] min-h-[320px] flex flex-col">
         <div className="shrink-0 border-b border-white/10 h-[40%] min-h-[120px]">
@@ -62,14 +70,14 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
     );
   }
 
-  // Fullscreen: side-by-side or stacked depending on available width
+  // Fullscreen: polished proportions — top anchored modal effect via padding
   return (
-    <div className="w-full h-[calc(100vh-4rem)] grid grid-cols-3">
-      <div className="col-span-1 border-r border-white/10">
+    <div className="w-full h-[calc(100vh-4rem)] grid grid-rows-[40%_60%] gap-0">
+      <div className="border-b border-white/10 overflow-hidden">
         {/* @ts-ignore */}
         <TextWorkbench compact={false} />
       </div>
-      <div className="col-span-2">
+      <div className="overflow-hidden">
         {showVisual && (
           // @ts-ignore
           <Scribbleboard mode="fullscreen" />

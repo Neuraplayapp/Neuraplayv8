@@ -170,10 +170,11 @@ async function saveToDatabase(client, collection, data) {
       break;
 
     case 'analytics':
+      // Guard anonymous events: if no user_id, store with a synthetic 'anonymous' user
       await client.query(`
         INSERT INTO analytics (id, user_id, event_type, event_data, session_id, user_agent, platform)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `, [data.id, data.userId, data.eventType, JSON.stringify(data.eventData), data.sessionId, data.userAgent, data.platform]);
+        VALUES ($1, COALESCE($2, 'anonymous'), $3, $4, $5, $6, $7)
+      `, [data.id, data.userId || null, data.eventType, JSON.stringify(data.eventData), data.sessionId, data.userAgent, data.platform]);
       break;
 
     case 'posts':
@@ -203,8 +204,8 @@ async function saveToDatabase(client, collection, data) {
     case 'ai_logs':
       await client.query(`
         INSERT INTO ai_logs (id, user_id, interaction_type, input, output, tools_used, response_time, session_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [data.id, data.userId, data.interactionType, data.input, data.output, JSON.stringify(data.toolsUsed), data.responseTime, data.sessionId]);
+        VALUES ($1, COALESCE($2, 'anonymous'), $3, $4, $5, $6, $7, $8)
+      `, [data.id, data.userId || null, data.interactionType, data.input, data.output, JSON.stringify(data.toolsUsed), data.responseTime, data.sessionId]);
       break;
 
     case 'scribble_boards':
@@ -221,8 +222,8 @@ async function saveToDatabase(client, collection, data) {
     case 'scribble_events':
       await client.query(`
         INSERT INTO scribble_events (id, user_id, board_id, event_name, detail)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [data.id, data.userId, data.boardId || null, data.eventName, JSON.stringify(data.detail || {})]);
+        VALUES ($1, COALESCE($2, 'anonymous'), $3, $4, $5)
+      `, [data.id, data.userId || null, data.boardId || null, data.eventName, JSON.stringify(data.detail || {})]);
       break;
 
     default:

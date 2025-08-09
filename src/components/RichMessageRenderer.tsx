@@ -130,15 +130,22 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
           }
         });
       }
-      // Handle other successful tool results
-      else if ((normalized?.success || result?.success) && (data)) {
-        console.log(`🔍 Adding tool_result for result ${index}`);
+      // Handle other successful tool results only if explicitly meant for chat
+      else if ((normalized?.success || result?.success) && data && data.displayInChat) {
+        console.log(`🔍 Adding tool_result for result ${index} (displayInChat)`);
         content.push({
           type: 'tool_result',
           content: message || 'Tool executed successfully',
           metadata: data
         });
       } else {
+        // Default: route to canvas by dispatching events, not chat
+        try {
+          if (data?.eventName) {
+            const evt = new CustomEvent(data.eventName, { detail: data.detail || {} });
+            window.dispatchEvent(evt);
+          }
+        } catch {}
         console.log(`🔍 Skipping result ${index} - no matching conditions`);
       }
     });

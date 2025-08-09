@@ -1,12 +1,12 @@
 import React from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area, BarChart, Bar, ScatterChart, Scatter, PieChart, Pie, Cell } from 'recharts';
 
-export type ChartSeriesPoint = { x: number|string; y: number };
+export type ChartSeriesPoint = { x: number|string; y: number; z?: number };
 export type ChartSeries = { name: string; data: ChartSeriesPoint[]; color?: string };
 
 interface ChartCardProps {
   title?: string;
-  type?: 'line' | 'area' | 'bar' | 'scatter' | 'pie';
+  type?: 'line' | 'area' | 'bar' | 'scatter' | 'pie' | 'scatter3d';
   series: ChartSeries[];
   xLabel?: string;
   yLabel?: string;
@@ -85,6 +85,19 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, type='line', series, xLabe
               ))}
             </Pie>
           </PieChart>
+        );
+      }
+      case 'scatter3d': {
+        // Render a lightweight Plotly 3D scatter via iframe to avoid bundling heavy libs
+        const s = series[0] || { name: 'Data', data: [] };
+        const xs = s.data.map(d => (typeof d.x === 'string' ? 0 : d.x as number));
+        const ys = s.data.map(d => d.y);
+        const zs = s.data.map(d => (d.z ?? 0));
+        const doc = `<!DOCTYPE html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><script src='https://cdn.plot.ly/plotly-2.30.0.min.js'></script><style>html,body,#root{height:100%;margin:0}</style></head><body><div id='root'></div><script>var data=[{x:${JSON.stringify(xs)},y:${JSON.stringify(ys)},z:${JSON.stringify(zs)},mode:'markers',type:'scatter3d',marker:{size:3,color:'${s.color || '#2563eb'}'}}];var layout={margin:{l:0,r:0,b:0,t:0}};Plotly.newPlot('root',data,layout,{displayModeBar:false});</script></body></html>`;
+        return (
+          <div className="w-full h-full">
+            <iframe title={title || '3D Chart'} srcDoc={doc} style={{ width: '100%', height, border: 'none', borderRadius: 8 }} />
+          </div>
         );
       }
       default:

@@ -134,6 +134,7 @@ const AIAssistant: React.FC = () => {
 
     // New: open Scribbleboard via tool
     const [isScribbleboardOpen, setIsScribbleboardOpen] = useState(false);
+    const [surfacePreference, setSurfacePreference] = useState<'auto'|'text'|'visual'>('auto');
     useEffect(() => {
         const openBoard = () => setIsScribbleboardOpen(true);
         window.addEventListener('scribble_open', openBoard as EventListener);
@@ -1148,6 +1149,14 @@ Need help with anything specific? Just ask! 🌟`;
             } else {
                 // For text or single recordings, use enhanced AI with tool calling
                 await handleChatMode(text);
+                // Auto-open surface on visual intent
+                try {
+                    const { analyzeCommand } = await import('../services/IntentClassifier');
+                    const cmd = analyzeCommand(text);
+                    const wantsVisual = /chart|graph|diagram|visual|plot|bar|line|pie|scatter/.test(text.toLowerCase()) || (cmd?.type === 'content' && /chart|graph|diagram/.test(cmd?.action?.type || ''));
+                    if (wantsVisual) { setSurfacePreference('visual'); setIsScribbleboardOpen(true); }
+                    else { setSurfacePreference('text'); }
+                } catch {}
             }
         } catch (error: any) {
             console.error('Error in handleSendMessage:', error);
@@ -1837,6 +1846,8 @@ Need help with anything specific? Just ask! 🌟`;
                 // CLIENT-SIDE TOOLS: These need to be executed by ToolExecutorService
                 toolCalls = firstResponse.tool_calls || [];
                 console.log('🔧 DEBUG: CLIENT-SIDE tool calls to execute:', toolCalls);
+                // If there are client tool calls, open surface and prefer visual
+                if (toolCalls.length > 0) { setSurfacePreference('visual'); setIsScribbleboardOpen(true); }
                 
                 // SERVER-SIDE TOOL RESULTS: Already executed, add to conversation
                 if (firstResponse.tool_results && firstResponse.tool_results.length > 0) {
@@ -1984,6 +1995,8 @@ Need help with anything specific? Just ask! 🌟`;
                         // Execute CLIENT-SIDE tool calls if any
         if (toolCalls.length > 0 && toolExecutorService) {
             console.log('🔧 DEBUG: Found CLIENT-SIDE tool calls to execute:', toolCalls);
+            // Always open the unified surface and favor visual when client tools appear
+            try { setSurfacePreference('visual'); setIsScribbleboardOpen(true); } catch {}
             for (const toolCall of toolCalls) {
                 try {
                     console.log('🔧 DEBUG: Executing CLIENT-SIDE tool call:', toolCall);
@@ -3313,10 +3326,12 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 open={isScribbleboardOpen}
                 onClose={() => setIsScribbleboardOpen(false)}
                 mode={isFullscreen ? 'fullscreen' : 'compact'}
+                anchor={isFullscreen ? 'center' : 'top'}
+                closeOnBackdrop={isFullscreen ? false : true}
                 title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
             >
                 {/* @ts-ignore */}
-                <AssistantSurface compact={!isFullscreen} />
+                <AssistantSurface compact={!isFullscreen} preference={surfacePreference} />
             </Overlay>
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 
