@@ -696,6 +696,33 @@ const AIAssistant: React.FC = () => {
         // Reset mode to idle to break any stuck processing
         setMode('idle');
         
+        // CRITICAL: Clear EVERYTHING Einstein-related from localStorage
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (
+                    key.includes('conversation') ||
+                    key.includes('neuraplay') ||
+                    key.includes('ai_') ||
+                    key.includes('scribble') ||
+                    key.includes('tool_results') ||
+                    key.includes('chat') ||
+                    key.includes('message')
+                )) {
+                    const value = localStorage.getItem(key);
+                    if (value && value.toLowerCase().includes('einstein')) {
+                        console.log('🚨 REMOVING EINSTEIN FROM STORAGE KEY:', key);
+                    }
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log('🗑️ Removed storage keys:', keysToRemove);
+        } catch (e) {
+            console.warn('Failed to clear localStorage:', e);
+        }
+        
         // Clear conversation data
         clearConversation(activeConversation);
         
@@ -703,17 +730,6 @@ const AIAssistant: React.FC = () => {
         window.dispatchEvent(new CustomEvent('scribble_clear_all', {
             detail: { clearEverything: true }
         }));
-        
-        // Clear any cached visual content
-        try {
-            localStorage.removeItem('scribble_evolution_preferences');
-            localStorage.removeItem('scribble_board_cache');
-            // Also clear any cached AI responses that might be causing issues
-            localStorage.removeItem('ai_processing_cache');
-            localStorage.removeItem('tool_results_cache');
-        } catch (e) {
-            console.warn('Failed to clear localStorage:', e);
-        }
         
         // Force a re-render by resetting surface preference
         setSurfacePreference('auto');
@@ -2037,6 +2053,20 @@ Need help with anything specific? Just ask! 🌟`;
                 aiResponse = parsed.text;
                 toolCalls = parsed.toolCalls || [];
             }
+        }
+
+        // CRITICAL DEBUG: Check for Einstein before adding to conversation
+        if (aiResponse.toLowerCase().includes('einstein')) {
+            console.error('🚨 EINSTEIN DETECTED IN AI RESPONSE!');
+            console.error('🚨 Full AI response:', aiResponse);
+            console.error('🚨 Input message was:', inputMessage);
+            console.error('🚨 Tool calls:', toolCalls);
+            console.error('🚨 Tool results:', toolResultsForAssistant);
+            console.error('🚨 Conversation history:', getActiveConversation().messages.slice(-5));
+            
+            // BLOCK Einstein responses from being added to conversation
+            console.error('🚫 BLOCKING EINSTEIN RESPONSE - replacing with error message');
+            aiResponse = "I apologize, but I had a processing error. Let me help you with something else instead! What would you like to explore?";
         }
 
         // Add AI response to conversation with tool results
@@ -3519,25 +3549,20 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             <Overlay
                 open={isScribbleboardOpen}
                 onClose={() => setIsScribbleboardOpen(false)}
-                mode={isFullscreen ? 'fullscreen' : 'compact'}
-                anchor={isFullscreen ? 'center' : 'bottom-right'}
+                mode={'fullscreen'}
+                anchor={'center'}
                 closeOnBackdrop={false}
-                anchorSelector={!isFullscreen ? '#assistant-chatbox-anchor' : undefined}
                 zIndex={10000}
-                title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
+                title={'AI Visual Workspace'}
             >
                 {/* @ts-ignore */}
                 <AssistantSurface 
-                    compact={!isFullscreen} 
+                    compact={false}
                     preference={surfacePreference}
                     onScribbleClose={() => {
-                        // In compact mode, close everything. In fullscreen, keep chat open
-                        if (!isFullscreen) {
-                            setIsOpen(false);
-                        }
-                        console.log('Scribbleboard closed, chat behavior handled');
+                        console.log('Scribbleboard closed');
                     }}
-                    retainChatContext={isFullscreen}
+                    retainChatContext={true}
                     chatContent={(
                         <div className="h-full flex flex-col">
                             {/* Chat Messages */}
