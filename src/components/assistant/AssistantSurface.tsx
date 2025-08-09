@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import TextWorkbench from '../editor/TextWorkbench';
 // @ts-ignore
 import Scribbleboard from '../scribbleboard/Scribbleboard';
-import { X, Maximize2, Minimize2, Eye, EyeOff } from 'lucide-react';
+import { X, Maximize2, Minimize2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type PanelPreference = 'auto' | 'text' | 'visual';
@@ -80,40 +80,59 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
     if (preference === 'visual') setShowVisual(true);
   }, [preference]);
 
-  // Mobile-first compact mode with responsive overlay
+  // Compact mode - renders the chat interface with optional canvas modal
   if (compact) {
     return (
       <div className="relative w-full h-[33vh] min-h-[280px] sm:min-h-[320px] bg-white text-gray-900">
-        {/* Base canvas */}
+        {/* Main chat interface */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="w-full h-full overflow-auto">
-            {/* @ts-ignore */}
-            {showVisual && scribbleMode === 'hidden' && <Scribbleboard mode="compact" />}
-          </div>
+          {chatContent ? (
+            <div className="w-full h-full">
+              {chatContent}
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
+              <div className="text-center p-4">
+                <div className="text-lg mb-2">💬</div>
+                <div>Start a conversation</div>
+                <div className="text-xs mt-1 text-gray-400">Ask AI anything to begin</div>
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Mobile-optimized sliding overlay */}
+        {/* Canvas modal that slides down from top when activated */}
         <AnimatePresence>
           {scribbleMode === 'overlay' && (
             <motion.div
-              className="absolute inset-0 z-50"
-              initial={{ y: '100%' }}
+              className="absolute inset-x-0 top-0 z-50 h-full"
+              initial={{ y: '-100%' }}
               animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              exit={{ y: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <div className="w-full h-full bg-white border-t-2 border-blue-500 shadow-2xl overflow-hidden">
-                {/* Mobile-optimized header */}
+              <div className="w-full h-full bg-white border-b-2 border-blue-500 shadow-2xl overflow-hidden">
+                {/* Canvas header */}
                 <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b touch-manipulation">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                    <span className="font-medium text-gray-800 text-sm sm:text-base">Hypothesis Lab</span>
+                    <span className="font-medium text-gray-800 text-sm sm:text-base">Visual Canvas</span>
                     <span className="text-xs px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full hidden sm:inline">
-                      Mobile Mode
+                      Compact
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {/* Mobile fullscreen toggle */}
+                    {/* Clear canvas button */}
+                    <button 
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('scribble_clear_all', { detail: { clearEverything: true } }));
+                      }}
+                      className="p-2 rounded-md hover:bg-white/60 transition-colors touch-manipulation"
+                      title="Clear canvas"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-600" />
+                    </button>
+                    {/* Fullscreen toggle */}
                     <button 
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent('scribble_close'));

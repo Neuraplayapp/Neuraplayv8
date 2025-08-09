@@ -3397,7 +3397,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                         console.log('Scribbleboard closed, chat behavior handled');
                     }}
                     retainChatContext={isFullscreen}
-                    chatContent={isFullscreen ? (
+                    chatContent={(
                         <div className="h-full flex flex-col">
                             {/* Chat Messages */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -3446,7 +3446,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </div>
                             </div>
                         </div>
-                    ) : undefined}
+                    )}
                 />
             </Overlay>
             {/* Search/Wiki/News Overlay */}
