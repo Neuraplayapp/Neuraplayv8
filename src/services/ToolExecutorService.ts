@@ -66,8 +66,7 @@ export class ToolExecutorService {
             message: `🚫 Image generation should be processed server-side, not by client ToolExecutor`
           };
 
-        case 'open_canvas_mindmap':
-          return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
+
         
         default:
           console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
@@ -274,14 +273,7 @@ export class ToolExecutorService {
     };
   }
 
-  // Canvas Mindmap tool handler (disabled - ScribbleModule removed)
-  private async handleOpenCanvasMindmap(params: any, context?: any): Promise<ToolResult> {
-    return {
-      success: false,
-      message: "ScribbleModule has been removed. Please use text-based planning and organization instead.",
-      data: { opened: false, reason: 'component_removed' }
-    };
-  }
+
 
   // Data reading handler
   private async handleDataReading(params: any, context?: any): Promise<ToolResult> {

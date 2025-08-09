@@ -1191,11 +1191,18 @@ async function handleImageGeneration(input_data, token) {
     
     console.log('✅ Image generation successful');
     
-    return {
-      image_url: dataUrl,
-      contentType: 'image/jpeg',
-      data: base64Image || (dataUrl ? dataUrl.split(',')[1] : null)
-    };
+      // Clean up memory after creating response
+  const response = {
+    image_url: dataUrl,
+    contentType: 'image/jpeg',
+    data: null // Don't store duplicate data
+  };
+  
+  // Force garbage collection of large buffers
+  imageBuffer = null;
+  base64Image = null;
+  
+  return response;
 
   } catch (error) {
     console.error('Image generation error:', error);
@@ -1210,11 +1217,21 @@ app.post('/api/api', async (req, res) => {
     console.log('🔍 DEBUG: Request headers:', JSON.stringify(req.headers, null, 2));
     const { task_type, input_data } = req.body;
     
-    // Handle image generation separately
+    // Handle image generation separately with cleanup
     if (task_type === 'image') {
       try {
         const imageResult = await handleImageGeneration(input_data, process.env.Neuraplay);
-        return res.json(imageResult);
+        
+        // Send response and immediately clean up
+        res.json(imageResult);
+        
+        // Clean up large data after sending
+        if (imageResult?.image_url) {
+          imageResult.image_url = null;
+          imageResult.data = null;
+        }
+        
+        return;
       } catch (error) {
         console.error('Image generation error:', error);
         return res.status(500).json({ error: `Image generation failed: ${error.message}` });
@@ -1272,29 +1289,25 @@ app.post('/api/api', async (req, res) => {
       const toolCalls = initialData.choices[0].message.tool_calls;
       const toolResults = [];
 
-      // Execute all tool calls
+      // Execute all tool calls with memory cleanup
       for (const toolCall of toolCalls) {
         const result = await executeTool(toolCall);
-        let contentForAI = JSON.stringify(result);
         
-        // Check if the result is from an image/diagram tool that produces large data
-        if (result.success && result.data?.image_url) {
-          console.log(`🔧 Summarizing large tool result for ${toolCall.function.name}`);
-          const summary = {
-            success: true,
-            message: `Tool ${toolCall.function.name} executed successfully.`,
-            // Exclude the large data, the client already has it through toolResults
-            // The AI just needs to know it worked and can reference the image
-            data: {
-              image_was_generated: true,
-              title: result.data.title || 'Generated content',
-              diagram_type: result.data.diagram_type || toolCall.function.name.replace('_', ' '),
-              size: result.data.size || 'standard',
-              style: result.data.style || 'default'
-            }
-          };
-          contentForAI = JSON.stringify(summary);
-        }
+        // Always create a clean summary without large data
+        const summary = {
+          success: result.success,
+          message: result.message,
+          data: result.success && result.data?.image_url ? {
+            image_was_generated: true,
+            title: result.data.title || 'Generated content',
+            diagram_type: result.data.diagram_type || toolCall.function.name.replace('_', ' '),
+            size: result.data.size || 'standard',
+            style: result.data.style || 'default'
+          } : result.data
+        };
+        
+        // Convert to string once to avoid multiple copies
+        const contentForAI = JSON.stringify(summary);
         
         // Debug logging for tool results
         console.log(`🔧 Tool ${toolCall.function.name} result size: ${contentForAI.length} characters`);
@@ -1305,6 +1318,12 @@ app.post('/api/api', async (req, res) => {
           name: toolCall.function.name,
           content: contentForAI
         });
+        
+        // Clean up large result data
+        if (result.data?.image_url) {
+          result.data.image_url = null;
+          result.data = null;
+        }
       }
 
       // Add tool call to messages

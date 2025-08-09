@@ -170,23 +170,7 @@ const tools = [
       }
     }
   },
-  {
-    "type": "function",
-    "function": {
-      "name": "open_canvas_mindmap",
-      "description": "Canvas mindmap tool is not available (ScribbleModule removed).",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "template": {
-            "type": "string",
-            "enum": ["mindMap", "projectPlan", "chartDashboard"],
-            "description": "Optional template to load"
-          }
-        }
-      }
-    }
-  },
+
   {
     "type": "function",
     "function": {
@@ -295,10 +279,7 @@ const TOOL_ROUTING_CONFIG = {
       reason: 'Requires CSS/DOM manipulation and browser APIs',
       requires: ['dom_manipulation', 'css_changes', 'browser_api']
     },
-    'open_canvas_mindmap': {
-      reason: 'ScribbleModule has been removed',
-      requires: ['ui_manipulation', 'browser_api']
-    }
+
   }
 };
 
@@ -361,18 +342,14 @@ async function executeTool(toolCall) {
 
 async function performWebSearch(query) {
   try {
-    console.log('🔍 DEBUG: performWebSearch called with query:', query);
     const SERPER_API_KEY = process.env.Serper_api;
-    console.log('🔍 DEBUG: Serper API key exists:', !!SERPER_API_KEY);
     if (!SERPER_API_KEY) {
-      console.log('❌ DEBUG: No Serper API key - check Render env var "Serper_api"');
       return {
         success: false,
         message: "Search API not configured"
       };
     }
     
-    console.log('🔍 DEBUG: Making Serper API call...');
     const response = await fetch('https://google.serper.dev/search', {
       method: 'POST',
       headers: {
@@ -382,33 +359,41 @@ async function performWebSearch(query) {
       body: JSON.stringify({ q: query })
     });
 
-    console.log('🔍 DEBUG: Serper response status:', response.status);
+    if (!response.ok) {
+      return {
+        success: false,
+        message: `Search API error: ${response.status}`
+      };
+    }
+
     const data = await response.json();
-    console.log('🔍 DEBUG: Serper response data:', JSON.stringify(data, null, 2));
     
     if (data.organic && data.organic.length > 0) {
-      const results = data.organic.slice(0, 5).map(result => ({
-        title: result.title,
-        snippet: result.snippet,
-        link: result.link,
-        source: result.source
+      // Extract only needed fields to minimize memory usage
+      const results = data.organic.slice(0, 5).map(({ title, snippet, link, source }) => ({
+        title,
+        snippet,
+        link,
+        source
       }));
       
-      console.log('✅ DEBUG: Web search successful, returning', results.length, 'results');
+      // Clear large response data
+      data.organic = null;
+      data.knowledge_graph = null;
+      data.related_searches = null;
+      
       return {
         success: true,
         message: `Found ${results.length} search results for "${query}"`,
         data: { type: 'web_results', query, results }
       };
-    } else {
-      console.log('❌ DEBUG: No organic results found in response');
-      return {
-        success: false,
-        message: `No search results found for "${query}"`
-      };
     }
+    
+    return {
+      success: false,
+      message: `No search results found for "${query}"`
+    };
   } catch (error) {
-    console.error('❌ DEBUG: Search error:', error);
     return {
       success: false,
       message: `Search failed: ${error.message}`
@@ -516,28 +501,13 @@ const { handleImageGeneration } = require('./imageGeneration.cjs');
 
 // Image generation tool handler (for agentic system)
 async function handleImageGenerationTool(params) {
-  console.log('🔍 IMAGE GENERATION TOOL EXECUTION STARTED');
-  console.log('🔍 Input params:', params);
-  console.log('🔍 Environment check - Neuraplay API key exists:', !!process.env.Neuraplay);
-  
   try {
     const { prompt, style = 'child-friendly', size = '512x512' } = params;
-    
-    console.log('🎨 Agentic image generation request:', { prompt, style, size });
-    console.log('🔍 About to call handleImageGeneration...');
+    console.log('🎨 Generating image:', { prompt, style, size });
     
     const imageResult = await handleImageGeneration({ prompt, size }, process.env.Neuraplay);
     
-    console.log('🔍 handleImageGeneration returned:', {
-      success: !!imageResult,
-      hasImageUrl: !!(imageResult?.image_url),
-      imageUrlType: typeof imageResult?.image_url,
-      imageUrlLength: imageResult?.image_url?.length || 0,
-      imageUrlStartsWith: imageResult?.image_url?.substring(0, 30) + '...',
-      hasContentType: !!(imageResult?.contentType),
-      contentType: imageResult?.contentType
-    });
-    
+    // Clean response without keeping large data in memory
     const finalResult = {
       success: true,
       message: `🎨 I've created a beautiful ${style} image for you: "${prompt}"`,
@@ -549,16 +519,9 @@ async function handleImageGenerationTool(params) {
       }
     };
     
-    console.log('🔍 Final tool result structure:', {
-      success: finalResult.success,
-      messageLength: finalResult.message?.length || 0,
-      hasData: !!finalResult.data,
-      dataKeys: finalResult.data ? Object.keys(finalResult.data) : [],
-      dataImageUrlExists: !!(finalResult.data?.image_url),
-      dataImageUrlLength: finalResult.data?.image_url?.length || 0
-    });
+    // Clear large data from memory
+    imageResult.image_url = null;
     
-    console.log('🔍 IMAGE GENERATION TOOL EXECUTION COMPLETED SUCCESSFULLY');
     return finalResult;
     
   } catch (error) {

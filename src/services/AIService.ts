@@ -314,23 +314,7 @@ class AIService {
           }
         }
       },
-      {
-        "type": "function",
-        "function": {
-          "name": "open_scribblemodule",
-          "description": "Canvas mindmap tool is not available (ScribbleModule removed).",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "template": {
-                "type": "string",
-                "enum": ["mindMap", "projectPlan", "chartDashboard"],
-                "description": "Optional template to load into the canvas"
-              }
-            }
-          }
-        }
-      }
+
     ];
   }
 
