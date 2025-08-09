@@ -173,14 +173,50 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
     const onGraphLayout = () => {};
     const onGraphFocus = () => {};
     const onGraphExport = () => {};
-    // Charts: allow direct creation with provided series
+    // Charts: allow direct creation with provided series OR images/visual content
     const onChartCreate = (e: any) => {
-      const { title, type = 'line', series } = e?.detail || {};
-      if (!series || !Array.isArray(series) || !series.length) return;
-      setBoards(prev => prev.map(b => b.id===activeBoard ? {
-        ...b,
-        charts: [{ id: `chart_${Date.now()}`, title, type, series }, ...(b.charts || [])]
-      } : b));
+      const { title, type = 'line', series, imageUrl, metadata } = e?.detail || {};
+      
+      console.log('🎯 Scribbleboard onChartCreate received:', { title, type, series, imageUrl, metadata });
+      
+      // Handle images and visual content (from Einstein portraits, diagrams, etc.)
+      if (imageUrl || type === 'image') {
+        setBoards(prev => prev.map(b => b.id===activeBoard ? {
+          ...b,
+          charts: [{ 
+            id: `chart_${Date.now()}`, 
+            title: title || 'Visual Content',
+            type: 'image',
+            imageUrl: imageUrl,
+            metadata: metadata,
+            series: [] // Empty series for images
+          }, ...(b.charts || [])]
+        } : b));
+        return;
+      }
+      
+      // Handle charts with data series
+      if (series && Array.isArray(series) && series.length > 0) {
+        setBoards(prev => prev.map(b => b.id===activeBoard ? {
+          ...b,
+          charts: [{ id: `chart_${Date.now()}`, title, type, series }, ...(b.charts || [])]
+        } : b));
+        return;
+      }
+      
+      // Handle empty charts (for scenarios like "education 3D")
+      if (type && title) {
+        setBoards(prev => prev.map(b => b.id===activeBoard ? {
+          ...b,
+          charts: [{ 
+            id: `chart_${Date.now()}`, 
+            title, 
+            type, 
+            series: [], // Will be populated by scenario data
+            scenario: e?.detail?.scenario
+          }, ...(b.charts || [])]
+        } : b));
+      }
     };
 
     window.addEventListener('scribble_open', onOpen as EventListener);
@@ -205,6 +241,29 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
     window.addEventListener('scribble_graph_focus', onGraphFocus as EventListener);
     window.addEventListener('scribble_graph_export', onGraphExport as EventListener);
     window.addEventListener('scribble_chart_create', onChartCreate as EventListener);
+    
+    // Clear all event handler
+    const onClearAll = (e: any) => {
+      console.log('🧹 Clearing ALL scribbleboard content');
+      setBoards([{
+        id: '1',
+        name: 'Main Board',
+        mode: 'fullscreen',
+        version: 1,
+        hypotheses: [],
+        suggestions: [],
+        parallel: null,
+        mutating: [],
+        graph: { nodes: [], edges: [] },
+        charts: [],
+        insights: [],
+        evolution: [],
+        scenarios: []
+      }]);
+      setActiveBoardIndex(0);
+    };
+    window.addEventListener('scribble_clear_all', onClearAll as EventListener);
+    
     return () => {
       window.removeEventListener('scribble_open', onOpen as EventListener);
       window.removeEventListener('scribble_hypothesis_test', onOpenTest as EventListener);
@@ -228,6 +287,7 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
       window.removeEventListener('scribble_graph_focus', onGraphFocus as EventListener);
       window.removeEventListener('scribble_graph_export', onGraphExport as EventListener);
       window.removeEventListener('scribble_chart_create', onChartCreate as EventListener);
+      window.removeEventListener('scribble_clear_all', onClearAll as EventListener);
     };
   }, [autoAgentEnabled, mode, activeBoard, boards.length]);
 
@@ -345,7 +405,15 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
         {/* Render any explicitly created charts */}
         {(board.charts || []).map(c => (
           <motion.div key={c.id} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
-            <ChartCard title={c.title} type={c.type} series={c.series} compact={mode==='compact'} />
+            <ChartCard 
+              title={c.title} 
+              type={c.type} 
+              series={c.series || []} 
+              compact={mode==='compact'}
+              imageUrl={c.imageUrl}
+              metadata={c.metadata}
+              scenario={c.scenario}
+            />
           </motion.div>
         ))}
         {/* Example: if graph contains a series node, render it */}

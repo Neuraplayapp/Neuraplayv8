@@ -3397,6 +3397,56 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                         console.log('Scribbleboard closed, chat behavior handled');
                     }}
                     retainChatContext={isFullscreen}
+                    chatContent={isFullscreen ? (
+                        <div className="h-full flex flex-col">
+                            {/* Chat Messages */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {currentMessages.map((msg, index) => (
+                                     <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
+                                        <div className="max-w-[85%] ai-message-assistant">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1">
+                                                    <div className="text-black" style={{ zIndex: 9999, position: 'relative' }}>
+                                                        <RichMessageRenderer 
+                                                            text={msg.text} 
+                                                            isUser={msg.isUser}
+                                                            isDarkMode={false}
+                                                            compact={false}
+                                                            toolResults={msg.toolResults || []}
+                                                        />
+                                                    </div>
+                                                    <p className="text-xs mt-1 text-gray-600">
+                                                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Input Area */}
+                            <div className="border-t border-gray-200 p-4">
+                                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                                    <input
+                                        type="text"
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                        placeholder="Ask AI anything..."
+                                        className="flex-1 bg-transparent border-none outline-none text-sm"
+                                    />
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!inputText.trim() || mode !== 'idle'}
+                                        className="p-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Send className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : undefined}
                 />
             </Overlay>
             {/* Search/Wiki/News Overlay */}

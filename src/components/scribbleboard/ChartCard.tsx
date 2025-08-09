@@ -59,16 +59,18 @@ const CHART_SCENARIOS = {
 
 interface ChartCardProps {
   title?: string;
-  type?: 'line' | 'area' | 'bar' | 'scatter' | 'pie' | 'scatter3d' | '3d-plotly' | '3d-scenario';
+  type?: 'line' | 'area' | 'bar' | 'scatter' | 'pie' | 'scatter3d' | '3d-plotly' | '3d-scenario' | 'image';
   series: ChartSeries[];
   xLabel?: string;
   yLabel?: string;
   compact?: boolean;
   scenario?: keyof typeof CHART_SCENARIOS;
   interactive?: boolean;
+  imageUrl?: string;
+  metadata?: any;
 }
 
-const ChartCard: React.FC<ChartCardProps> = ({ title, type='line', series, xLabel, yLabel, compact, scenario, interactive = true }) => {
+const ChartCard: React.FC<ChartCardProps> = ({ title, type='line', series, xLabel, yLabel, compact, scenario, interactive = true, imageUrl, metadata }) => {
   const height = compact ? 180 : 260;
   const chartRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -316,6 +318,24 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, type='line', series, xLabe
           </div>
         );
       }
+      case 'image':
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg">
+            {imageUrl ? (
+              <img 
+                src={imageUrl} 
+                alt={title || 'Visual Content'}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+                style={{ maxHeight: height - 20 }}
+              />
+            ) : (
+              <div className="text-center text-gray-500">
+                <div className="text-4xl mb-2">🖼️</div>
+                <div>Image not available</div>
+              </div>
+            )}
+          </div>
+        );
       default:
         return (
           <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>

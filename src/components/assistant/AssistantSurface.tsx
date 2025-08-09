@@ -14,12 +14,13 @@ interface AssistantSurfaceProps {
   preference?: PanelPreference;
   onScribbleClose?: () => void;
   retainChatContext?: boolean;
+  chatContent?: React.ReactNode; // New prop for chat content
 }
 
 // Unified assistant surface: white canvas + sliding text editor panel with enhanced scribbleboard UX
-const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference = 'auto', onScribbleClose, retainChatContext = true }) => {
+const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference = 'auto', onScribbleClose, retainChatContext = true, chatContent }) => {
   const [showVisual, setShowVisual] = useState(preference === 'visual');
-  const [showEditor, setShowEditor] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
   const [scribbleMode, setScribbleMode] = useState<ScribbleMode>('hidden');
   const [showInsights, setShowInsights] = useState(false);
   // Persist surface state in session storage
@@ -146,7 +147,59 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
   // Responsive fullscreen: mobile stacks vertically, desktop splits horizontally
   return (
     <div className="relative w-full h-[calc(100vh-4rem)] bg-white text-gray-900">
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] w-full h-full min-h-0">
+      {/* Header with document editor toggle */}
+      <div className="h-12 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+          <span className="font-medium text-gray-800">AI Workspace</span>
+          <span className="text-xs px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full">
+            Canvas + Chat
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowEditor(!showEditor)}
+            className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+              showEditor 
+                ? 'bg-blue-100 border-blue-300 text-blue-700' 
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            📝 Document Editor
+          </button>
+        </div>
+      </div>
+      
+      {/* Document Editor Overlay */}
+      <AnimatePresence>
+        {showEditor && (
+          <motion.div
+            className="absolute inset-x-0 top-12 z-40 h-[calc(100%-3rem)]"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="w-full h-full bg-white border-b border-gray-200 shadow-lg">
+              <div className="h-10 border-b border-gray-200 flex items-center px-4 justify-between bg-gray-50">
+                <div className="text-sm font-medium text-gray-700">Document Editor</div>
+                <button 
+                  onClick={() => setShowEditor(false)} 
+                  className="px-3 py-1 text-xs rounded border border-gray-300 hover:bg-white transition-colors"
+                >
+                  Close Editor
+                </button>
+              </div>
+              <div className="h-[calc(100%-2.5rem)]">
+                {/* @ts-ignore */}
+                <TextWorkbench compact={false} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] w-full h-[calc(100%-3rem)] min-h-0">
         {/* Canvas area - full width on mobile, 66% on desktop */}
         <div className="relative min-h-0 overflow-hidden h-[60vh] lg:h-full">
           {/* Canvas area */}
@@ -238,29 +291,25 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
             )}
           </AnimatePresence>
           
-          {/* Sliding editor panel from the left (only when insights are hidden) */}
-          {!showInsights && (
-            <div className="absolute inset-y-0 left-0 z-20 pointer-events-none">
-              <div className="relative h-full">
-                <div className="absolute inset-y-0 left-0 pointer-events-auto">
-                  <div className={`h-full w-[420px] border-r border-gray-200 bg-white shadow-xl transition-transform duration-300 ease-out ${showEditor ? 'translate-x-0' : '-translate-x-[110%]'} `}>
-                    <div className="h-10 border-b border-gray-200 flex items-center px-2 justify-between">
-                      <div className="text-xs text-gray-500">Text Editor</div>
-                      <button onClick={() => setShowEditor(false)} className="px-2 py-0.5 text-[11px] rounded border border-gray-300 hover:bg-gray-50">End</button>
-                    </div>
-                    <div className="h-[calc(100%-2.5rem)]">
-                      {/* @ts-ignore */}
-                      <TextWorkbench compact={false} />
-                    </div>
-                  </div>
-                </div>
+          {/* Text Editor moved to header overlay */}
+        </div>
+
+        {/* Chat area - stacked below on mobile, 33% sidebar on desktop */}
+        <div className="min-h-0 overflow-auto h-[40vh] lg:h-full border-t lg:border-t-0 lg:border-l border-gray-200 bg-white">
+          {chatContent ? (
+            <div className="w-full h-full">
+              {chatContent}
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
+              <div className="text-center p-4">
+                <div className="text-lg mb-2">💬</div>
+                <div>Start a conversation</div>
+                <div className="text-xs mt-1 text-gray-400">Ask AI anything to begin</div>
               </div>
             </div>
           )}
         </div>
-
-        {/* Chat area - stacked below on mobile, 33% sidebar on desktop */}
-        <div className="min-h-0 overflow-auto h-[40vh] lg:h-full border-t lg:border-t-0 lg:border-l border-gray-200" />
       </div>
     </div>
   );
