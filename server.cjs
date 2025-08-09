@@ -1192,17 +1192,14 @@ async function handleImageGeneration(input_data, token) {
     console.log('✅ Image generation successful');
     
       // Clean up memory after creating response
-  const response = {
+  const result = {
     image_url: dataUrl,
     contentType: 'image/jpeg',
     data: null // Don't store duplicate data
   };
   
-  // Force garbage collection of large buffers
-  imageBuffer = null;
-  base64Image = null;
-  
-  return response;
+  // Let garbage collection handle cleanup
+  return result;
 
   } catch (error) {
     console.error('Image generation error:', error);
