@@ -105,8 +105,8 @@ const AIAssistant: React.FC = () => {
         getActiveConversation
     } = useGlobalConversation();
 
-    // Canvas requests now handled by AssistantSurface directly via scribble_open events('openScribbleModule', handler as EventListener);
-    }, []);
+    // Canvas requests now handled by AssistantSurface directly via scribble_open events
+    // Legacy openScribbleModule event listener removed - functionality moved to AssistantSurface
 
     // New: open Scribbleboard via tool
     const [isScribbleboardOpen, setIsScribbleboardOpen] = useState(false);
@@ -190,7 +190,7 @@ const AIAssistant: React.FC = () => {
             
             // Safe error property access
             const errorObj = typeof error === 'object' && error !== null ? error as any : {};
-            const errorStr = typeof error === 'string' ? error : error?.toString?.() || 'Unknown error';
+            const errorStr = typeof error === 'string' ? error : (error && typeof error.toString === 'function' ? error.toString() : 'Unknown error');
             
             console.error('❌ Error message:', errorObj?.message || errorStr);
             console.error('❌ Error stack:', errorObj?.stack || 'No stack');
@@ -3398,15 +3398,15 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
                                     <input
                                         type="text"
-                                        value={inputText}
-                                        onChange={(e) => setInputText(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
                                         placeholder="Ask AI anything..."
                                         className="flex-1 bg-transparent border-none outline-none text-sm"
                                     />
                                     <button
-                                        onClick={sendMessage}
-                                        disabled={!inputText.trim() || mode !== 'idle'}
+                                        onClick={handleSendText}
+                                        disabled={!inputMessage.trim() || mode !== 'idle'}
                                         className="p-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <Send className="w-4 h-4" />
