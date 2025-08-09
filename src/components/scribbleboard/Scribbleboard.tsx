@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 // @ts-ignore
-import ChartCard from './ChartCard';
+import ChartCard, { CHART_SCENARIOS } from './ChartCard';
 import { selectionManager } from '../../services/SelectionManager';
 import { suggestLabel } from '../../services/labels/LabelingService';
 

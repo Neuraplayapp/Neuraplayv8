@@ -21,7 +21,7 @@ import Scribbleboard from './scribbleboard/Scribbleboard';
 // @ts-ignore
 import TextWorkbench from './editor/TextWorkbench';
 import SearchOverlay from './SearchOverlay';
-import { analyzeCommand as analyzeIntent } from '../services/IntentClassifier';
+import { analyzeCommand as analyzeIntent, createChartsFromIntent } from '../services/IntentClassifier';
 import { AssistantConfig } from '../services/AssistantConfig';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
@@ -692,10 +692,24 @@ const AIAssistant: React.FC = () => {
         setActiveConversation(newId);
     };
 
-    // Clear current conversation history
+    // Clear current conversation history and ALL visual content
     const clearCurrentConversation = () => {
         clearConversation(activeConversation);
-        console.log('🧹 Cleared conversation history for:', activeConversation);
+        
+        // Clear any stuck visual content in scribbleboard
+        window.dispatchEvent(new CustomEvent('scribble_clear_all', {
+            detail: { clearEverything: true }
+        }));
+        
+        // Clear any cached visual content
+        try {
+            localStorage.removeItem('scribble_evolution_preferences');
+            localStorage.removeItem('scribble_board_cache');
+        } catch (e) {
+            console.warn('Failed to clear localStorage:', e);
+        }
+        
+        console.log('🧹 Cleared ALL conversation history AND visual content for:', activeConversation);
     };
 
     // updateConversationTitle function removed - not used in the component
@@ -1826,6 +1840,15 @@ Need help with anything specific? Just ask! 🌟`;
         let toolResultsForAssistant: any[] = [];
 
         try {
+            // 🎯 ENHANCED INTENT DETECTION - Auto-create charts and visuals
+            const intentAnalysis = analyzeIntent(inputMessage);
+            console.log('🎯 Intent Analysis:', intentAnalysis);
+            
+            // Auto-create charts and hypotheses based on intent
+            if (intentAnalysis.type === 'visualization' || intentAnalysis.type === 'hypothesis') {
+                createChartsFromIntent(intentAnalysis);
+            }
+            
             // Try the enhanced AI service
             const { aiService } = await import('../services/AIService');
             console.log('🔍 AI Assistant Debug - Calling AI service with tool calling:', enableToolCalling);
@@ -3363,7 +3386,18 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
             >
                 {/* @ts-ignore */}
-                <AssistantSurface compact={!isFullscreen} preference={surfacePreference} />
+                <AssistantSurface 
+                    compact={!isFullscreen} 
+                    preference={surfacePreference}
+                    onScribbleClose={() => {
+                        // In compact mode, close everything. In fullscreen, keep chat open
+                        if (!isFullscreen) {
+                            setIsOpen(false);
+                        }
+                        console.log('Scribbleboard closed, chat behavior handled');
+                    }}
+                    retainChatContext={isFullscreen}
+                />
             </Overlay>
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 

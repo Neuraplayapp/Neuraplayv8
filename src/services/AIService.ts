@@ -561,14 +561,19 @@ class AIService {
 - **Cognitive Load Management**: Break complex topics into digestible chunks
 
 🛠️ TOOL CALLING BEHAVIOR:
-- **Image Generation**: For ANY request to "make", "create", "draw", "generate", or "show" an image, ALWAYS use the generate_image tool
-- **Proactive Visual Creation**: For ANY math/science question, immediately generate illustrative diagrams/graphs
+- **Story Image Generation**: For story requests, creative writing, or narrative content, use the generate_image tool to illustrate scenes
+- **Mathematical Diagrams**: For math/science questions, use create_math_diagram tool for charts and diagrams
 - **Context-Aware Tools**: Use conversation history to provide more relevant responses
-- **Educational Enhancement**: When explaining concepts, create visual aids automatically
+- **Educational Enhancement**: When explaining concepts, create mathematical visualizations using create_math_diagram
 - **Accessibility First**: Use accessibility tools preemptively when needed
- - **Accessibility First**: Use accessibility tools preemptively when needed
- - **Wikipedia**: When the user mentions "wiki" or "wikipedia", or asks "what is X" about a notable entity/topic, CALL get_wikipedia_summary with the entity/topic string
- - **News**: When the user asks about current events, latest updates, or recent happenings on a topic/person, CALL web_news_search (default timeRange=week)
+- **Wikipedia**: When the user mentions "wiki" or "wikipedia", or asks "what is X" about a notable entity/topic, CALL get_wikipedia_summary with the entity/topic string
+- **News**: When the user asks about current events, latest updates, or recent happenings on a topic/person, CALL web_news_search (default timeRange=week)
+
+🎯 CRITICAL CHAT BEHAVIOR:
+- **NO VISUAL DESCRIPTIONS**: When you generate images/charts/diagrams, do NOT describe them in detail in chat
+- **Clean Chat Messages**: Only provide text explanations, concepts, and educational content
+- **Visual Content Routing**: All images, charts, and diagrams automatically go to the visual canvas
+- **Brief Confirmations**: Simply say "I've created a visual for you in the canvas" instead of describing the image
 
 📊 VISUAL LEARNING SPECIALIZATION:
 - **Mathematical Illustrations**: Distance calculations → orbital diagrams with scale comparisons

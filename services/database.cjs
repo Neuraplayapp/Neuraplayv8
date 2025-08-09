@@ -114,35 +114,120 @@ async function initDatabase() {
       )
     `);
 
-    // Scribble boards (persist entire board state compactly as JSON)
+    // Enhanced Scribble boards with comprehensive feature support
     await client.query(`
       CREATE TABLE IF NOT EXISTS scribble_boards (
         id VARCHAR(255) PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
-        data JSONB NOT NULL DEFAULT '{}',
+        mode VARCHAR(50) DEFAULT 'fullscreen',
+        data JSONB NOT NULL DEFAULT '{
+          "hypotheses": [],
+          "suggestions": [],
+          "parallel": null,
+          "mutating": [],
+          "graph": {"nodes": [], "edges": []},
+          "charts": [],
+          "scenarios": [],
+          "dualView": false,
+          "insights": []
+        }',
+        version INTEGER DEFAULT 1,
+        is_shared BOOLEAN DEFAULT FALSE,
+        share_token VARCHAR(255),
+        last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
 
-    // Tool and board events log (auditable stream of actions)
+    // Enhanced Tool and board events log with comprehensive tracking
     await client.query(`
       CREATE TABLE IF NOT EXISTS scribble_events (
         id VARCHAR(255) PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
         board_id VARCHAR(255),
         event_name VARCHAR(100) NOT NULL,
+        event_type VARCHAR(50) DEFAULT 'action',
         detail JSONB DEFAULT '{}',
+        tool_result JSONB,
+        confidence DECIMAL(3,2),
+        processing_time INTEGER,
+        session_id VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (board_id) REFERENCES scribble_boards(id) ON DELETE CASCADE
       )
     `);
 
+    // Scribble insights for AI-generated suggestions and analysis
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scribble_insights (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        board_id VARCHAR(255) NOT NULL,
+        insight_type VARCHAR(50) DEFAULT 'suggestion',
+        text TEXT NOT NULL,
+        confidence DECIMAL(3,2) DEFAULT 0.75,
+        metadata JSONB DEFAULT '{}',
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (board_id) REFERENCES scribble_boards(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Scribble evolution tracking for concept development
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scribble_evolution (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        board_id VARCHAR(255) NOT NULL,
+        concept_id VARCHAR(255) NOT NULL,
+        version_number INTEGER NOT NULL,
+        evolution_type VARCHAR(50) DEFAULT 'manual',
+        previous_content TEXT,
+        new_content TEXT,
+        changes_summary TEXT,
+        confidence_delta DECIMAL(3,2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (board_id) REFERENCES scribble_boards(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Scribble collaboration for future team features
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scribble_collaboration (
+        id VARCHAR(255) PRIMARY KEY,
+        board_id VARCHAR(255) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'viewer',
+        permissions JSONB DEFAULT '{"read": true, "write": false, "admin": false}',
+        invited_by VARCHAR(255),
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (board_id) REFERENCES scribble_boards(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (invited_by) REFERENCES users(id)
+      )
+    `);
+
+    // Create indexes for better performance
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_boards_user_id ON scribble_boards(user_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_boards_updated_at ON scribble_boards(updated_at)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_events_board_id ON scribble_events(board_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_events_event_name ON scribble_events(event_name)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_insights_board_id ON scribble_insights(board_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_insights_active ON scribble_insights(is_active)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_evolution_board_id ON scribble_evolution(board_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_scribble_collaboration_board_id ON scribble_collaboration(board_id)');
+
     client.release();
     databaseAvailable = true;
-    console.log('✅ Database tables initialized successfully');
+    console.log('✅ Enhanced database tables with scribbleboard support initialized successfully');
+    console.log('🔬 Scribbleboard features: Hypothesis testing, Evolution tracking, AI insights, Collaboration ready');
     return true;
   } catch (error) {
     console.error('❌ Database initialization error:', error);

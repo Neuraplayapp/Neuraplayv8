@@ -26,26 +26,70 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
   }, [open, onClose]);
 
   const [anchorRect, setAnchorRect] = React.useState<{ top: number; left: number; width: number; right: number; bottom: number } | null>(null);
+  const [anchorReady, setAnchorReady] = React.useState(false);
+  
   useEffect(() => {
-    if (!open || !anchorSelector || mode === 'fullscreen') { setAnchorRect(null); return; }
+    if (!open || !anchorSelector || mode === 'fullscreen') { 
+      setAnchorRect(null); 
+      setAnchorReady(false);
+      return; 
+    }
+    
+    let rafId: number;
+    let observer: ResizeObserver | null = null;
+    
     const compute = () => {
       const el = document.querySelector(anchorSelector) as HTMLElement | null;
-      if (!el) { setAnchorRect(null); return; }
+      if (!el) { 
+        console.warn('Anchor element not found:', anchorSelector);
+        setAnchorRect(null); 
+        setAnchorReady(false);
+        // Retry on next RAF if element missing
+        rafId = requestAnimationFrame(compute);
+        return; 
+      }
+      
       const rect = el.getBoundingClientRect();
+      // Ensure element has actual dimensions
+      if (rect.width === 0 || rect.height === 0) {
+        rafId = requestAnimationFrame(compute);
+        return;
+      }
+      
       // Viewport-only coordinates for fixed positioning (no scroll offsets)
-      setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, right: rect.right, bottom: rect.bottom });
+      const newRect = { 
+        top: rect.top, 
+        left: rect.left, 
+        width: rect.width, 
+        right: rect.right, 
+        bottom: rect.bottom 
+      };
+      setAnchorRect(newRect);
+      setAnchorReady(true);
+      
+      // Set up ResizeObserver on the anchor element
+      if (!observer) {
+        observer = new ResizeObserver(() => {
+          rafId = requestAnimationFrame(compute);
+        });
+        observer.observe(el);
+      }
     };
-    // compute now and on next frames to catch layout changes
-    compute();
-    const raf1 = requestAnimationFrame(compute);
-    const raf2 = requestAnimationFrame(compute);
-    window.addEventListener('resize', compute);
-    window.addEventListener('scroll', compute, { passive: true } as any);
+    
+    // Initial compute with RAF guard
+    rafId = requestAnimationFrame(compute);
+    
+    const handleResize = () => { rafId = requestAnimationFrame(compute); };
+    const handleScroll = () => { rafId = requestAnimationFrame(compute); };
+    
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
     return () => {
-      window.removeEventListener('resize', compute);
-      window.removeEventListener('scroll', compute as any);
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+      if (observer) observer.disconnect();
+      cancelAnimationFrame(rafId);
     };
   }, [open, anchorSelector, mode]);
 
