@@ -101,60 +101,111 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
           )}
         </div>
         
-        {/* Canvas modal that slides down from top when activated */}
+        {/* Dynamic canvas modal with modern curved design */}
         <AnimatePresence>
           {scribbleMode === 'overlay' && (
             <motion.div
-              className="absolute inset-x-0 top-0 z-50 h-full"
-              initial={{ y: '-100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '-100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="absolute inset-x-2 top-2 z-50 h-[calc(100%-1rem)]"
+              initial={{ scale: 0.8, opacity: 0, y: -20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: -20 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
-              <div className="w-full h-full bg-white border-b-2 border-blue-500 shadow-2xl overflow-hidden">
-                {/* Canvas header */}
-                <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b touch-manipulation">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                    <span className="font-medium text-gray-800 text-sm sm:text-base">Visual Canvas</span>
-                    <span className="text-xs px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full hidden sm:inline">
-                      Compact
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {/* Clear canvas button */}
-                    <button 
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent('scribble_clear_all', { detail: { clearEverything: true } }));
-                      }}
-                      className="p-2 rounded-md hover:bg-white/60 transition-colors touch-manipulation"
-                      title="Clear canvas"
-                    >
-                      <Trash2 className="w-4 h-4 text-gray-600" />
-                    </button>
-                    {/* Fullscreen toggle */}
-                    <button 
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent('scribble_close'));
-                        setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent('scribble_open', { detail: { mode: 'fullscreen' } }));
-                        }, 100);
-                      }}
-                      className="p-2 rounded-md hover:bg-white/60 transition-colors touch-manipulation"
-                      title="Expand to fullscreen"
-                    >
-                      <Maximize2 className="w-4 h-4 text-gray-600" />
-                    </button>
-                    <button 
-                      onClick={() => window.dispatchEvent(new CustomEvent('scribble_close'))}
-                      className="p-2 rounded-md hover:bg-white/60 transition-colors touch-manipulation"
-                    >
-                      <X className="w-4 h-4 text-gray-600" />
-                    </button>
+              <div className="w-full h-full bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 backdrop-blur-xl border border-white/50 shadow-2xl overflow-hidden rounded-2xl">
+                {/* Floating glass-morphic header */}
+                <div className="relative">
+                  {/* Background blur effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-md"></div>
+                  
+                  {/* Header content */}
+                  <div className="relative flex items-center justify-between p-3 border-b border-white/20">
+                    <div className="flex items-center gap-3">
+                      {/* Animated orb */}
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse shadow-lg"></div>
+                        <div className="absolute inset-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-ping opacity-30"></div>
+                      </div>
+                      <div>
+                        <span className="font-bold text-gray-800 text-sm tracking-wide">🎨 Visual Workspace</span>
+                        <div className="text-xs text-gray-600 -mt-0.5">Interactive Canvas</div>
+                      </div>
+                    </div>
+                    
+                    {/* Floating action buttons */}
+                    <div className="flex items-center gap-1">
+                      {/* Clear with confirmation */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('scribble_clear_all', { detail: { clearEverything: true } }));
+                        }}
+                        className="p-2 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 hover:bg-red-50/60 transition-all duration-200 shadow-lg"
+                        title="Clear canvas"
+                      >
+                        <Trash2 className="w-4 h-4 text-gray-700" />
+                      </motion.button>
+                      
+                      {/* Expand to fullscreen */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('scribble_close'));
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('scribble_open', { detail: { mode: 'fullscreen' } }));
+                          }, 100);
+                        }}
+                        className="p-2 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 hover:bg-blue-50/60 transition-all duration-200 shadow-lg"
+                        title="Expand to fullscreen"
+                      >
+                        <Maximize2 className="w-4 h-4 text-gray-700" />
+                      </motion.button>
+                      
+                      {/* Close */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.dispatchEvent(new CustomEvent('scribble_close'))}
+                        className="p-2 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 hover:bg-gray-50/60 transition-all duration-200 shadow-lg"
+                      >
+                        <X className="w-4 h-4 text-gray-700" />
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
-                {/* @ts-ignore */}
-                <Scribbleboard mode="compact" />
+                
+                {/* Canvas content with subtle grid background */}
+                <div className="relative h-[calc(100%-4rem)] overflow-hidden">
+                  {/* Animated background pattern */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500"></div>
+                  </div>
+                  
+                  {/* Grid pattern */}
+                  <div className="absolute inset-0 opacity-10">
+                    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#grid)" />
+                    </svg>
+                  </div>
+                  
+                  {/* Scribbleboard with modern styling */}
+                  <div className="relative z-10 h-full p-2">
+                    {/* @ts-ignore */}
+                    <Scribbleboard mode="compact" />
+                  </div>
+                  
+                  {/* Floating corner indicators */}
+                  <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-white/40 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/30">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span className="text-xs text-gray-600 font-medium">Live</span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -165,29 +216,89 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
 
   // Responsive fullscreen: mobile stacks vertically, desktop splits horizontally
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] bg-white text-gray-900">
-      {/* Header with document editor toggle */}
-      <div className="h-12 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-          <span className="font-medium text-gray-800">AI Workspace</span>
-          <span className="text-xs px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full">
-            Canvas + Chat
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowEditor(!showEditor)}
-            className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
-              showEditor 
-                ? 'bg-blue-100 border-blue-300 text-blue-700' 
-                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-            }`}
+    <div className="relative w-full h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 text-gray-900 overflow-hidden">
+      {/* Premium glassmorphic header */}
+      <motion.div 
+        className="relative h-12 backdrop-blur-xl bg-white/60 border-b border-white/30 shadow-lg"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/5 to-pink-500/10 animate-pulse"></div>
+        
+        <div className="relative flex items-center justify-between px-6 h-full">
+          <motion.div 
+            className="flex items-center gap-4"
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
           >
-            📝 Document Editor
-          </button>
+            {/* Sophisticated animated orb */}
+            <div className="relative">
+              <motion.div 
+                className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-lg"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 180, 360]
+                }}
+                transition={{ 
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+              <motion.div 
+                className="absolute inset-0 w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 opacity-40"
+                animate={{ 
+                  scale: [1, 1.5, 1],
+                  opacity: [0.4, 0.1, 0.4]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </div>
+            <div>
+              <span className="font-bold text-gray-800 tracking-wide">AI Workspace</span>
+              <motion.div 
+                className="text-xs text-gray-600 -mt-0.5"
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                Canvas + Chat
+              </motion.div>
+            </div>
+          </motion.div>
+          
+          <motion.div 
+            className="flex items-center gap-2"
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <motion.button
+              whileHover={{ scale: 1.05, y: -1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowEditor(!showEditor)}
+              className={`px-4 py-2 text-xs rounded-xl backdrop-blur-md border transition-all duration-300 shadow-lg ${
+                showEditor 
+                  ? 'bg-blue-500/20 border-blue-300/50 text-blue-700 shadow-blue-500/20' 
+                  : 'bg-white/40 border-white/30 text-gray-700 hover:bg-white/60 shadow-gray-500/10'
+              }`}
+            >
+              <motion.span
+                animate={{ scale: showEditor ? [1, 1.1, 1] : 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                📝 Document Editor
+              </motion.span>
+            </motion.button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
       
       {/* Document Editor Overlay */}
       <AnimatePresence>

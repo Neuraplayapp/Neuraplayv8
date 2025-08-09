@@ -14,7 +14,7 @@ import RichMessageRenderer from './RichMessageRenderer';
 import { toolExecutorService } from '../services/ToolExecutorService';
 // Unified assistant surface (text + visual)
 import AssistantSurface from './assistant/AssistantSurface';
-import ScribbleModule from './ScribbleModule';
+// ScribbleModule removed - using AssistantSurface instead
 import Overlay from './Overlay';
 // @ts-ignore
 import Scribbleboard from './scribbleboard/Scribbleboard';
@@ -89,7 +89,7 @@ const AIAssistant: React.FC = () => {
 
     // Listen for search triggers from clickable cards - moved to after function definition
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isScribbleModuleOpen, setIsScribbleModuleOpen] = useState(false);
+    // ScribbleModule state removed - using AssistantSurface
     const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
     const [overlayContent, setOverlayContent] = useState<JSX.Element | null>(null);
     const [scribbleImports, setScribbleImports] = useState<any[]>([]);
@@ -105,32 +105,7 @@ const AIAssistant: React.FC = () => {
         getActiveConversation
     } = useGlobalConversation();
 
-    // Listen for tool-triggered canvas open requests
-    useEffect(() => {
-        const handler = (e: any) => {
-            setIsScribbleModuleOpen(true);
-            if (e?.detail?.items && Array.isArray(e.detail.items)) {
-                setScribbleImports(e.detail.items);
-            }
-            if (e?.detail?.template) {
-                setScribbleTemplate(e.detail.template);
-            }
-            // Support plugin quick-add and content injection
-            if (e?.detail?.pluginId || e?.detail?.content) {
-                const detail = e.detail || {};
-                // Pass as a special import item the ScribbleModule understands
-                setScribbleImports([
-                    {
-                        type: detail.pluginId || 'text',
-                        title: detail.pluginId || 'plugin',
-                        content: detail.content || 'New Block',
-                        metadata: { position: detail.position || null }
-                    }
-                ]);
-            }
-        };
-        window.addEventListener('openScribbleModule', handler as EventListener);
-        return () => window.removeEventListener('openScribbleModule', handler as EventListener);
+    // Canvas requests now handled by AssistantSurface directly via scribble_open events('openScribbleModule', handler as EventListener);
     }, []);
 
     // New: open Scribbleboard via tool
@@ -2965,9 +2940,8 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        // Only clear chat; do not open ScribbleModule
+                                        // Clear chat and canvas
                                         clearCurrentConversation();
-                                        setIsScribbleModuleOpen(false);
                                     }}
                                     className="ai-fullscreen-button"
                                     title="Clear Conversation History"
@@ -3366,13 +3340,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
             </aside>
 
             {/* ScribbleModule Canvas */}
-            <ScribbleModule 
-                isOpen={isScribbleModuleOpen}
-                onClose={() => { setIsScribbleModuleOpen(false); setScribbleImports([]); setScribbleTemplate(null); }}
-                theme={theme}
-                importItems={scribbleImports}
-                template={scribbleTemplate}
-            />
+            {/* Canvas functionality now integrated into AssistantSurface */}
 
             {/* Assistant Unified Surface Overlay */}
             <Overlay

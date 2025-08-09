@@ -71,12 +71,32 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
       
       if (savedConversations) {
         const parsed = JSON.parse(savedConversations);
-        // Convert timestamp strings back to Date objects
-        const conversationsWithDates = Object.keys(parsed).reduce((acc, key) => {
+        
+        // Clean any persistent Einstein messages during load
+        const cleanedConversations = Object.keys(parsed).reduce((acc, key) => {
+          const conversation = parsed[key];
+          const originalMessageCount = conversation.messages.length;
+          
+          // Filter out Einstein-related persistent messages
+          const cleanedMessages = conversation.messages.filter((msg: any) => {
+            const isPersistentEinstein = msg.text.includes('Einstein') && 
+                                      (msg.text.includes('wild hair') || 
+                                       msg.text.includes('moved to canvas') ||
+                                       msg.text.includes('attachment pane'));
+            if (isPersistentEinstein) {
+              console.log('🗑️ Removed persistent Einstein message during load:', msg.text.substring(0, 100) + '...');
+            }
+            return !isPersistentEinstein;
+          });
+          
+          if (cleanedMessages.length !== originalMessageCount) {
+            console.log(`🧹 Cleaned ${originalMessageCount - cleanedMessages.length} persistent messages from conversation: ${key}`);
+          }
+          
           acc[key] = {
-            ...parsed[key],
-            timestamp: new Date(parsed[key].timestamp),
-            messages: parsed[key].messages.map((msg: any) => ({
+            ...conversation,
+            timestamp: new Date(conversation.timestamp),
+            messages: cleanedMessages.map((msg: any) => ({
               ...msg,
               timestamp: new Date(msg.timestamp)
             }))
@@ -84,7 +104,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
           return acc;
         }, {} as { [key: string]: Conversation });
         
-        setConversations(conversationsWithDates);
+        setConversations(cleanedConversations);
       }
       
       if (savedActiveConversation && savedActiveConversation !== 'current') {
@@ -153,7 +173,26 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const clearConversation = (conversationId: string) => {
+    console.log('🧹 Clearing conversation:', conversationId);
+    
     setConversations(prev => {
+      const oldConversation = prev[conversationId];
+      if (oldConversation && oldConversation.messages) {
+        // Check for persistent Einstein-type messages before clearing
+        const persistentMessages = oldConversation.messages.filter(msg => 
+          msg.text.includes('Einstein') || 
+          msg.text.includes('wild hair') || 
+          msg.text.includes('moved to canvas')
+        );
+        
+        if (persistentMessages.length > 0) {
+          console.log('⚠️ Found persistent messages that will be cleared:', persistentMessages.length);
+          persistentMessages.forEach(msg => {
+            console.log('🗑️ Clearing persistent message:', msg.text.substring(0, 100) + '...');
+          });
+        }
+      }
+      
       if (conversationId === 'current') {
         // Reset current conversation to initial state
         return {
