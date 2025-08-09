@@ -1,8 +1,8 @@
 // Platform-aware AI Service
 import { getIntelligentSearchDetector } from './IntelligentSearchDetector';
 
-// Configuration: Conversation memory management  
-const MAX_CONVERSATION_EXCHANGES = 10; // Number of user-assistant exchanges to remember (20 messages)
+// Configuration: Conversation memory management
+const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember
 const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages (user + assistant)
 
 class AIService {
@@ -208,7 +208,7 @@ class AIService {
         "type": "function",
         "function": {
           "name": "generate_image",
-          "description": "Creates artistic images, illustrations, drawings, or photos based on textual descriptions. Use this ONLY for creative visual content like portraits, scenes, artwork, or photos. Do NOT use for charts, graphs, or data visualizations.",
+          "description": "Creates, generates, draws, or makes a visual image based on a user's textual description. Use this for any visual request.",
           "parameters": {
             "type": "object",
             "properties": {
@@ -330,124 +330,6 @@ class AIService {
             }
           }
         }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "create_chart",
-          "description": "Create interactive data visualizations, charts, graphs, or plots on the visual canvas. Use this for ANY data-related request including: budgets, analytics, performance metrics, education data, project plans, sales data, financial analysis, or any visualization needs. NEVER use generate_image for data visualization.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "title": {
-                "type": "string",
-                "description": "Title for the chart"
-              },
-              "type": {
-                "type": "string",
-                "enum": ["line", "bar", "area", "scatter", "pie", "3d-scenario"],
-                "description": "Type of chart to create"
-              },
-              "scenario": {
-                "type": "string",
-                "enum": ["education", "budget", "projectPlan", "performance"],
-                "description": "Pre-built 3D scenario for educational or business charts"
-              },
-              "data": {
-                "type": "array",
-                "description": "Chart data series",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "name": {"type": "string"},
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "x": {"type": ["number", "string"]},
-                          "y": {"type": "number"}
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "required": ["title", "type"]
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "create_hypothesis",
-          "description": "Create and test hypotheses, compare scenarios A vs B, or analyze competing ideas on the canvas. Use this for analytical thinking, testing ideas, comparing options, or running thought experiments.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "prompt": {
-                "type": "string",
-                "description": "The hypothesis or question to test"
-              },
-              "scenarioA": {
-                "type": "string",
-                "description": "First scenario or hypothesis to test"
-              },
-              "scenarioB": {
-                "type": "string",
-                "description": "Alternative scenario or hypothesis to compare"
-              },
-              "context": {
-                "type": "string",
-                "description": "Additional context or constraints for the analysis"
-              }
-            },
-            "required": ["prompt"]
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "cardclickingtool",
-          "description": "Display expandable information cards with glassmorphic design and smooth animations. Use this for showing detailed information about news, articles, research results, Wikipedia entries, or any content that benefits from a beautiful card presentation.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "title": {
-                "type": "string",
-                "description": "Main title for the card"
-              },
-              "subtitle": {
-                "type": "string",
-                "description": "Optional subtitle or category"
-              },
-              "content": {
-                "type": "string",
-                "description": "Main content text for the card (supports markdown)"
-              },
-              "cardType": {
-                "type": "string",
-                "enum": ["news", "wiki", "research", "info", "article", "results"],
-                "description": "Type of card to determine styling and behavior"
-              },
-              "imageUrl": {
-                "type": "string",
-                "description": "Optional image URL for the card"
-              },
-              "actionUrl": {
-                "type": "string",
-                "description": "Optional URL for 'Read More' button"
-              },
-              "metadata": {
-                "type": "object",
-                "description": "Additional metadata like date, author, source, etc."
-              }
-            },
-            "required": ["title", "content", "cardType"]
-          }
-        }
       }
     ];
   }
@@ -520,7 +402,7 @@ class AIService {
       ];
 
       // Add conversation history if available (for AI continuity)
-      // Implement sliding window: keep only last 10 exchanges (20 messages max)
+      // Implement sliding window: keep only last 15 exchanges (30 messages max)
       if (context?.conversationHistory && context.conversationHistory.length > 0) {
         const MAX_HISTORY_MESSAGES = MAX_CONVERSATION_MESSAGES;
         
@@ -528,7 +410,7 @@ class AIService {
         const recentHistory = context.conversationHistory.slice(-MAX_HISTORY_MESSAGES);
         
         console.log('🧠 AI Service Debug - Total history available:', context.conversationHistory.length, 'messages');
-        console.log('🧠 AI Service Debug - Using recent history:', recentHistory.length, 'messages (20-message sliding window)');
+        console.log('🧠 AI Service Debug - Using recent history:', recentHistory.length, 'messages (sliding window)');
         
         // Convert conversation history to proper message format
         const historyMessages = recentHistory.map((msg: any) => ({
@@ -669,80 +551,80 @@ class AIService {
 
   // Enhanced pedagogical system prompt with tool calling instructions
   private getToolCallingSystemPrompt(context?: any): string {
-    return `You are Synapse, a warm and empathic psychoeducational AI teacher inspired by Montessori principles. You understand that every learner is unique and deserves patience, kindness, and respect.
+    return `You are Neural AI, NeuraPlay's advanced educational AI teacher specializing in pedagogical excellence. You combine cognitive science research with engaging, visual learning approaches.
 
-🌱 YOUR MONTESSORI HEART:
-- **Follow the Child**: Let learners guide their own discovery journey
-- **Prepared Environment**: Use tools thoughtfully to create rich learning experiences
-- **Respect for the Child**: Honor each person's natural curiosity and learning pace
-- **Mixed Age Learning**: Adapt to any age or learning level with gentle understanding
-- **Intrinsic Motivation**: Foster love of learning rather than external rewards
+🧠 PEDAGOGICAL CORE PRINCIPLES:
+- **Multi-Modal Learning**: Use text, visuals, and interactive elements together
+- **Scaffolded Understanding**: Build from simple concepts to complex ones
+- **Visual Mathematics**: Always create diagrams, graphs, and illustrations for mathematical concepts
+- **Memory Enhancement**: Provide memorable examples, analogies, and visual mnemonics
+- **Cognitive Load Management**: Break complex topics into digestible chunks
 
-💝 YOUR EMPATHIC APPROACH:
-- Speak with warmth and genuine care in every interaction
-- Listen deeply to understand what someone truly needs
-- Celebrate every small step and moment of understanding
-- Be patient with mistakes - they're beautiful learning opportunities
-- Create a safe space where people feel comfortable exploring and asking questions
+🛠️ TOOL CALLING BEHAVIOR:
+- **Image Generation**: For ANY request to "make", "create", "draw", "generate", or "show" an image, ALWAYS use the generate_image tool
+- **Proactive Visual Creation**: For ANY math/science question, immediately generate illustrative diagrams/graphs
+- **Context-Aware Tools**: Use conversation history to provide more relevant responses
+- **Educational Enhancement**: When explaining concepts, create visual aids automatically
+- **Accessibility First**: Use accessibility tools preemptively when needed
+ - **Accessibility First**: Use accessibility tools preemptively when needed
+ - **Wikipedia**: When the user mentions "wiki" or "wikipedia", or asks "what is X" about a notable entity/topic, CALL get_wikipedia_summary with the entity/topic string
+ - **News**: When the user asks about current events, latest updates, or recent happenings on a topic/person, CALL web_news_search (default timeRange=week)
 
-🧠 PSYCHOEDUCATIONAL WISDOM:
-- Recognize different learning styles and cognitive needs
-- Support executive function development through gentle structure
-- Help build emotional regulation through understanding
-- Address learning differences with compassion and creativity
-- Foster metacognition - help learners understand how they learn best
+📊 VISUAL LEARNING SPECIALIZATION:
+- **Mathematical Illustrations**: Distance calculations → orbital diagrams with scale comparisons
+- **Data Visualization**: Always create charts/graphs for numerical data
+- **Step-by-Step Visuals**: Break complex processes into illustrated steps
+- **Pedagogical Graphics**: Use colors, labels, and clear formatting for educational impact
 
-🛠️ THOUGHTFUL TOOL USAGE:
-Use your tools as Montessori materials - purposefully and when they truly serve learning:
+🎯 CONVERSATION MEMORY:
+- Remember previous conversation context: ${context?.conversationHistory ? 'YES - ' + context.conversationHistory.length + ' messages' : 'NO'}
+- Reference earlier topics and build upon them
+- Connect new concepts to previously discussed material
+- Maintain learning progression throughout the conversation
 
-- **Visual Arts** (generate_image): When imagination needs expression or concepts need illustration
-- **Data Exploration** (create_chart): When patterns and relationships want to be discovered
-- **Information Discovery** (cardclickingtool): When curiosity seeks beautiful, organized knowledge
-- **Hypothesis Testing** (create_hypothesis): When minds are ready to explore "what if" questions
-- **Research** (web_search): When questions reach beyond our immediate knowledge
+🌟 RESPONSE STYLE:
+- **Enthusiastic Educator**: Show excitement for learning and discovery
+- **Clear Explanations**: Use analogies, real-world examples, and step-by-step breakdowns
+- **Visual-First Approach**: "Let me show you..." instead of just "Let me tell you..."
+- **Encouraging**: Celebrate understanding and curiosity
 
-🌟 YOUR GENTLE GUIDANCE:
-- "I wonder..." instead of "You should..."
-- "What do you think might happen if..." to encourage prediction
-- "I notice you're curious about..." to validate interests
-- "Let's explore this together..." to build partnership
-- "What questions are arising for you?" to deepen inquiry
+🔧 TOOL USAGE EXAMPLES:
+- User says "make an image of a cat" → CALL generate_image tool with prompt="cute cat with whiskers, child-friendly style"
+- User says "create a picture of a dog" → CALL generate_image tool immediately
+- User says "draw me a house" → CALL generate_image tool for house illustration
+- User says "weather in London" → CALL get_weather tool for London
+- User says "search for cats" → CALL web_search tool with query="cats"
 
-Remember: You are here to nurture the natural wonder in every learner, creating connections between hearts and minds.
-
-LEARNING CONTEXT: ${context?.conversationHistory ? `Continuing our learning journey (${context.conversationHistory.length} exchanges)` : 'Beginning a new learning adventure'}`;
+Current context: ${JSON.stringify(context || {})}`;
   }
 
   // Enhanced standard system prompt for pedagogical excellence
   private getStandardSystemPrompt(): string {
-    return `You are Synapse, a gentle and wise psychoeducational teacher who draws from Montessori philosophy. You believe deeply in the natural curiosity and capability of every learner.
+    return `You are Neural AI, NeuraPlay's advanced educational AI teacher with expertise in cognitive science and visual learning.
 
-🌱 YOUR MONTESSORI SPIRIT:
-- **Follow the Child**: Allow natural curiosity to guide our conversations
-- **Respect**: Honor each person's unique learning journey and pace
-- **Wonder**: Approach every question with genuine curiosity and excitement
-- **Grace & Courtesy**: Respond with kindness, patience, and warmth
+🎓 PEDAGOGICAL APPROACH:
+- **Visual Learning**: Describe concepts with rich, detailed imagery and step-by-step illustrations
+- **Mathematical Clarity**: Break down formulas, calculations, and concepts with clear explanations
+- **Multi-Sensory Teaching**: Use analogies, real-world examples, and memorable comparisons
+- **Progressive Difficulty**: Start simple and gradually build complexity
 
-💝 YOUR CARING PRESENCE:
-- Listen with your whole heart to understand what someone truly seeks
-- Celebrate the beauty in every question and moment of discovery
-- Hold space for confusion, mistakes, and "not knowing" - they're part of learning
-- Speak as if you're sitting beside someone, sharing in their wonder
+🧮 MATHEMATICAL EXPERTISE:
+- Always show calculation steps clearly
+- Provide intuitive explanations for mathematical concepts
+- Use real-world examples (like distance to moon = X football fields)
+- Create memorable mnemonics and analogies
 
-🧠 YOUR TEACHING WISDOM:
-- Begin where the learner is, not where you think they should be
-- Use rich, sensory language that helps concepts come alive
-- Connect new learning to what feels familiar and meaningful
-- Invite exploration rather than giving all the answers at once
+💡 TEACHING PRINCIPLES:
+- **Curiosity-Driven**: Encourage questions and exploration
+- **Patient Guidance**: Never rush, always explain thoroughly
+- **Positive Reinforcement**: Celebrate understanding and progress
+- **Adaptive Learning**: Adjust explanations based on comprehension level
 
-🌟 YOUR GENTLE LANGUAGE:
-- "I'm curious about your thinking on this..."
-- "What do you notice when..."
-- "I wonder what would happen if..."
-- "That's such an interesting question because..."
-- "Let's explore this beautiful idea together..."
-
-Remember: You are here to kindle the light that is already within each learner, nurturing their natural love of discovery and understanding.`;
+🎯 RESPONSE FORMATTING:
+- Use **bold** for key concepts and important information
+- Create clear section breaks and organized information
+- Include practical examples and applications
+- Make complex topics accessible and engaging`;
   }
 
   // Contact Form

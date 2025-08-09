@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 
 interface RichMessageRendererProps {
   text: string;
@@ -21,8 +21,6 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   compact = false,
   toolResults = [] 
 }) => {
-
-  // Content processing tracking removed - handled by ScribbleboardV2
 
   // 🔍 COMPREHENSIVE FRONTEND IMAGE DEBUGGING
   useEffect(() => {
@@ -98,41 +96,40 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
         hasData: !!result.data
       });
 
-      // Handle ALL visual content - route to scribbleboard instead of chat
+      // Handle math diagrams (specific type)
       const data = normalized?.data || result?.data;
       const message = normalized?.message || result?.message;
-      
-      // Route ALL images and visual content to scribbleboard, NEVER to chat
-      if (data?.image_url) {
-        console.log(`🔍 Routing ALL visual content to scribbleboard for result ${index}`);
-        
-        // Send to scribbleboard - ScribbleboardV2 handles deduplication
-        try {
-          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-            detail: {
-              title: data.title || 'Visual Content',
-              type: 'image',
-              imageUrl: data.image_url,
-              metadata: data
-            }
-          }));
-          console.log(`✅ Dispatched scribble_chart_create for: ${data.title || 'image'}`);
-        } catch (e) {
-          console.warn('Failed to route to scribbleboard:', e);
-        }
-        // Don't add to chat content - return early
-        return;
-      }
-      
-      // Keep non-visual content in chat
       if (data?.type === 'wiki_card') {
         content.push({ type: 'wiki_card', content: data.title || 'Wikipedia', metadata: data });
       } else if (data?.type === 'news_card') {
         content.push({ type: 'news_card', content: 'News', metadata: data });
       } else if (data?.type === 'web_results') {
         content.push({ type: 'web_results', content: 'Web Results', metadata: data });
+      } else if (data?.image_url && data?.diagram_type) {
+        console.log(`🔍 Adding math_diagram for result ${index}`);
+        content.push({
+          type: 'math_diagram',
+          content: data.image_url,
+          metadata: {
+            title: data.title || 'Mathematical Diagram',
+            diagramType: data.diagram_type,
+            style: data.style || 'colorful'
+          }
+        });
       }
-      // NO IMAGES IN CHAT - All images go to scribbleboard (removed this section)
+      // Handle general images (from generate_image tool)
+      else if (data?.image_url) {
+        console.log(`🔍 Adding general image for result ${index}`);
+        content.push({
+          type: 'image',
+          content: data.image_url,
+          metadata: {
+            title: data.title || 'Generated Image',
+            caption: message || 'Image generated successfully',
+            style: data.style || 'default'
+          }
+        });
+      }
       // Handle other successful tool results only if explicitly meant for chat
       else if ((normalized?.success || result?.success) && data && data.displayInChat) {
         console.log(`🔍 Adding tool_result for result ${index} (displayInChat)`);
@@ -159,60 +156,15 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       hasImages: content.some(item => item.type === 'image' || item.type === 'math_diagram')
     });
     
-    // Parse MARKDOWN IMAGES - ROUTE TO SCRIBBLEBOARD, NOT CHAT
-    const markdownImageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-    let markdownMatch;
-    while ((markdownMatch = markdownImageRegex.exec(processedText)) !== null) {
-      const altText = markdownMatch[1];
-      const imageUrl = markdownMatch[2];
-      
-      console.log(`🔍 Found markdown image: ${altText} -> ${imageUrl}`);
-      
-      // Route to scribbleboard - ScribbleboardV2 handles deduplication
-      try {
-        window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-          detail: {
-            title: altText || 'Markdown Image',
-            type: 'image',
-            imageUrl: imageUrl,
-            metadata: { caption: altText, isMarkdownImage: true }
-          }
-        }));
-        console.log(`✅ Dispatched markdown image: ${altText || imageUrl}`);
-      } catch (e) {
-        console.warn('Failed to route markdown image to scribbleboard:', e);
-      }
-      
-      // Remove from chat text - NO placeholder text that could persist
-      processedText = processedText.replace(markdownMatch[0], '');
-    }
-    
-    // Parse IMAGE_GENERATED format - ROUTE TO SCRIBBLEBOARD, NOT CHAT
+    // Parse IMAGE_GENERATED format
     const imageRegex = /IMAGE_GENERATED:([^:]+):(.+)/g;
     let match;
     while ((match = imageRegex.exec(processedText)) !== null) {
-      // 🔧 CRITICAL FIX: Prevent infinite loop for IMAGE_GENERATED format
-      const imageGenKey = `image_gen_${match[1]}_${match[2]}`;
-      if (!processedContentRef.current.has(imageGenKey)) {
-        processedContentRef.current.add(imageGenKey);
-        
-        // Route to scribbleboard instead of adding to chat - ONLY ONCE
-        try {
-          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-            detail: {
-              title: match[2] || 'Generated Image',
-              type: 'image',
-              imageUrl: match[1], // base64 data URL
-              metadata: { caption: match[2] }
-            }
-          }));
-          console.log(`✅ Successfully dispatched IMAGE_GENERATED: ${imageGenKey}`);
-        } catch (e) {
-          console.warn('Failed to route IMAGE_GENERATED to scribbleboard:', e);
-        }
-      } else {
-        console.log(`⚠️ Skipping already processed IMAGE_GENERATED: ${imageGenKey}`);
-      }
+      content.push({
+        type: 'image',
+        content: match[1], // base64 data URL
+        metadata: { caption: match[2] }
+      });
       processedText = processedText.replace(match[0], '');
     }
     
@@ -274,8 +226,8 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             <a href={metadata.canonical_url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}>Read on Wikipedia</a>
           )}
           <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
-            onClick={() => window.dispatchEvent(new CustomEvent('scribble_open', { detail: { template: 'mindMap' } }))}
-          >Add to Canvas</button>
+            onClick={() => window.dispatchEvent(new CustomEvent('openScribbleModule', { detail: { template: 'mindMap' } }))}
+          >Add to Mindmap</button>
         </div>
       </div>
     );
@@ -333,7 +285,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
             onClick={() => window.dispatchEvent(new CustomEvent('triggerAISearch', { detail: { query: 'Search videos for this topic' } }))}
           >Videos</button>
           <button className={`inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs sm:text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/5 text-gray-800 hover:bg-black/10'}`}
-            onClick={() => window.dispatchEvent(new CustomEvent('scribble_open', { detail: { template: 'projectPlan' } }))}
+            onClick={() => window.dispatchEvent(new CustomEvent('openScribbleModule', { detail: { template: 'projectPlan' } }))}
           >Plan this</button>
         </div>
       </div>
@@ -384,14 +336,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
 
     const handleOpenCanvas = () => {
       try {
-        const event = new CustomEvent('scribble_chart_create', { 
-          detail: { 
-            title: metadata.title || 'Diagram', 
-            type: 'image',
-            imageUrl: content,
-            metadata 
-          } 
-        });
+        const event = new CustomEvent('openScribbleModule', { detail: { items: [{ type: 'chart', title: metadata.title || 'Diagram', content, metadata }] } });
         window.dispatchEvent(event);
       } catch {}
     };
@@ -467,14 +412,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     };
     const handleOpenCanvas = () => {
       try {
-        const event = new CustomEvent('scribble_chart_create', { 
-          detail: { 
-            title: metadata.title || 'Image', 
-            type: 'image',
-            imageUrl: content,
-            metadata 
-          } 
-        });
+        const event = new CustomEvent('openScribbleModule', { detail: { items: [{ type: 'image', title: metadata.title || 'Image', content, metadata }] } });
         window.dispatchEvent(event);
       } catch {}
     };
@@ -784,9 +722,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
           case 'math_diagram':
             return <div key={index}>{renderMathDiagram(item.content, item.metadata)}</div>;
           case 'image':
-            // Images should never render in chat - this case should not happen
-            console.warn('Image rendering in chat - this should not happen!');
-            return null;
+            return <div key={index}>{renderImage(item.content, item.metadata)}</div>;
           case 'formula':
             return <div key={index}>{renderFormula(item.content, item.metadata)}</div>;
           case 'table':
