@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 type OverlayMode = 'compact' | 'default' | 'fullscreen';
-type OverlayAnchor = 'center' | 'top';
+type OverlayAnchor = 'center' | 'top' | 'bottom-left' | 'bottom-right';
 
 interface OverlayProps {
   open: boolean;
@@ -12,10 +12,11 @@ interface OverlayProps {
   anchor?: OverlayAnchor; // where to attach in non-fullscreen
   closeOnBackdrop?: boolean; // allow backdrop to close in non-fullscreen
   anchorSelector?: string; // CSS selector to anchor to a specific element (compact/default only)
+  zIndex?: number; // z-index for overlay root
   children: React.ReactNode;
 }
 
-const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default', anchor = 'center', closeOnBackdrop = true, anchorSelector, children }) => {
+const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default', anchor = 'center', closeOnBackdrop = false, anchorSelector, zIndex = 10000, children }) => {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -24,14 +25,14 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
   }, [open, onClose]);
 
-  const [anchorRect, setAnchorRect] = React.useState<{ top: number; left: number; width: number } | null>(null);
+  const [anchorRect, setAnchorRect] = React.useState<{ top: number; left: number; width: number; bottom: number } | null>(null);
   useEffect(() => {
     if (!open || !anchorSelector || mode === 'fullscreen') { setAnchorRect(null); return; }
     const compute = () => {
       const el = document.querySelector(anchorSelector) as HTMLElement | null;
       if (!el) { setAnchorRect(null); return; }
       const rect = el.getBoundingClientRect();
-      setAnchorRect({ top: rect.top + window.scrollY, left: rect.left + window.scrollX, width: rect.width });
+      setAnchorRect({ top: rect.top + window.scrollY, left: rect.left + window.scrollX, width: rect.width, bottom: rect.bottom + window.scrollY });
     };
     // compute now and on next frames to catch layout changes
     compute();
@@ -69,7 +70,7 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[1000]" initial="hidden" animate="visible" exit="exit" variants={backdropVariants}>
+        <motion.div className="fixed inset-0" style={{ zIndex }} initial="hidden" animate="visible" exit="exit" variants={backdropVariants}>
           <div
             className="absolute inset-0 backdrop-blur-sm bg-black/20 dark:bg-black/40"
             onClick={() => {
@@ -79,7 +80,7 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
           />
 
           {mode === 'fullscreen' ? (
-            <motion.div className="relative w-full h-full pointer-events-auto" variants={panelVariants.fullscreen}>
+            <motion.div className="relative w-full h-full pointer-events-auto" variants={panelVariants.fullscreen} onMouseDown={(e)=>e.stopPropagation()}>
               <div className="w-full h-full flex flex-col">
                 <motion.div
                   className="flex items-center justify-between px-4 py-3 border-b bg-white/80 dark:bg-black/60 border-black/10 dark:border-white/10"
@@ -97,12 +98,18 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
             <div className={`absolute inset-0 ${anchorRect ? '' : `flex ${anchor === 'top' ? 'items-start' : 'items-center'} justify-center`} pointer-events-none`}>
               <motion.div
                 className={`pointer-events-auto`}
-                style={anchorRect ? { position: 'fixed', top: anchorRect.top, left: anchorRect.left, width: Math.min(anchorRect.width, 640) } : {}}
-                initial={panelVariants[mode].hidden}
-                animate={panelVariants[mode].visible}
-                exit={panelVariants[mode].exit}
+                style={anchorRect ? (
+                  anchor === 'bottom-left'
+                    ? { position: 'fixed', left: anchorRect.left, bottom: Math.max(0, window.innerHeight - anchorRect.bottom), width: Math.min(anchorRect.width, 480) }
+                    : anchor === 'bottom-right'
+                      ? { position: 'fixed', right: Math.max(0, window.innerWidth - (anchorRect.left + anchorRect.width)), bottom: Math.max(0, window.innerHeight - anchorRect.bottom), width: Math.min(anchorRect.width, 480) }
+                      : { position: 'fixed', top: anchorRect.top, left: anchorRect.left, width: Math.min(anchorRect.width, 640) }
+                ) : {}}
+                initial={(anchor === 'bottom-left' || anchor === 'bottom-right') ? { opacity: 0, y: 16, scale: 0.98 } : panelVariants[mode].hidden}
+                animate={(anchor === 'bottom-left' || anchor === 'bottom-right') ? { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 24 } } : panelVariants[mode].visible}
+                exit={(anchor === 'bottom-left' || anchor === 'bottom-right') ? { opacity: 0, y: 16, scale: 0.98, transition: { duration: 0.15 } } : panelVariants[mode].exit}
               >
-                <div className={`rounded-xl border backdrop-blur-md shadow-2xl ${mode === 'compact' ? 'p-2' : 'p-4'} ${!anchorRect ? (anchor === 'top' ? 'mt-2' : 'mt-6') : ''} bg-white/80 dark:bg-black/60 border-black/10 dark:border-white/10`}>
+                <div className={`rounded-xl border backdrop-blur-md shadow-2xl ${mode === 'compact' ? 'p-2' : 'p-4'} ${!anchorRect ? (anchor === 'top' ? 'mt-2' : 'mt-6') : ''} bg-white/90 border-black/10`}> 
                   <div className={`flex items-center justify-between ${mode==='fullscreen' ? 'pb-2 border-b border-white/10' : 'pb-2'}`}>
                     <div className={`font-medium ${mode==='compact' ? 'text-sm' : 'text-base'}`}>{title}</div>
                     <button onClick={onClose} className={`p-1 rounded-md ${mode==='compact' ? 'text-sm' : 'text-base'} text-gray-600 dark:text-gray-300 hover:opacity-80`} aria-label="Close">✕</button>

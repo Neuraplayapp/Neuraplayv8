@@ -3330,9 +3330,10 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 open={isScribbleboardOpen}
                 onClose={() => setIsScribbleboardOpen(false)}
                 mode={isFullscreen ? 'fullscreen' : 'compact'}
-                anchor={isFullscreen ? 'center' : 'top'}
-                closeOnBackdrop={isFullscreen ? false : true}
+                anchor={isFullscreen ? 'center' : 'bottom-right'}
+                closeOnBackdrop={false}
                 anchorSelector={!isFullscreen ? '#assistant-chatbox-anchor' : undefined}
+                zIndex={10000}
                 title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
             >
                 {/* @ts-ignore */}
