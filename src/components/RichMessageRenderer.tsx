@@ -157,6 +157,33 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       hasImages: content.some(item => item.type === 'image' || item.type === 'math_diagram')
     });
     
+    // Parse MARKDOWN IMAGES - ROUTE TO SCRIBBLEBOARD, NOT CHAT
+    const markdownImageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    let markdownMatch;
+    while ((markdownMatch = markdownImageRegex.exec(processedText)) !== null) {
+      const altText = markdownMatch[1];
+      const imageUrl = markdownMatch[2];
+      
+      console.log(`🔍 Found markdown image: ${altText} -> ${imageUrl}`);
+      
+      // Route to scribbleboard instead of displaying in chat
+      try {
+        window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+          detail: {
+            title: altText || 'Image',
+            type: 'image',
+            imageUrl: imageUrl,
+            metadata: { caption: altText, isMarkdownImage: true }
+          }
+        }));
+      } catch (e) {
+        console.warn('Failed to route markdown image to scribbleboard:', e);
+      }
+      
+      // Remove from chat text and add placeholder
+      processedText = processedText.replace(markdownMatch[0], `✨ *${altText || 'Image'} moved to canvas*`);
+    }
+    
     // Parse IMAGE_GENERATED format - ROUTE TO SCRIBBLEBOARD, NOT CHAT
     const imageRegex = /IMAGE_GENERATED:([^:]+):(.+)/g;
     let match;
