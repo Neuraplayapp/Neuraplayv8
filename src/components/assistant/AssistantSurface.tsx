@@ -17,6 +17,124 @@ interface AssistantSurfaceProps {
   chatContent?: React.ReactNode; // New prop for chat content
 }
 
+// Smart content snippets component for compact mode
+interface CompactChatSnippetsProps {
+  chatContent: React.ReactNode;
+}
+
+const CompactChatSnippets: React.FC<CompactChatSnippetsProps> = ({ chatContent }) => {
+  // Extract and process chat messages for compact display
+  const processMessages = () => {
+    // If chatContent is a React element, we need to extract meaningful info
+    // For now, we'll create a smart display that shows key highlights
+    
+    return (
+      <div className="w-full h-full p-3 overflow-hidden">
+        {/* Recent activity header */}
+        <motion.div 
+          className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200/50"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+          <span className="text-xs font-medium text-gray-600">Recent Activity</span>
+        </motion.div>
+
+        {/* Chat content container with smart truncation */}
+        <div className="space-y-2 h-[calc(100%-2rem)] overflow-y-auto">
+          {/* Smart wrapper that limits content and adds "expand" hint */}
+          <div className="relative">
+            <div 
+              className="max-h-[120px] overflow-hidden relative"
+              style={{
+                maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)'
+              }}
+            >
+              {/* Render the actual chat content but constrained */}
+              <div className="text-sm">
+                {chatContent}
+              </div>
+            </div>
+            
+            {/* Expand indicator */}
+            <motion.div 
+              className="absolute bottom-0 right-0 left-0 flex justify-center py-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  // Trigger fullscreen mode
+                  window.dispatchEvent(new CustomEvent('scribble_open', { 
+                    detail: { mode: 'fullscreen' } 
+                  }));
+                }}
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-200/60 text-xs text-gray-600 hover:bg-white/90 transition-all"
+              >
+                <motion.div
+                  animate={{ y: [0, -2, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  ⬆️
+                </motion.div>
+                <span>Tap to expand</span>
+              </motion.button>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Quick action buttons */}
+        <motion.div 
+          className="absolute bottom-3 left-3 right-3 flex gap-2"
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+                detail: { 
+                  title: 'Quick Chart', 
+                  type: 'bar', 
+                  scenario: 'performance'
+                }
+              }));
+            }}
+            className="flex-1 px-3 py-2 text-xs bg-blue-500/10 text-blue-700 rounded-lg border border-blue-200/50 font-medium hover:bg-blue-500/20 transition-colors"
+          >
+            📊 Create Chart
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('scribble_hypothesis_test', {
+                detail: { 
+                  prompt: 'Quick hypothesis test',
+                  scenarioA: 'Option A analysis',
+                  scenarioB: 'Option B analysis'
+                }
+              }));
+            }}
+            className="flex-1 px-3 py-2 text-xs bg-purple-500/10 text-purple-700 rounded-lg border border-purple-200/50 font-medium hover:bg-purple-500/20 transition-colors"
+          >
+            🧪 Test Idea
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  };
+
+  return <>{processMessages()}</>;
+};
+
 // Unified assistant surface: white canvas + sliding text editor panel with enhanced scribbleboard UX
 const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference = 'auto', onScribbleClose, chatContent }) => {
   const [showVisual, setShowVisual] = useState(preference === 'visual');
@@ -80,25 +198,143 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
     if (preference === 'visual') setShowVisual(true);
   }, [preference]);
 
-  // Compact mode - renders the chat interface with optional canvas modal
+  // Compact mode - modern glass-morphic assistant with beautiful animations
   if (compact) {
     return (
-      <div className="relative w-full h-[33vh] min-h-[280px] sm:min-h-[320px] bg-white text-gray-900">
-        {/* Main chat interface */}
-        <div className="absolute inset-0 overflow-hidden">
-          {chatContent ? (
-            <div className="w-full h-full">
-              {chatContent}
-            </div>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
-              <div className="text-center p-4">
-                <div className="text-lg mb-2">💬</div>
-                <div>Start a conversation</div>
-                <div className="text-xs mt-1 text-gray-400">Ask AI anything to begin</div>
+      <AnimatePresence mode="wait">
+        <motion.div 
+        className="relative w-full h-[33vh] min-h-[280px] sm:min-h-[320px] overflow-hidden"
+        initial={{ y: '-100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: '-100%', opacity: 0 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 300, 
+          damping: 30,
+          opacity: { duration: 0.3 }
+        }}
+      >
+        {/* Modern glass container with top accent border */}
+        <div className="relative w-full h-full bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl overflow-hidden">
+          {/* Animated top accent border */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse"></div>
+          
+          {/* Header with AI status indicator */}
+          <motion.div 
+            className="relative p-4 border-b border-white/20 bg-white/40 backdrop-blur-sm"
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Animated AI orb */}
+                <div className="relative">
+                  <motion.div 
+                    className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg"
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 180, 360]
+                    }}
+                    transition={{ 
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  <motion.div 
+                    className="absolute inset-0 w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 opacity-40"
+                    animate={{ 
+                      scale: [1, 1.3, 1],
+                      opacity: [0.4, 0.1, 0.4]
+                    }}
+                    transition={{ 
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </div>
+                <div>
+                  <div className="font-bold text-gray-800 text-sm tracking-wide">AI Assistant</div>
+                  <motion.div 
+                    className="text-xs text-gray-600 -mt-0.5"
+                    animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    Ready to help
+                  </motion.div>
+                </div>
+              </div>
+              
+              {/* Status indicators */}
+              <div className="flex items-center gap-2">
+                <motion.div 
+                  className="w-2 h-2 rounded-full bg-green-500"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <span className="text-xs text-gray-600 font-medium">Online</span>
               </div>
             </div>
-          )}
+          </motion.div>
+
+          {/* Main chat interface with smooth animations */}
+          <motion.div 
+            className="absolute inset-x-0 bottom-0 top-16 overflow-hidden"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.5, ease: "easeOut" }}
+          >
+            {chatContent ? (
+              <CompactChatSnippets chatContent={chatContent} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <motion.div 
+                  className="text-center p-6"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                >
+                  <motion.div 
+                    className="text-3xl mb-3"
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 5, -5, 0]
+                    }}
+                    transition={{ 
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    💬
+                  </motion.div>
+                  <div className="font-medium text-gray-700 mb-2">Start a conversation</div>
+                  <div className="text-xs text-gray-500">Ask AI anything to begin your journey</div>
+                  
+                  {/* Quick action hints */}
+                  <motion.div 
+                    className="mt-4 flex flex-wrap gap-2 justify-center"
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.8, duration: 0.5 }}
+                  >
+                    {['Create chart', 'Analyze data', 'Ask question'].map((hint, i) => (
+                      <motion.span 
+                        key={hint}
+                        className="px-3 py-1 text-xs bg-white/60 text-gray-600 rounded-full border border-white/40"
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.8)' }}
+                        transition={{ delay: 0.9 + i * 0.1 }}
+                      >
+                        {hint}
+                      </motion.span>
+                    ))}
+                  </motion.div>
+                </motion.div>
+              </div>
+            )}
+          </motion.div>
         </div>
         
         {/* Canvas modal that slides down from top when activated */}
@@ -159,7 +395,8 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
