@@ -463,16 +463,38 @@ const TOOL_ROUTING_CONFIG = {
     'accessibility_support': {
       reason: 'Requires CSS/DOM manipulation and browser APIs',
       requires: ['dom_manipulation', 'css_changes', 'browser_api']
-    }
+    },
+    // Assistant surface client tools
+    'scribble_open': { reason: 'Open assistant visual surface', requires: ['ui_manipulation'] },
+    'scribble_editor_insert': { reason: 'Insert text into editor', requires: ['ui_manipulation'] },
+    'scribble_editor_erase': { reason: 'Erase text in editor', requires: ['ui_manipulation'] },
+    'scribble_editor_replace': { reason: 'Replace text in editor', requires: ['ui_manipulation'] },
+    'scribble_editor_normalize': { reason: 'Normalize text content', requires: ['ui_manipulation'] },
+    'scribble_editor_scaffold_hypothesis': { reason: 'Scaffold hypothesis template', requires: ['ui_manipulation'] },
+    'scribble_parallel_thought': { reason: 'Start A/B parallel thought', requires: ['ui_manipulation'] },
+    'scribble_hypothesis_test': { reason: 'Add hypothesis card', requires: ['ui_manipulation'] },
+    'scribble_hypothesis_result': { reason: 'Update hypothesis result', requires: ['ui_manipulation'] },
+    'scribble_hypothesis_branch_combine': { reason: 'Combine branches', requires: ['ui_manipulation'] },
+    'scribble_hypothesis_branch_prune': { reason: 'Prune branches', requires: ['ui_manipulation'] },
+    'scribble_board_new': { reason: 'Create new board', requires: ['ui_manipulation'] },
+    'scribble_board_switch': { reason: 'Switch active board', requires: ['ui_manipulation'] },
+    'scribble_board_rename': { reason: 'Rename board', requires: ['ui_manipulation'] },
+    'scribble_board_delete': { reason: 'Delete board', requires: ['ui_manipulation'] },
+    'scribble_mutating_create': { reason: 'Create mutating node', requires: ['ui_manipulation'] },
+    'scribble_mutating_evolve': { reason: 'Evolve mutating node', requires: ['ui_manipulation'] },
+    'scribble_mutating_compare': { reason: 'Compare versions', requires: ['ui_manipulation'] },
+    'scribble_graph_add_node': { reason: 'Add graph node', requires: ['ui_manipulation'] },
+    'scribble_graph_add_edge': { reason: 'Add graph edge', requires: ['ui_manipulation'] },
+    'scribble_graph_layout': { reason: 'Layout graph', requires: ['ui_manipulation'] },
+    'scribble_graph_focus': { reason: 'Focus graph node', requires: ['ui_manipulation'] },
+    'scribble_graph_export': { reason: 'Export graph', requires: ['ui_manipulation'] },
+    'scribble_chart_create': { reason: 'Create chart on board', requires: ['ui_manipulation'] }
   }
 };
 
 // Extract server-side tool names for quick lookup
 const SERVER_SIDE_TOOLS = Object.keys(TOOL_ROUTING_CONFIG.server);
-const CLIENT_SIDE_TOOLS = [
-  'navigate_to_page','update_settings','recommend_game','accessibility_support',
-  'scribble_chart_create'
-];
+const CLIENT_SIDE_TOOLS = Object.keys(TOOL_ROUTING_CONFIG.client);
 
 // Tool execution functions (SERVER-SIDE ONLY)
 async function executeTool(toolCall) {

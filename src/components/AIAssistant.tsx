@@ -11,6 +11,8 @@ import { useConversation as useGlobalConversation, type Message } from '../conte
 import { base64ToBinary } from '../utils/videoUtils';
 
 import RichMessageRenderer from './RichMessageRenderer';
+// Unified assistant surface (text + visual)
+import AssistantSurface from './assistant/AssistantSurface';
 import ScribbleModule from './ScribbleModule';
 import Overlay from './Overlay';
 // @ts-ignore
@@ -3314,7 +3316,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
             >
                 {/* @ts-ignore */}
-                <(await import('./assistant/AssistantSurface')).default compact={!isFullscreen} />
+                <AssistantSurface compact={!isFullscreen} />
             </Overlay>
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 
