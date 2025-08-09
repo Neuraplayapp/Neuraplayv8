@@ -30,10 +30,10 @@ const AIAssistant: React.FC = () => {
         clearConversation,
         getActiveConversation
     } = useGlobalConversation();
-    
+
     const { user, canUseAI, recordAIUsage } = useUser();
     const { theme } = useTheme();
-    
+
     // Event listeners for scribbleboard
     useEffect(() => {
         const openBoard = () => setIsScribbleboardOpen(true);
@@ -52,30 +52,30 @@ const AIAssistant: React.FC = () => {
         setInputMessage('');
         setMode('loading');
         setIsLoading(true);
-        
+
         // Add user message
-        addMessage(activeConversation, {
+            addMessage(activeConversation, { 
             text: userMessage,
             isUser: true,
-            timestamp: new Date()
-        });
+                timestamp: new Date() 
+            });
         
         try {
             // Check usage limits
-            const aiUsage = canUseAI();
-            if (!aiUsage.allowed) {
+        const aiUsage = canUseAI();
+        if (!aiUsage.allowed) {
                 throw new Error(`AI usage limit reached (${aiUsage.limit} prompts/day)`);
             }
             
             // Get conversation context
             const conversation = getActiveConversation();
-            const context = {
+        const context = {
                 conversationHistory: conversation.messages.map(msg => ({
-                    role: msg.isUser ? 'user' : 'assistant',
+                role: msg.isUser ? 'user' : 'assistant',
                     content: msg.text
-                }))
-            };
-            
+            }))
+        };
+
             console.log('🤖 Sending to AI:', { userMessage, contextLength: context.conversationHistory.length });
             
             // Call AI service with tool calling
@@ -86,27 +86,27 @@ const AIAssistant: React.FC = () => {
             // Add AI response
             addMessage(activeConversation, {
                 text: response.textResponse || 'I received your message but had trouble responding.',
-                isUser: false,
-                timestamp: new Date(),
+                                        isUser: false,
+                                        timestamp: new Date(),
                 toolResults: response.toolResults || []
             });
             
             // Record usage
             recordAIUsage();
             
-        } catch (error: any) {
+                 } catch (error: any) {
             console.error('❌ AI Error:', error);
             
             // User-friendly error message
             const errorText = error.message?.includes('limit') 
                 ? error.message 
                 : 'Sorry, I encountered an error. Please try again.';
-                
-            addMessage(activeConversation, {
+                    
+                addMessage(activeConversation, {
                 text: `❌ ${errorText}`,
-                isUser: false,
-                timestamp: new Date()
-            });
+                    isUser: false,
+                    timestamp: new Date()
+                });
         } finally {
             setIsLoading(false);
             setMode('idle');
@@ -137,13 +137,13 @@ const AIAssistant: React.FC = () => {
     return (
         <>
             {/* AI Assistant Toggle Button */}
-            <button
+                                <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="fixed bottom-4 right-4 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center"
                 aria-label="Toggle AI Assistant"
             >
                 <Send className="w-6 h-6" />
-            </button>
+                                </button>
 
             {/* Compact Chat Window */}
             {isOpen && !isScribbleboardOpen && (
@@ -151,7 +151,7 @@ const AIAssistant: React.FC = () => {
                     {/* Header */}
                     <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
                         <h3 className="font-semibold text-gray-800 dark:text-white">Synapse AI</h3>
-                        <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2">
                             <button
                                 onClick={clearCurrentConversation}
                                 className="p-1 text-gray-500 hover:text-red-600 transition-colors"
@@ -168,14 +168,14 @@ const AIAssistant: React.FC = () => {
                                     <AlertTriangle className="w-4 h-4" />
                                 </button>
                             )}
-                            <button
+                                    <button
                                 onClick={() => setIsScribbleboardOpen(true)}
                                 className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                             >
                                 Workspace
-                            </button>
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -187,25 +187,25 @@ const AIAssistant: React.FC = () => {
                             </div>
                         ) : (
                             currentMessages.map((msg, index) => (
-                                <RichMessageRenderer
+                                                <RichMessageRenderer 
                                     key={index}
-                                    text={msg.text}
-                                    isUser={msg.isUser}
-                                    isDarkMode={theme.isDarkMode}
+                                                    text={msg.text} 
+                                                    isUser={msg.isUser}
+                                                    isDarkMode={theme.isDarkMode}
                                     compact={true}
                                     toolResults={msg.toolResults}
                                 />
                             ))
                         )}
-                    </div>
+                                        </div>
 
                     {/* Input */}
                     <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={inputMessage}
-                                onChange={(e) => setInputMessage(e.target.value)}
+                                    <div className="flex items-center gap-2">
+                                    <input 
+                                        type="text"
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder={isLoading ? "Thinking..." : "Ask Synapse anything..."}
                                 disabled={isLoading}
@@ -223,8 +223,8 @@ const AIAssistant: React.FC = () => {
                                 )}
                             </button>
                         </div>
-                    </div>
-                </div>
+                                    </div>
+                                </div>
             )}
 
             {/* Fullscreen Workspace Overlay */}
@@ -283,18 +283,18 @@ const AIAssistant: React.FC = () => {
                                     </div>
                                 ) : (
                                     currentMessages.map((msg, index) => (
-                                        <RichMessageRenderer
+                                                        <RichMessageRenderer 
                                             key={index}
-                                            text={msg.text}
-                                            isUser={msg.isUser}
+                                                            text={msg.text} 
+                                                            isUser={msg.isUser}
                                             isDarkMode={theme.isDarkMode}
-                                            compact={false}
+                                                            compact={false}
                                             toolResults={msg.toolResults}
                                         />
                                     ))
                                 )}
                             </div>
-
+                            
                             {/* Input Area */}
                             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                                 <div className="flex items-center gap-3">
@@ -319,7 +319,7 @@ const AIAssistant: React.FC = () => {
                                             </>
                                         ) : (
                                             <>
-                                                <Send className="w-4 h-4" />
+                                        <Send className="w-4 h-4" />
                                                 <span>Send</span>
                                             </>
                                         )}

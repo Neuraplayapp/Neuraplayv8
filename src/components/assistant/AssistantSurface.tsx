@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import TextWorkbench from '../editor/TextWorkbench';
 // @ts-ignore
-import Scribbleboard from '../scribbleboard/Scribbleboard';
+import Scribbleboard from '../scribbleboard/ScribbleboardV2';
 import { X, Maximize2, Minimize2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
