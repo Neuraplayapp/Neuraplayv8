@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface RichMessageRendererProps {
   text: string;
@@ -21,6 +21,16 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   compact = false,
   toolResults = [] 
 }) => {
+
+  // 🔧 CRITICAL FIX: Track processed content to prevent infinite loops
+  const processedContentRef = useRef(new Set<string>());
+
+  // Clear processed content on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      processedContentRef.current.clear();
+    };
+  }, []);
 
   // 🔍 COMPREHENSIVE FRONTEND IMAGE DEBUGGING
   useEffect(() => {
@@ -103,20 +113,28 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       // Route ALL images and visual content to scribbleboard, NEVER to chat
       if (data?.image_url) {
         console.log(`🔍 Routing ALL visual content to scribbleboard for result ${index}`);
-        // Send to scribbleboard instead of chat
-        try {
-          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-            detail: {
-              title: data.title || 'Visual Content',
-              type: 'image',
-              imageUrl: data.image_url,
-              metadata: data
-            }
-          }));
+        
+        // 🔧 CRITICAL FIX: Prevent infinite loop by tracking processed content
+        const contentKey = `${data.image_url}_${data.title || 'image'}_${index}`;
+        if (!processedContentRef.current.has(contentKey)) {
+          processedContentRef.current.add(contentKey);
           
-          // Don't auto-open scribbleboard - only open on button press or detection
-        } catch (e) {
-          console.warn('Failed to route to scribbleboard:', e);
+          // Send to scribbleboard instead of chat - ONLY ONCE
+          try {
+            window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+              detail: {
+                title: data.title || 'Visual Content',
+                type: 'image',
+                imageUrl: data.image_url,
+                metadata: data
+              }
+            }));
+            console.log(`✅ Successfully dispatched scribble_chart_create for: ${contentKey}`);
+          } catch (e) {
+            console.warn('Failed to route to scribbleboard:', e);
+          }
+        } else {
+          console.log(`⚠️ Skipping already processed content: ${contentKey}`);
         }
         // Don't add to chat content - return early
         return;
@@ -166,18 +184,27 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       
       console.log(`🔍 Found markdown image: ${altText} -> ${imageUrl}`);
       
-      // Route to scribbleboard instead of displaying in chat
-      try {
-        window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-          detail: {
-            title: altText || 'Image',
-            type: 'image',
-            imageUrl: imageUrl,
-            metadata: { caption: altText, isMarkdownImage: true }
-          }
-        }));
-      } catch (e) {
-        console.warn('Failed to route markdown image to scribbleboard:', e);
+      // 🔧 CRITICAL FIX: Prevent infinite loop for markdown images
+      const markdownKey = `markdown_${imageUrl}_${altText}`;
+      if (!processedContentRef.current.has(markdownKey)) {
+        processedContentRef.current.add(markdownKey);
+        
+        // Route to scribbleboard instead of displaying in chat - ONLY ONCE
+        try {
+          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+            detail: {
+              title: altText || 'Image',
+              type: 'image',
+              imageUrl: imageUrl,
+              metadata: { caption: altText, isMarkdownImage: true }
+            }
+          }));
+          console.log(`✅ Successfully dispatched markdown image: ${markdownKey}`);
+        } catch (e) {
+          console.warn('Failed to route markdown image to scribbleboard:', e);
+        }
+      } else {
+        console.log(`⚠️ Skipping already processed markdown image: ${markdownKey}`);
       }
       
       // Remove from chat text - NO placeholder text that could persist
@@ -188,20 +215,27 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
     const imageRegex = /IMAGE_GENERATED:([^:]+):(.+)/g;
     let match;
     while ((match = imageRegex.exec(processedText)) !== null) {
-      // Route to scribbleboard instead of adding to chat
-      try {
-        window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-          detail: {
-            title: match[2] || 'Generated Image',
-            type: 'image',
-            imageUrl: match[1], // base64 data URL
-            metadata: { caption: match[2] }
-          }
-        }));
+      // 🔧 CRITICAL FIX: Prevent infinite loop for IMAGE_GENERATED format
+      const imageGenKey = `image_gen_${match[1]}_${match[2]}`;
+      if (!processedContentRef.current.has(imageGenKey)) {
+        processedContentRef.current.add(imageGenKey);
         
-        // Don't auto-open scribbleboard for parsed images
-      } catch (e) {
-        console.warn('Failed to route IMAGE_GENERATED to scribbleboard:', e);
+        // Route to scribbleboard instead of adding to chat - ONLY ONCE
+        try {
+          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+            detail: {
+              title: match[2] || 'Generated Image',
+              type: 'image',
+              imageUrl: match[1], // base64 data URL
+              metadata: { caption: match[2] }
+            }
+          }));
+          console.log(`✅ Successfully dispatched IMAGE_GENERATED: ${imageGenKey}`);
+        } catch (e) {
+          console.warn('Failed to route IMAGE_GENERATED to scribbleboard:', e);
+        }
+      } else {
+        console.log(`⚠️ Skipping already processed IMAGE_GENERATED: ${imageGenKey}`);
       }
       processedText = processedText.replace(match[0], '');
     }
