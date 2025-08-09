@@ -18,7 +18,7 @@ export class ToolExecutorService {
   private navigationService: NavigationService;
 
   constructor() {
-    this.navigationService = new NavigationService();
+    this.navigationService = NavigationService.getInstance();
   }
 
   public static getInstance(): ToolExecutorService {
@@ -80,105 +80,48 @@ export class ToolExecutorService {
 
         case 'open_canvas_mindmap':
           return await this.handleOpenCanvasMindmap(toolCall.parameters, context);
-        // Scribbleboard tools
-        case 'scribble_hypothesis_test': {
-          // Ensure board opens and editor is scaffolded before posting the test
-          try {
-            window.dispatchEvent(new CustomEvent('scribble_open', { detail: { mode: 'compact' } }));
-            window.dispatchEvent(new CustomEvent('scribble_editor_scaffold_hypothesis', { detail: { a: 'Hypothesis A: ...', b: 'Hypothesis B: ...' } }));
-            window.dispatchEvent(new CustomEvent('scribble_hypothesis_test', { detail: toolCall.parameters }));
-            return { success: true, message: '🧪 Hypothesis tester opened and editor scaffolded' };
-          } catch (e) {
-            return { success: false, message: `Failed to open hypothesis tester: ${e instanceof Error ? e.message : 'Unknown error'}` };
-          }
-        }
+        // Scribbleboard tools removed — return neutral responses
+        case 'scribble_hypothesis_test':
         case 'scribble_hypothesis_result':
-          return this.dispatch('scribble_hypothesis_result', toolCall.parameters, '✅ Hypothesis result posted');
         case 'scribble_autoagent_toggle':
-          return this.dispatch('scribble_autoagent_toggle', toolCall.parameters, '🤖 AutoAgent toggled');
         case 'scribble_autoagent_suggest':
-          return this.dispatch('scribble_autoagent_suggest', toolCall.parameters, '💡 Suggestions added');
-        case 'scribble_parallel_thought': {
-          try {
-            window.dispatchEvent(new CustomEvent('scribble_open', { detail: { mode: 'compact' } }));
-            window.dispatchEvent(new CustomEvent('scribble_parallel_thought', { detail: toolCall.parameters }));
-            return { success: true, message: '🧭 Parallel thought started' };
-          } catch (e) {
-            return { success: false, message: `Failed to start parallel thought: ${e instanceof Error ? e.message : 'Unknown error'}` };
-          }
-        }
+        case 'scribble_parallel_thought':
         case 'scribble_editor_insert':
-          return this.dispatch('scribble_editor_insert', toolCall.parameters, '✍️ Inserted into editor');
         case 'scribble_editor_erase':
-          return this.dispatch('scribble_editor_erase', toolCall.parameters, '🧽 Erased from editor');
         case 'scribble_editor_replace':
-          return this.dispatch('scribble_editor_replace', toolCall.parameters, '🔁 Replaced in editor');
         case 'scribble_editor_normalize':
-          return this.dispatch('scribble_editor_normalize', toolCall.parameters, '🧹 Normalized editor content');
         case 'scribble_editor_send_to_board':
-          return this.dispatch('scribble_add_note', toolCall.parameters, '📌 Sent to board');
         case 'scribble_open':
-          return this.dispatch('scribble_open', toolCall.parameters, '🗂️ Opened Scribbleboard');
         case 'scribble_editor_scaffold_hypothesis':
-          return this.dispatch('scribble_editor_scaffold_hypothesis', toolCall.parameters, '🧪 Editor scaffolded for hypothesis');
-        // Boards
         case 'scribble_board_new':
-          return this.dispatch('scribble_board_new', toolCall.parameters, '🆕 Board created');
         case 'scribble_board_switch':
-          return this.dispatch('scribble_board_switch', toolCall.parameters, '🔁 Switched board');
         case 'scribble_board_rename':
-          return this.dispatch('scribble_board_rename', toolCall.parameters, '✏️ Board renamed');
         case 'scribble_board_delete':
-          return this.dispatch('scribble_board_delete', toolCall.parameters, '🗑️ Board deleted');
-        // Hypothesis branching
         case 'scribble_hypothesis_branch_combine':
-          return this.dispatch('scribble_hypothesis_branch_combine', toolCall.parameters, '🔗 Branches combined');
         case 'scribble_hypothesis_branch_prune':
-          return this.dispatch('scribble_hypothesis_branch_prune', toolCall.parameters, '✂️ Branch pruned');
-        // Mutating node
         case 'scribble_mutating_create':
-          return this.dispatch('scribble_mutating_create', toolCall.parameters, '🧬 Mutating node created');
         case 'scribble_mutating_evolve':
-          return this.dispatch('scribble_mutating_evolve', toolCall.parameters, '🔁 Node evolved');
         case 'scribble_mutating_compare':
-          return this.dispatch('scribble_mutating_compare', toolCall.parameters, '🧪 Compare versions');
-        case 'scribble_mutating_evolve_feedback': {
-          try {
-            // For now, synthesize an evolved content note and call evolve under the hood
-            const { id, feedback, goal, constraints } = toolCall.parameters || {};
-            const summary = `Feedback: ${feedback || 'n/a'}\nGoal: ${goal || 'n/a'}\nConstraints: ${constraints || 'n/a'}`;
-            window.dispatchEvent(new CustomEvent('scribble_mutating_evolve', { detail: { id, toType: undefined } }));
-            window.dispatchEvent(new CustomEvent('scribble_add_note', { detail: { text: `Evolved with feedback:\n${summary}` } }));
-            return { success: true, message: '🔁 Node evolved with feedback and version stored' };
-          } catch (e) {
-            return { success: false, message: `Failed to evolve with feedback: ${e instanceof Error ? e.message : 'Unknown error'}` };
-          }
-        }
-        // Graph
+        case 'scribble_mutating_evolve_feedback':
         case 'scribble_graph_add_node':
-          return this.dispatch('scribble_graph_add_node', toolCall.parameters, '➕ Node added');
         case 'scribble_graph_add_edge':
-          return this.dispatch('scribble_graph_add_edge', toolCall.parameters, '➡️ Edge added');
         case 'scribble_graph_layout':
-          return this.dispatch('scribble_graph_layout', toolCall.parameters, '🗺️ Layout updated');
         case 'scribble_graph_focus':
-          return this.dispatch('scribble_graph_focus', toolCall.parameters, '🎯 Focused node');
         case 'scribble_graph_export':
-          return this.dispatch('scribble_graph_export', toolCall.parameters, '📤 Graph exported');
         case 'scribble_chart_create':
-          return this.dispatch('scribble_chart_create', toolCall.parameters, '📊 Chart created');
+          return { success: true, message: '🗒️ Visual canvas is disabled in this build.' };
         case 'open_canvas_plugin_node':
-          return await this.handleOpenCanvasPluginNode(toolCall.parameters, context);
+          return await this.handleOpenCanvasPluginNode(toolCall.parameters);
         case 'canvas_add_markdown_block':
-          return await this.handleCanvasAddMarkdown(toolCall.parameters, context);
+          return await this.handleCanvasAddMarkdown(toolCall.parameters);
         case 'canvas_simulate_agent':
-          return await this.handleCanvasSimulateAgent(toolCall.parameters, context);
+          return await this.handleCanvasSimulateAgent(toolCall.parameters);
         case 'canvas_rewrite_layout':
-          return await this.handleCanvasRewriteLayout(toolCall.parameters, context);
+          return await this.handleCanvasRewriteLayout(toolCall.parameters);
         case 'canvas_connect_nodes':
-          return await this.handleCanvasConnectNodes(toolCall.parameters, context);
+          return await this.handleCanvasConnectNodes(toolCall.parameters);
         case 'canvas_edit_text':
-          return await this.handleCanvasEditText(toolCall.parameters, context);
+          return await this.handleCanvasEditText(toolCall.parameters);
         
         default:
           console.log(`🔧 DEBUG: ToolExecutor - Unknown tool: ${toolCall.name}`);
@@ -282,8 +225,7 @@ export class ToolExecutorService {
       
       return {
         success,
-        message: success ? message : `❌ Failed to update ${setting}: ${message}`,
-        settingUpdated: success
+        message: success ? message : `❌ Failed to update ${setting}: ${message}`
       };
     } catch (error) {
       console.error('🔍 Tool Executor Debug - Settings update error:', error);
@@ -462,48 +404,11 @@ export class ToolExecutorService {
       const { title, type, scenario, data } = params;
       
       console.log('🎯 Chart Creation Tool Called:', { title, type, scenario, data });
-      
-      // First, open the canvas if it's not already open
-      window.dispatchEvent(new CustomEvent('scribble_open', { 
-        detail: { mode: 'fullscreen' } 
-      }));
-      
-      // Generate chart data if not provided
-      let chartSeries = data;
-      if (!chartSeries && scenario) {
-        // Use scenario-based data from CHART_SCENARIOS
-        const scenarios = {
-          education: [
-            { name: 'Scores', data: [
-              { x: 'Math', y: 85 }, { x: 'Science', y: 78 }, { x: 'English', y: 92 }, 
-              { x: 'History', y: 88 }, { x: 'Art', y: 95 }
-            ]}
-          ],
-          budget: [
-            { name: 'Budget', data: [
-              { x: 'Marketing', y: 15000 }, { x: 'Operations', y: 25000 }, 
-              { x: 'R&D', y: 20000 }, { x: 'HR', y: 12000 }, { x: 'IT', y: 18000 }
-            ]}
-          ],
-          performance: [
-            { name: 'Performance', data: [
-              { x: 'Efficiency', y: 87 }, { x: 'Quality', y: 94 }, { x: 'Speed', y: 78 }, 
-              { x: 'Satisfaction', y: 92 }, { x: 'Innovation', y: 85 }
-            ]}
-          ]
-        };
-        chartSeries = scenarios[scenario as keyof typeof scenarios] || [];
-      }
-      
-      // Create the chart on canvas
-      window.dispatchEvent(new CustomEvent('scribble_chart_create', { 
-        detail: { title, type, series: chartSeries, scenario } 
-      }));
-      
+      // Visual canvas removed; return a neutral message
       return {
         success: true,
-        message: `📊 Created ${type} chart "${title}" on the visual canvas!${scenario ? ` Using ${scenario} scenario.` : ''}`,
-        data: { title, type, scenario, chartCreated: true }
+        message: `📊 Chart request acknowledged (visual canvas disabled).` ,
+        data: { title, type, scenario, chartCreated: false }
       };
     } catch (error) {
       return {
@@ -518,46 +423,11 @@ export class ToolExecutorService {
       const { prompt, scenarioA, scenarioB, context: analysisContext } = params;
       
       console.log('🧪 Hypothesis Creation Tool Called:', { prompt, scenarioA, scenarioB });
-      
-      // Open the canvas in hypothesis mode
-      window.dispatchEvent(new CustomEvent('scribble_open', { 
-        detail: { 
-          mode: 'fullscreen',
-          left: scenarioA || 'Hypothesis A: Your first scenario',
-          right: scenarioB || 'Hypothesis B: Alternative scenario',
-          prompt: prompt
-        } 
-      }));
-      
-      // Create the hypothesis testing environment
-      window.dispatchEvent(new CustomEvent('scribble_hypothesis_test', { 
-        detail: { prompt } 
-      }));
-      
-      // If we have both scenarios, set up parallel thought
-      if (scenarioA && scenarioB) {
-        window.dispatchEvent(new CustomEvent('scribble_parallel_thought', { 
-          detail: { leftPrompt: scenarioA, rightPrompt: scenarioB } 
-        }));
-      }
-      
-      // Simulate AI analysis (in a real implementation, this would call an analysis service)
-      setTimeout(() => {
-        const mockResult = {
-          title: 'AI Analysis Complete',
-          estimate: Math.random() > 0.5 ? `${Math.floor(Math.random() * 40 + 60)}% confidence in A` : `${Math.floor(Math.random() * 40 + 60)}% confidence in B`,
-          confidence: (Math.random() * 0.3 + 0.7).toFixed(2) // 0.7-1.0
-        };
-        
-        window.dispatchEvent(new CustomEvent('scribble_hypothesis_result', { 
-          detail: { id: `h_${Date.now()}`, ...mockResult } 
-        }));
-      }, 2000);
-      
+      // Visual canvas removed; return a neutral message
       return {
         success: true,
-        message: `🧪 Created hypothesis test "${prompt}" with A/B scenarios on the canvas! AI analysis will complete in a moment.`,
-        data: { prompt, scenarioA, scenarioB, hypothesisCreated: true }
+        message: `🧪 Hypothesis request acknowledged (visual canvas disabled).`,
+        data: { prompt, scenarioA, scenarioB, hypothesisCreated: false }
       };
     } catch (error) {
       return {
@@ -572,30 +442,11 @@ export class ToolExecutorService {
       const { template } = params;
       
       console.log('🎨 Canvas Open Tool Called:', { template });
-      
-      // Open the canvas with the specified template
-      window.dispatchEvent(new CustomEvent('scribble_open', { 
-        detail: { mode: 'fullscreen', template } 
-      }));
-      
-      // If a specific template is requested, set it up
-      if (template === 'chartDashboard') {
-        // Pre-populate with sample charts
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('scribble_chart_create', { 
-            detail: { 
-              title: 'Sample Dashboard', 
-              type: '3d-scenario', 
-              scenario: 'performance' 
-            } 
-          }));
-        }, 500);
-      }
-      
+      // Visual canvas removed; return a neutral message
       return {
         success: true,
-        message: `🎨 Opened visual canvas${template ? ` with ${template} template` : ''}! You can now create charts, test hypotheses, and visualize ideas.`,
-        data: { template, canvasOpened: true }
+        message: `🎨 Visual canvas is disabled in this build.`,
+        data: { template, canvasOpened: false }
       };
     } catch (error) {
       return {

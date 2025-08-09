@@ -66,8 +66,7 @@ import Diary from '../components/Diary';
 import TeachersRoom from '../components/TeachersRoom';
 // @ts-ignore
 import ScribbleModule from '../components/ScribbleModule';
-// @ts-ignore
-import ScribbleKonvaBoard from '../components/scribbleboard/ScribbleKonvaBoard';
+// Scribbleboard removed
 
 
 
@@ -517,13 +516,7 @@ const DashboardPage: React.FC = () => {
             ) : showTeachersRoom ? (
               <div className="space-y-6">
                 <TeachersRoom onClose={() => setShowTeachersRoom(false)} />
-                {/* Learning Squad: shared board preview */}
-                <div className={`${getCardBackgroundClasses()} rounded-2xl p-6`}>
-                  <h3 className={`text-xl font-semibold mb-3 ${getTextClasses('primary')}`}>Learning Squad Board</h3>
-                  {/* Konva + yjs shared board */}
-                  {/* @ts-ignore */}
-                  <ScribbleKonvaBoard room="squad-room" />
-                </div>
+                {/* Learning Squad board removed */}
                 {/* Personal Canvas widget removed - launch via assistant overlay only */}
               </div>
             ) : activeTab === 'library' && (

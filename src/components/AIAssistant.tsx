@@ -13,11 +13,8 @@ import { base64ToBinary } from '../utils/videoUtils';
 import RichMessageRenderer from './RichMessageRenderer';
 import { toolExecutorService } from '../services/ToolExecutorService';
 // Unified assistant surface (text + visual)
-import AssistantSurface from './assistant/AssistantSurface';
 import ScribbleModule from './ScribbleModule';
 import Overlay from './Overlay';
-// @ts-ignore
-import Scribbleboard from './scribbleboard/Scribbleboard';
 // @ts-ignore
 import TextWorkbench from './editor/TextWorkbench';
 import SearchOverlay from './SearchOverlay';
@@ -133,14 +130,7 @@ const AIAssistant: React.FC = () => {
         return () => window.removeEventListener('openScribbleModule', handler as EventListener);
     }, []);
 
-    // New: open Scribbleboard via tool
-    const [isScribbleboardOpen, setIsScribbleboardOpen] = useState(false);
-    const [surfacePreference, setSurfacePreference] = useState<'auto'|'text'|'visual'>('auto');
-    useEffect(() => {
-        const openBoard = () => setIsScribbleboardOpen(true);
-        window.addEventListener('scribble_open', openBoard as EventListener);
-        return () => window.removeEventListener('scribble_open', openBoard as EventListener);
-    }, []);
+    // Removed Scribbleboard surface/state
     
     // Use user context for usage limits and verification
     const { 
@@ -214,8 +204,8 @@ const AIAssistant: React.FC = () => {
             console.error('❌ Error properties:', Object.keys(error || {}));
             
             // Safe error property access
-            const errorObj = typeof error === 'object' && error !== null ? error as any : {};
-            const errorStr = typeof error === 'string' ? error : error?.toString?.() || 'Unknown error';
+            const errorObj = typeof error === 'object' && error !== null ? (error as any) : {};
+            const errorStr = typeof error === 'string' ? error : (error as any)?.toString?.() || 'Unknown error';
             
             console.error('❌ Error message:', errorObj?.message || errorStr);
             console.error('❌ Error stack:', errorObj?.stack || 'No stack');
@@ -1154,9 +1144,7 @@ Need help with anything specific? Just ask! 🌟`;
                 try {
                     const { analyzeCommand } = await import('../services/IntentClassifier');
                     const cmd = analyzeCommand(text);
-                    const wantsVisual = /chart|graph|diagram|visual|plot|bar|line|pie|scatter/.test(text.toLowerCase()) || (cmd?.type === 'content' && /chart|graph|diagram/.test(cmd?.action?.type || ''));
-                    if (wantsVisual) { setSurfacePreference('visual'); setIsScribbleboardOpen(true); }
-                    else { setSurfacePreference('text'); }
+                    // Visual canvas removed
                 } catch {}
             }
         } catch (error: any) {
@@ -1851,8 +1839,7 @@ Need help with anything specific? Just ask! 🌟`;
                 // CLIENT-SIDE TOOLS: These need to be executed by ToolExecutorService
                 toolCalls = firstResponse.tool_calls || [];
                 console.log('🔧 DEBUG: CLIENT-SIDE tool calls to execute:', toolCalls);
-                // If there are client tool calls, open surface and prefer visual
-                if (toolCalls.length > 0) { setSurfacePreference('visual'); setIsScribbleboardOpen(true); }
+                // Visual canvas removed
                 
                 // SERVER-SIDE TOOL RESULTS: Already executed, add to conversation
                 if (firstResponse.tool_results && firstResponse.tool_results.length > 0) {
@@ -1998,16 +1985,11 @@ Need help with anything specific? Just ask! 🌟`;
         } catch {}
 
                         // Execute CLIENT-SIDE tool calls if any
-        const openCanvasAndResize = () => {
-            setSurfacePreference('visual');
-            setIsScribbleboardOpen(true);
-            requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
-        };
+        const openCanvasAndResize = () => {};
 
         if (toolCalls.length > 0 && toolExecutorService) {
             console.log('🔧 DEBUG: Found CLIENT-SIDE tool calls to execute:', toolCalls);
-            // Always open the unified surface and favor visual when client tools appear
-            try { openCanvasAndResize(); } catch {}
+            // Visual canvas removed
             for (const toolCall of toolCalls) {
                 try {
                     console.log('🔧 DEBUG: Executing CLIENT-SIDE tool call:', toolCall);
@@ -2058,10 +2040,7 @@ Need help with anything specific? Just ask! 🌟`;
                         return 'line';
                     };
                     const type = normalizeType(textForIntent);
-                    const series = [{ name: 'Series 1', data: [
-                        { x: 'A', y: 10 }, { x: 'B', y: 22 }, { x: 'C', y: 14 }, { x: 'D', y: 28 }
-                    ] }];
-                    window.dispatchEvent(new CustomEvent('scribble_chart_create', { detail: { title: 'Chart', type, series } }));
+                    // Visual canvas removed
                 } catch (e) { console.error('Fallback chart create failed:', e); }
             }
         }
@@ -2925,20 +2904,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 <span>AI Assistant - Fullscreen Mode</span>
                             </div>
                             <div className="ai-fullscreen-controls">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsScribbleboardOpen(true);
-                                        window.dispatchEvent(new CustomEvent('scribble_open'));
-                                    }}
-                                    className="ai-fullscreen-button"
-                                    title="Open Scribbleboard"
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="3" y="4" width="18" height="14" rx="2" ry="2"></rect>
-                                        <line x1="3" y1="10" x2="21" y2="10"></line>
-                                    </svg>
-                                </button>
+                                {/* Scribbleboard removed */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -3029,21 +2995,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                                 </h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* Open Scribbleboard (reusing legacy button slot) */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsScribbleboardOpen(true);
-                                        window.dispatchEvent(new CustomEvent('scribble_open'));
-                                    }}
-                                    className={`p-2 rounded-full transition-all ${theme.isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-black/10 text-black hover:bg-black/20'}`}
-                                    title="Open Scribbleboard"
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="3" y="4" width="18" height="14" rx="2" ry="2"></rect>
-                                        <line x1="3" y1="10" x2="21" y2="10"></line>
-                                    </svg>
-                                </button>
+                                {/* Scribbleboard action removed */}
                                 
                                 {/* Clear Conversation */}
                                 <button
@@ -3351,20 +3303,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 template={scribbleTemplate}
             />
 
-            {/* Assistant Unified Surface Overlay */}
-            <Overlay
-                open={isScribbleboardOpen}
-                onClose={() => setIsScribbleboardOpen(false)}
-                mode={isFullscreen ? 'fullscreen' : 'compact'}
-                anchor={isFullscreen ? 'center' : 'bottom-right'}
-                closeOnBackdrop={false}
-                anchorSelector={!isFullscreen ? '#assistant-chatbox-anchor' : undefined}
-                zIndex={10000}
-                title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
-            >
-                {/* @ts-ignore */}
-                <AssistantSurface compact={!isFullscreen} preference={surfacePreference} />
-            </Overlay>
+            {/* Visual canvas removed */}
             {/* Search/Wiki/News Overlay */}
             <SearchOverlay 
                 isOpen={isSearchOverlayOpen}
