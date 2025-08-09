@@ -3246,7 +3246,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                             </button>
                             
                             {/* Input Field - Center (takes remaining space) */}
-                            <div className="flex-grow">
+                            <div className="flex-grow" id="assistant-chatbox-anchor">
                                 <label className="flex items-center gap-2">
                                     <input 
                                         type="text"
@@ -3328,6 +3328,7 @@ You are a highly structured, multilingual AI assistant. You must prioritize tool
                 mode={isFullscreen ? 'fullscreen' : 'compact'}
                 anchor={isFullscreen ? 'center' : 'top'}
                 closeOnBackdrop={isFullscreen ? false : true}
+                anchorSelector={!isFullscreen ? '#assistant-chatbox-anchor' : undefined}
                 title={isFullscreen ? 'Assistant Workspace' : 'Assistant'}
             >
                 {/* @ts-ignore */}
