@@ -233,7 +233,7 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
 
   const isCompact = mode === 'compact';
   const board = boards.find(b => b.id === activeBoard)!;
-  const containerClass = useMemo(() => (isCompact ? 'p-2 space-y-2' : 'p-4 space-y-3'), [isCompact]);
+  const containerClass = useMemo(() => (isCompact ? 'p-3 space-y-3' : 'p-6 space-y-4'), [isCompact]);
 
   const downloadJSON = () => {
     try {
@@ -250,9 +250,9 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
   };
 
   const content = (
-    <div className={containerClass}>
+    <div className={`${containerClass} max-w-none`}> 
       {/* AutoAgent Toggle */}
-      <div className={`flex items-center justify-between ${isCompact ? 'text-xs' : 'text-sm'}`}>
+      <div className={`flex items-center justify-between ${isCompact ? 'text-xs' : 'text-sm'} text-gray-700`}>
         <div className="font-medium">🤖 AutoAgent</div>
         <label className="inline-flex items-center gap-2 cursor-pointer">
           <span>{autoAgentEnabled ? 'Enabled' : 'Disabled'}</span>
@@ -265,16 +265,16 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
       </div>
 
       {/* Boards Switcher */}
-      <div className={`flex items-center gap-2 ${isCompact?'text-xs':'text-sm'}`}>
-        <select className="px-2 py-1 rounded border" value={activeBoard} onChange={(e)=>setActiveBoard(e.target.value)}>
+      <div className={`flex items-center gap-2 ${isCompact?'text-xs':'text-sm'} text-gray-700`}>
+        <select className="px-2 py-1 rounded border border-gray-300" value={activeBoard} onChange={(e)=>setActiveBoard(e.target.value)}>
           {boards.map(b=> <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
-        <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_new',{detail:{}}))}>New</button>
-        <button className="px-2 py-1 text-xs rounded border" onClick={()=>{
+        <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_new',{detail:{}}))}>New</button>
+        <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={()=>{
           const name = prompt('Board name?', board.name) || board.name; window.dispatchEvent(new CustomEvent('scribble_board_rename',{detail:{id:activeBoard,name}}));
         }}>Rename</button>
-        {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_delete',{detail:{id:activeBoard}}))}>Delete</button>}
-        <button className="ml-auto px-2 py-1 text-xs rounded border" onClick={downloadJSON}>Export JSON</button>
+        {!isCompact && <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_board_delete',{detail:{id:activeBoard}}))}>Delete</button>}
+        <button className="ml-auto px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={downloadJSON}>Export JSON</button>
       </div>
 
       {/* Suggestions */}
@@ -300,7 +300,7 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
                 <SuggestionCard text={`A: ${p}`} mode={mode} />
               </motion.div>
             ))}
-            {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'A'}}))}>Keep A</button>}
+            {!isCompact && <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'A'}}))}>Keep A</button>}
           </div>
           {!isCompact && (
             <div className="space-y-2">
@@ -309,10 +309,10 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
                   <SuggestionCard text={`B: ${p}`} mode={mode} />
                 </motion.div>
               ))}
-              <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'B'}}))}>Keep B</button>
+               <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_prune',{detail:{keep:'B'}}))}>Keep B</button>
             </div>
           )}
-          {!isCompact && <button className="px-2 py-1 text-xs rounded border" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_combine',{detail:{id: (board.hypotheses[0]?.id)}}))}>Combine</button>}
+          {!isCompact && <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_hypothesis_branch_combine',{detail:{id: (board.hypotheses[0]?.id)}}))}>Combine</button>}
         </motion.div>
       ) : null}
 
@@ -327,15 +327,15 @@ const Scribbleboard: React.FC<ScribbleboardProps> = ({ mode }) => {
         </AnimatePresence>
         {/* Mutating node versions panel (compact summary) */}
         {board.mutating.length > 0 && !isCompact && (
-          <motion.div className="p-3 border rounded bg-white/60 dark:bg-black/30 border-black/10 dark:border-white/10" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <motion.div className="p-3 border rounded bg-white border-gray-200" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="text-sm font-semibold mb-2">🧬 Mutating Nodes</div>
             <div className="space-y-1 text-xs">
               {board.mutating.map(m => (
                 <motion.div key={m.id} className="flex items-center justify-between" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                   <div className="truncate mr-2">{m.title} <span className="opacity-60">(v{m.versions.length})</span></div>
                   <div className="flex gap-2">
-                    <button className="px-2 py-0.5 border rounded" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_compare',{ detail: { id: m.id, versionIndex: 0 } }))}>Compare</button>
-                    <button className="px-2 py-0.5 border rounded" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_evolve',{ detail: { id: m.id } }))}>Evolve</button>
+                    <button className="px-2 py-0.5 border rounded border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_compare',{ detail: { id: m.id, versionIndex: 0 } }))}>Compare</button>
+                    <button className="px-2 py-0.5 border rounded border-gray-300 hover:bg-gray-50" onClick={()=>window.dispatchEvent(new CustomEvent('scribble_mutating_evolve',{ detail: { id: m.id } }))}>Evolve</button>
                   </div>
                 </motion.div>
               ))}

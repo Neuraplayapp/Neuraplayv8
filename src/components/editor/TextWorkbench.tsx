@@ -131,14 +131,14 @@ const Toolbar: React.FC<ToolbarProps> = ({ compact }) => {
 const EditorPane: React.FC = () => {
   const { text, setText } = useEditorStore();
   return (
-    <textarea className="w-full h-full p-3 outline-none bg-white dark:bg-black text-sm" value={text} onChange={(e) => setText(e.target.value)} />
+    <textarea className="w-full h-full p-3 outline-none bg-white text-sm placeholder:text-gray-400" placeholder="Start typing..." value={text} onChange={(e) => setText(e.target.value)} />
   );
 };
 
 const PreviewPane: React.FC = () => {
   const { preview, fontFamily, fontSize, lineHeight, align, bold, italic, underline, color } = useEditorStore();
   return (
-    <motion.div className="w-full h-full overflow-auto p-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+    <motion.div className="w-full h-full overflow-auto p-3 bg-white" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
       <div className="prose max-w-none" style={{
         fontFamily,
         fontSize: `${fontSize}px`,
