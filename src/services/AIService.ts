@@ -208,7 +208,7 @@ class AIService {
         "type": "function",
         "function": {
           "name": "generate_image",
-          "description": "Creates, generates, draws, or makes a visual image based on a user's textual description. Use this for any visual request.",
+          "description": "Creates artistic images, illustrations, drawings, or photos based on textual descriptions. Use this ONLY for creative visual content like portraits, scenes, artwork, or photos. Do NOT use for charts, graphs, or data visualizations.",
           "parameters": {
             "type": "object",
             "properties": {
@@ -328,6 +328,82 @@ class AIService {
                 "description": "Optional template to load into the canvas"
               }
             }
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_chart",
+          "description": "Create interactive data visualizations, charts, graphs, or plots on the visual canvas. Use this when users want to visualize data, create charts, compare data, analyze trends, or create 3D visualizations.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Title for the chart"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["line", "bar", "area", "scatter", "pie", "3d-scenario"],
+                "description": "Type of chart to create"
+              },
+              "scenario": {
+                "type": "string",
+                "enum": ["education", "budget", "projectPlan", "performance"],
+                "description": "Pre-built 3D scenario for educational or business charts"
+              },
+              "data": {
+                "type": "array",
+                "description": "Chart data series",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {"type": "string"},
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "x": {"type": ["number", "string"]},
+                          "y": {"type": "number"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "required": ["title", "type"]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_hypothesis",
+          "description": "Create and test hypotheses, compare scenarios A vs B, or analyze competing ideas on the canvas. Use this for analytical thinking, testing ideas, comparing options, or running thought experiments.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string",
+                "description": "The hypothesis or question to test"
+              },
+              "scenarioA": {
+                "type": "string",
+                "description": "First scenario or hypothesis to test"
+              },
+              "scenarioB": {
+                "type": "string",
+                "description": "Alternative scenario or hypothesis to compare"
+              },
+              "context": {
+                "type": "string",
+                "description": "Additional context or constraints for the analysis"
+              }
+            },
+            "required": ["prompt"]
           }
         }
       }
@@ -597,6 +673,9 @@ class AIService {
 - User says "make an image of a cat" → CALL generate_image tool with prompt="cute cat with whiskers, child-friendly style"
 - User says "create a picture of a dog" → CALL generate_image tool immediately
 - User says "draw me a house" → CALL generate_image tool for house illustration
+- User says "create a chart showing sales data" → CALL create_chart tool with data
+- User says "visualize my performance metrics" → CALL create_chart tool with type="bar"
+- User says "test hypothesis A vs B" → CALL create_hypothesis tool
 - User says "weather in London" → CALL get_weather tool for London
 - User says "search for cats" → CALL web_search tool with query="cats"
 

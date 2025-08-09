@@ -77,16 +77,28 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
           const conversation = parsed[key];
           const originalMessageCount = conversation.messages.length;
           
-          // Filter out Einstein-related persistent messages
+          // Filter out persistent image placeholder messages
           const cleanedMessages = conversation.messages.filter((msg: any) => {
+            // Check for Einstein-specific messages
             const isPersistentEinstein = msg.text.includes('Einstein') && 
                                       (msg.text.includes('wild hair') || 
                                        msg.text.includes('moved to canvas') ||
                                        msg.text.includes('attachment pane'));
-            if (isPersistentEinstein) {
-              console.log('🗑️ Removed persistent Einstein message during load:', msg.text.substring(0, 100) + '...');
+            
+            // Check for general "moved to canvas" messages that persist
+            const isMovedToCanvasMessage = msg.text.includes('moved to canvas') && 
+                                         (msg.text.includes('✨') || msg.text.includes('*'));
+            
+            // Check for any AI-generated image descriptions that became persistent
+            const isPersistentImageDescription = (msg.text.includes('portrait') || msg.text.includes('generated')) &&
+                                               msg.text.includes('moved to canvas');
+            
+            const shouldRemove = isPersistentEinstein || isMovedToCanvasMessage || isPersistentImageDescription;
+            
+            if (shouldRemove) {
+              console.log('🗑️ Removed persistent image message during load:', msg.text.substring(0, 100) + '...');
             }
-            return !isPersistentEinstein;
+            return !shouldRemove;
           });
           
           if (cleanedMessages.length !== originalMessageCount) {
@@ -134,6 +146,20 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [activeConversation]);
 
   const addMessage = (conversationId: string, message: Message) => {
+    // Filter out persistent image placeholder messages BEFORE saving
+    const isPersistentImageMessage = (text: string) => {
+      return (
+        (text.includes('Einstein') && (text.includes('wild hair') || text.includes('moved to canvas'))) ||
+        (text.includes('moved to canvas') && (text.includes('✨') || text.includes('*'))) ||
+        ((text.includes('portrait') || text.includes('generated')) && text.includes('moved to canvas'))
+      );
+    };
+    
+    if (isPersistentImageMessage(message.text)) {
+      console.log('🚫 Blocked persistent image message from being saved:', message.text.substring(0, 100) + '...');
+      return; // Don't save this message at all
+    }
+    
     setConversations(prev => {
       const currentMessages = prev[conversationId]?.messages || [];
       const newMessages = [...currentMessages, message];

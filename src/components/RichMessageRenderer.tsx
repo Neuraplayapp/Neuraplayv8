@@ -180,8 +180,8 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
         console.warn('Failed to route markdown image to scribbleboard:', e);
       }
       
-      // Remove from chat text and add placeholder
-      processedText = processedText.replace(markdownMatch[0], `✨ *${altText || 'Image'} moved to canvas*`);
+      // Remove from chat text - NO placeholder text that could persist
+      processedText = processedText.replace(markdownMatch[0], '');
     }
     
     // Parse IMAGE_GENERATED format - ROUTE TO SCRIBBLEBOARD, NOT CHAT

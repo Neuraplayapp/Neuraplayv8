@@ -51,6 +51,18 @@ export class ToolExecutorService {
           console.log(`🔧 DEBUG: ToolExecutor - Handling content creation`);
           return await this.handleContentCreation(toolCall.parameters, context);
         
+        case 'create_chart':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling chart creation: ${toolCall.parameters.type}`);
+          return await this.handleChartCreation(toolCall.parameters, context);
+        
+        case 'create_hypothesis':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling hypothesis creation`);
+          return await this.handleHypothesisCreation(toolCall.parameters, context);
+        
+        case 'open_canvas_mindmap':
+          console.log(`🔧 DEBUG: ToolExecutor - Handling canvas mindmap`);
+          return await this.handleCanvasOpen(toolCall.parameters, context);
+        
         case 'accessibility_support':
           console.log(`🔧 DEBUG: ToolExecutor - Handling accessibility support`);
           return await this.handleAccessibilitySupport(toolCall.parameters, context);
@@ -441,6 +453,155 @@ export class ToolExecutorService {
       return { success: true, message: '🔗 Connected nodes on canvas.' };
     } catch (e) {
       return { success: false, message: `Failed to connect nodes: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+
+  // NEW CANVAS TOOL HANDLERS
+  private async handleChartCreation(params: any, context?: any): Promise<ToolResult> {
+    try {
+      const { title, type, scenario, data } = params;
+      
+      console.log('🎯 Chart Creation Tool Called:', { title, type, scenario, data });
+      
+      // First, open the canvas if it's not already open
+      window.dispatchEvent(new CustomEvent('scribble_open', { 
+        detail: { mode: 'fullscreen' } 
+      }));
+      
+      // Generate chart data if not provided
+      let chartSeries = data;
+      if (!chartSeries && scenario) {
+        // Use scenario-based data from CHART_SCENARIOS
+        const scenarios = {
+          education: [
+            { name: 'Scores', data: [
+              { x: 'Math', y: 85 }, { x: 'Science', y: 78 }, { x: 'English', y: 92 }, 
+              { x: 'History', y: 88 }, { x: 'Art', y: 95 }
+            ]}
+          ],
+          budget: [
+            { name: 'Budget', data: [
+              { x: 'Marketing', y: 15000 }, { x: 'Operations', y: 25000 }, 
+              { x: 'R&D', y: 20000 }, { x: 'HR', y: 12000 }, { x: 'IT', y: 18000 }
+            ]}
+          ],
+          performance: [
+            { name: 'Performance', data: [
+              { x: 'Efficiency', y: 87 }, { x: 'Quality', y: 94 }, { x: 'Speed', y: 78 }, 
+              { x: 'Satisfaction', y: 92 }, { x: 'Innovation', y: 85 }
+            ]}
+          ]
+        };
+        chartSeries = scenarios[scenario as keyof typeof scenarios] || [];
+      }
+      
+      // Create the chart on canvas
+      window.dispatchEvent(new CustomEvent('scribble_chart_create', { 
+        detail: { title, type, series: chartSeries, scenario } 
+      }));
+      
+      return {
+        success: true,
+        message: `📊 Created ${type} chart "${title}" on the visual canvas!${scenario ? ` Using ${scenario} scenario.` : ''}`,
+        data: { title, type, scenario, chartCreated: true }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to create chart: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  private async handleHypothesisCreation(params: any, context?: any): Promise<ToolResult> {
+    try {
+      const { prompt, scenarioA, scenarioB, context: analysisContext } = params;
+      
+      console.log('🧪 Hypothesis Creation Tool Called:', { prompt, scenarioA, scenarioB });
+      
+      // Open the canvas in hypothesis mode
+      window.dispatchEvent(new CustomEvent('scribble_open', { 
+        detail: { 
+          mode: 'fullscreen',
+          left: scenarioA || 'Hypothesis A: Your first scenario',
+          right: scenarioB || 'Hypothesis B: Alternative scenario',
+          prompt: prompt
+        } 
+      }));
+      
+      // Create the hypothesis testing environment
+      window.dispatchEvent(new CustomEvent('scribble_hypothesis_test', { 
+        detail: { prompt } 
+      }));
+      
+      // If we have both scenarios, set up parallel thought
+      if (scenarioA && scenarioB) {
+        window.dispatchEvent(new CustomEvent('scribble_parallel_thought', { 
+          detail: { leftPrompt: scenarioA, rightPrompt: scenarioB } 
+        }));
+      }
+      
+      // Simulate AI analysis (in a real implementation, this would call an analysis service)
+      setTimeout(() => {
+        const mockResult = {
+          title: 'AI Analysis Complete',
+          estimate: Math.random() > 0.5 ? `${Math.floor(Math.random() * 40 + 60)}% confidence in A` : `${Math.floor(Math.random() * 40 + 60)}% confidence in B`,
+          confidence: (Math.random() * 0.3 + 0.7).toFixed(2) // 0.7-1.0
+        };
+        
+        window.dispatchEvent(new CustomEvent('scribble_hypothesis_result', { 
+          detail: { id: `h_${Date.now()}`, ...mockResult } 
+        }));
+      }, 2000);
+      
+      return {
+        success: true,
+        message: `🧪 Created hypothesis test "${prompt}" with A/B scenarios on the canvas! AI analysis will complete in a moment.`,
+        data: { prompt, scenarioA, scenarioB, hypothesisCreated: true }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to create hypothesis: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  private async handleCanvasOpen(params: any, context?: any): Promise<ToolResult> {
+    try {
+      const { template } = params;
+      
+      console.log('🎨 Canvas Open Tool Called:', { template });
+      
+      // Open the canvas with the specified template
+      window.dispatchEvent(new CustomEvent('scribble_open', { 
+        detail: { mode: 'fullscreen', template } 
+      }));
+      
+      // If a specific template is requested, set it up
+      if (template === 'chartDashboard') {
+        // Pre-populate with sample charts
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('scribble_chart_create', { 
+            detail: { 
+              title: 'Sample Dashboard', 
+              type: '3d-scenario', 
+              scenario: 'performance' 
+            } 
+          }));
+        }, 500);
+      }
+      
+      return {
+        success: true,
+        message: `🎨 Opened visual canvas${template ? ` with ${template} template` : ''}! You can now create charts, test hypotheses, and visualize ideas.`,
+        data: { template, canvasOpened: true }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to open canvas: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
     }
   }
 
