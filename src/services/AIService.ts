@@ -1,8 +1,8 @@
 // Platform-aware AI Service
 import { getIntelligentSearchDetector } from './IntelligentSearchDetector';
 
-// Configuration: Conversation memory management
-const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember
+// Configuration: Conversation memory management  
+const MAX_CONVERSATION_EXCHANGES = 10; // Number of user-assistant exchanges to remember (20 messages)
 const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages (user + assistant)
 
 class AIService {
@@ -520,7 +520,7 @@ class AIService {
       ];
 
       // Add conversation history if available (for AI continuity)
-      // Implement sliding window: keep only last 15 exchanges (30 messages max)
+      // Implement sliding window: keep only last 10 exchanges (20 messages max)
       if (context?.conversationHistory && context.conversationHistory.length > 0) {
         const MAX_HISTORY_MESSAGES = MAX_CONVERSATION_MESSAGES;
         
@@ -528,7 +528,7 @@ class AIService {
         const recentHistory = context.conversationHistory.slice(-MAX_HISTORY_MESSAGES);
         
         console.log('🧠 AI Service Debug - Total history available:', context.conversationHistory.length, 'messages');
-        console.log('🧠 AI Service Debug - Using recent history:', recentHistory.length, 'messages (sliding window)');
+        console.log('🧠 AI Service Debug - Using recent history:', recentHistory.length, 'messages (20-message sliding window)');
         
         // Convert conversation history to proper message format
         const historyMessages = recentHistory.map((msg: any) => ({

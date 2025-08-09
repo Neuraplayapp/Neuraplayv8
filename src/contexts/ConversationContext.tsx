@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Configuration: Conversation memory management
-const MAX_CONVERSATION_EXCHANGES = 15; // Number of user-assistant exchanges to remember  
-const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages in memory
+const MAX_CONVERSATION_EXCHANGES = 10; // Number of user-assistant exchanges to remember (20 messages)
+const MAX_CONVERSATION_MESSAGES = MAX_CONVERSATION_EXCHANGES * 2; // Total messages in memory (20)
 
 export interface Message {
   text: string;
@@ -72,43 +72,14 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (savedConversations) {
         const parsed = JSON.parse(savedConversations);
         
-        // Clean any persistent Einstein messages during load
-        const cleanedConversations = Object.keys(parsed).reduce((acc, key) => {
+        // Simple conversation loading - no filtering needed
+        const loadedConversations = Object.keys(parsed).reduce((acc, key) => {
           const conversation = parsed[key];
-          const originalMessageCount = conversation.messages.length;
-          
-          // Filter out persistent image placeholder messages
-          const cleanedMessages = conversation.messages.filter((msg: any) => {
-            // Check for Einstein-specific messages
-            const isPersistentEinstein = msg.text.includes('Einstein') && 
-                                      (msg.text.includes('wild hair') || 
-                                       msg.text.includes('moved to canvas') ||
-                                       msg.text.includes('attachment pane'));
-            
-            // Check for general "moved to canvas" messages that persist
-            const isMovedToCanvasMessage = msg.text.includes('moved to canvas') && 
-                                         (msg.text.includes('✨') || msg.text.includes('*'));
-            
-            // Check for any AI-generated image descriptions that became persistent
-            const isPersistentImageDescription = (msg.text.includes('portrait') || msg.text.includes('generated')) &&
-                                               msg.text.includes('moved to canvas');
-            
-            const shouldRemove = isPersistentEinstein || isMovedToCanvasMessage || isPersistentImageDescription;
-            
-            if (shouldRemove) {
-              console.log('🗑️ Removed persistent image message during load:', msg.text.substring(0, 100) + '...');
-            }
-            return !shouldRemove;
-          });
-          
-          if (cleanedMessages.length !== originalMessageCount) {
-            console.log(`🧹 Cleaned ${originalMessageCount - cleanedMessages.length} persistent messages from conversation: ${key}`);
-          }
           
           acc[key] = {
             ...conversation,
             timestamp: new Date(conversation.timestamp),
-            messages: cleanedMessages.map((msg: any) => ({
+            messages: conversation.messages.map((msg: any) => ({
               ...msg,
               timestamp: new Date(msg.timestamp)
             }))
@@ -116,7 +87,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
           return acc;
         }, {} as { [key: string]: Conversation });
         
-        setConversations(cleanedConversations);
+        setConversations(loadedConversations);
       }
       
       if (savedActiveConversation && savedActiveConversation !== 'current') {
@@ -146,33 +117,22 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [activeConversation]);
 
   const addMessage = (conversationId: string, message: Message) => {
-    // Filter out persistent image placeholder messages BEFORE saving
-    const isPersistentImageMessage = (text: string) => {
-      return (
-        (text.includes('Einstein') && (text.includes('wild hair') || text.includes('moved to canvas'))) ||
-        (text.includes('moved to canvas') && (text.includes('✨') || text.includes('*'))) ||
-        ((text.includes('portrait') || text.includes('generated')) && text.includes('moved to canvas'))
-      );
-    };
-    
-    if (isPersistentImageMessage(message.text)) {
-      console.log('🚫 Blocked persistent image message from being saved:', message.text.substring(0, 100) + '...');
-      return; // Don't save this message at all
-    }
+    // ScribbleboardV2 handles problematic content at the source
     
     setConversations(prev => {
       const currentMessages = prev[conversationId]?.messages || [];
       const newMessages = [...currentMessages, message];
       
-      // Implement sliding window: keep only last 30 messages (15 exchanges)
+      // Implement sliding window: keep only last 20 messages (10 exchanges)
       const MAX_MESSAGES = MAX_CONVERSATION_MESSAGES;
+      
       const trimmedMessages = newMessages.length > MAX_MESSAGES 
         ? newMessages.slice(-MAX_MESSAGES) 
         : newMessages;
       
       if (newMessages.length > MAX_MESSAGES) {
         console.log('🧠 Conversation Context - Trimmed old messages:', 
-          `${newMessages.length} -> ${trimmedMessages.length} (sliding window)`);
+          `${newMessages.length} -> ${trimmedMessages.length} (20-message sliding window)`);
       }
       
       return {

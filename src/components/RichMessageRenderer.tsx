@@ -22,15 +22,7 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
   toolResults = [] 
 }) => {
 
-  // 🔧 CRITICAL FIX: Track processed content to prevent infinite loops
-  const processedContentRef = useRef(new Set<string>());
-
-  // Clear processed content on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      processedContentRef.current.clear();
-    };
-  }, []);
+  // Content processing tracking removed - handled by ScribbleboardV2
 
   // 🔍 COMPREHENSIVE FRONTEND IMAGE DEBUGGING
   useEffect(() => {
@@ -114,27 +106,19 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       if (data?.image_url) {
         console.log(`🔍 Routing ALL visual content to scribbleboard for result ${index}`);
         
-        // 🔧 CRITICAL FIX: Prevent infinite loop by tracking processed content
-        const contentKey = `${data.image_url}_${data.title || 'image'}_${index}`;
-        if (!processedContentRef.current.has(contentKey)) {
-          processedContentRef.current.add(contentKey);
-          
-          // Send to scribbleboard instead of chat - ONLY ONCE
-          try {
-            window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-              detail: {
-                title: data.title || 'Visual Content',
-                type: 'image',
-                imageUrl: data.image_url,
-                metadata: data
-              }
-            }));
-            console.log(`✅ Successfully dispatched scribble_chart_create for: ${contentKey}`);
-          } catch (e) {
-            console.warn('Failed to route to scribbleboard:', e);
-          }
-        } else {
-          console.log(`⚠️ Skipping already processed content: ${contentKey}`);
+        // Send to scribbleboard - ScribbleboardV2 handles deduplication
+        try {
+          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+            detail: {
+              title: data.title || 'Visual Content',
+              type: 'image',
+              imageUrl: data.image_url,
+              metadata: data
+            }
+          }));
+          console.log(`✅ Dispatched scribble_chart_create for: ${data.title || 'image'}`);
+        } catch (e) {
+          console.warn('Failed to route to scribbleboard:', e);
         }
         // Don't add to chat content - return early
         return;
@@ -184,27 +168,19 @@ const RichMessageRenderer: React.FC<RichMessageRendererProps> = ({
       
       console.log(`🔍 Found markdown image: ${altText} -> ${imageUrl}`);
       
-      // 🔧 CRITICAL FIX: Prevent infinite loop for markdown images
-      const markdownKey = `markdown_${imageUrl}_${altText}`;
-      if (!processedContentRef.current.has(markdownKey)) {
-        processedContentRef.current.add(markdownKey);
-        
-        // Route to scribbleboard instead of displaying in chat - ONLY ONCE
-        try {
-          window.dispatchEvent(new CustomEvent('scribble_chart_create', {
-            detail: {
-              title: altText || 'Image',
-              type: 'image',
-              imageUrl: imageUrl,
-              metadata: { caption: altText, isMarkdownImage: true }
-            }
-          }));
-          console.log(`✅ Successfully dispatched markdown image: ${markdownKey}`);
-        } catch (e) {
-          console.warn('Failed to route markdown image to scribbleboard:', e);
-        }
-      } else {
-        console.log(`⚠️ Skipping already processed markdown image: ${markdownKey}`);
+      // Route to scribbleboard - ScribbleboardV2 handles deduplication
+      try {
+        window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+          detail: {
+            title: altText || 'Markdown Image',
+            type: 'image',
+            imageUrl: imageUrl,
+            metadata: { caption: altText, isMarkdownImage: true }
+          }
+        }));
+        console.log(`✅ Dispatched markdown image: ${altText || imageUrl}`);
+      } catch (e) {
+        console.warn('Failed to route markdown image to scribbleboard:', e);
       }
       
       // Remove from chat text - NO placeholder text that could persist
