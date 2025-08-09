@@ -335,7 +335,7 @@ class AIService {
         "type": "function",
         "function": {
           "name": "create_chart",
-          "description": "Create interactive data visualizations, charts, graphs, or plots on the visual canvas. Use this when users want to visualize data, create charts, compare data, analyze trends, or create 3D visualizations.",
+          "description": "Create interactive data visualizations, charts, graphs, or plots on the visual canvas. Use this for ANY data-related request including: budgets, analytics, performance metrics, education data, project plans, sales data, financial analysis, or any visualization needs. NEVER use generate_image for data visualization.",
           "parameters": {
             "type": "object",
             "properties": {
@@ -670,14 +670,26 @@ class AIService {
 - **Encouraging**: Celebrate understanding and curiosity
 
 🔧 TOOL USAGE EXAMPLES:
+**IMAGE GENERATION (artistic content only):**
 - User says "make an image of a cat" → CALL generate_image tool with prompt="cute cat with whiskers, child-friendly style"
 - User says "create a picture of a dog" → CALL generate_image tool immediately
 - User says "draw me a house" → CALL generate_image tool for house illustration
+
+**CHART CREATION (data visualization):**
 - User says "create a chart showing sales data" → CALL create_chart tool with data
+- User says "create a budget" → CALL create_chart tool with scenario="budget"
+- User says "budget analysis" → CALL create_chart tool with scenario="budget"
 - User says "visualize my performance metrics" → CALL create_chart tool with type="bar"
+- User says "show education data" → CALL create_chart tool with scenario="education"
+- User says "project timeline" → CALL create_chart tool with scenario="projectPlan"
+- User says "performance dashboard" → CALL create_chart tool with scenario="performance"
+
+**OTHER TOOLS:**
 - User says "test hypothesis A vs B" → CALL create_hypothesis tool
 - User says "weather in London" → CALL get_weather tool for London
 - User says "search for cats" → CALL web_search tool with query="cats"
+
+**CRITICAL RULE: For any data, charts, graphs, budgets, analytics, metrics, or visualization requests → ALWAYS use create_chart tool, NEVER generate_image!**
 
 Current context: ${JSON.stringify(context || {})}`;
   }

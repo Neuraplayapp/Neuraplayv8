@@ -21,7 +21,7 @@ import Scribbleboard from './scribbleboard/Scribbleboard';
 // @ts-ignore
 import TextWorkbench from './editor/TextWorkbench';
 import SearchOverlay from './SearchOverlay';
-import { analyzeCommand as analyzeIntent, createChartsFromIntent } from '../services/IntentClassifier';
+import { analyzeCommand as analyzeIntent } from '../services/IntentClassifier';
 import { AssistantConfig } from '../services/AssistantConfig';
 import { WebSocketService } from '../services/WebSocketService';
 import { dataCollectionService } from '../services/DataCollectionService';
@@ -1819,10 +1819,7 @@ Need help with anything specific? Just ask! 🌟`;
             const intentAnalysis = analyzeIntent(inputMessage);
             console.log('🎯 Intent Analysis:', intentAnalysis);
             
-            // Auto-create charts and hypotheses based on intent
-            if (intentAnalysis.type === 'visualization' || intentAnalysis.type === 'hypothesis') {
-                createChartsFromIntent(intentAnalysis);
-            }
+            // Legacy chart creation removed - now handled by AI tool calling system
             
             // Try the enhanced AI service
             const { aiService } = await import('../services/AIService');
