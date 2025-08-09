@@ -1861,14 +1861,49 @@ Need help with anything specific? Just ask! 🌟`;
                             try {
                                 const resultData = JSON.parse(toolResult.content);
                                 if (resultData.success) {
-                                    const serverToolMessage: Message = {
-                                        text: resultData.message,
-                                        isUser: false,
-                                        timestamp: new Date(),
-                                        action: toolResult.name as any,
-                                        ...(resultData.data?.image_url && { image: resultData.data.image_url })
-                                    };
-                                    addMessage(activeConversation, serverToolMessage);
+                                    // Route server-side tool results appropriately
+                                    const serverSideCanvasTools = ['generate_image', 'create_math_diagram'];
+                                    const isServerCanvasTool = serverSideCanvasTools.includes(toolResult.name);
+                                    
+                                    if (isServerCanvasTool && resultData.data?.image_url) {
+                                        // Image generation: Route to canvas via event, brief chat confirmation
+                                        console.log('🎨 Server-side image result - routing to canvas:', toolResult.name);
+                                        
+                                        // Send image to canvas
+                                        window.dispatchEvent(new CustomEvent('scribble_chart_create', {
+                                            detail: {
+                                                title: resultData.data.title || 'Generated Image',
+                                                type: 'image',
+                                                imageUrl: resultData.data.image_url,
+                                                metadata: { source: 'ai_generated', tool: toolResult.name }
+                                            }
+                                        }));
+                                        
+                                        // Open canvas if not already open
+                                        if (!isScribbleboardOpen) {
+                                            setSurfacePreference('visual');
+                                            setIsScribbleboardOpen(true);
+                                        }
+                                        
+                                        // Brief confirmation in chat
+                                        const briefConfirmation: Message = {
+                                            text: `🎨 Image generated and added to visual workspace`,
+                                            isUser: false,
+                                            timestamp: new Date(),
+                                            action: 'canvas_confirmation' as any
+                                        };
+                                        addMessage(activeConversation, briefConfirmation);
+                                    } else {
+                                        // Non-canvas server tools: Add to chat as usual
+                                        const serverToolMessage: Message = {
+                                            text: resultData.message,
+                                            isUser: false,
+                                            timestamp: new Date(),
+                                            action: toolResult.name as any,
+                                            ...(resultData.data?.image_url && { image: resultData.data.image_url })
+                                        };
+                                        addMessage(activeConversation, serverToolMessage);
+                                    }
                                 }
                             } catch (jsonError) {
                                 console.error('🔧 DEBUG: Failed to parse tool result JSON:', jsonError);
@@ -2020,20 +2055,61 @@ Need help with anything specific? Just ask! 🌟`;
                     const result = await toolExecutorService.executeTool(toolExecutorCall, context);
                     console.log('🔧 DEBUG: Tool execution result:', result);
                     
-                    // Add tool execution results to conversation
+                    // Route tool execution results appropriately
                     if (result.success) {
                         console.log('✅ DEBUG: Tool execution successful:', result.message);
-                        const toolMessage: Message = {
-                            text: result.message,
-                            isUser: false,
-                            timestamp: new Date(),
-                            action: toolCall.name as any,
-                            // Handle image generation results
-                            ...(result.data?.image_url && { image: result.data.image_url })
-                        };
-                        addMessage(activeConversation, toolMessage);
+                        
+                        // Define which tools should stay in canvas vs appear in chat
+                        const canvasOnlyTools = [
+                            'create_chart', 
+                            'create_hypothesis', 
+                            'open_canvas_mindmap',
+                            'open_canvas_plugin_node',
+                            'canvas_add_markdown',
+                            'canvas_simulate_agent',
+                            'canvas_rewrite_layout',
+                            'canvas_connect_nodes'
+                        ];
+                        
+                        const isCanvasOnlyTool = canvasOnlyTools.includes(toolCall.name);
+                        
+                        if (isCanvasOnlyTool) {
+                            // Canvas tools: Show only brief confirmation in chat, content stays in canvas
+                            console.log('🎨 Canvas tool result - NOT adding to chat conversation:', toolCall.name);
+                            
+                            // Optional: Show very brief confirmation without details
+                            const briefConfirmation: Message = {
+                                text: `✨ ${toolCall.name === 'create_chart' ? 'Chart created' : 
+                                        toolCall.name === 'create_hypothesis' ? 'Hypothesis test started' :
+                                        toolCall.name === 'open_canvas_mindmap' ? 'Canvas opened' : 
+                                        'Canvas updated'} on visual workspace`,
+                                isUser: false,
+                                timestamp: new Date(),
+                                action: 'canvas_confirmation' as any
+                            };
+                            addMessage(activeConversation, briefConfirmation);
+                        } else {
+                            // Chat tools: Add full result to conversation
+                            const toolMessage: Message = {
+                                text: result.message,
+                                isUser: false,
+                                timestamp: new Date(),
+                                action: toolCall.name as any,
+                                // Handle image generation results
+                                ...(result.data?.image_url && { image: result.data.image_url })
+                            };
+                            addMessage(activeConversation, toolMessage);
+                        }
                     } else {
                         console.error('❌ DEBUG: Tool execution failed:', result.message);
+                        // Always show failures in chat for debugging
+                        const errorMessage: Message = {
+                            text: `❌ ${toolCall.name} failed: ${result.message}`,
+                            isUser: false,
+                            timestamp: new Date(),
+                            action: 'error' as any
+                        };
+                        addMessage(activeConversation, errorMessage);
                     }
                 } catch (toolError) {
                     console.error('❌ DEBUG: Error executing tool:', toolError);
