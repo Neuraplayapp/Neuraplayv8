@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import TextWorkbench from '../editor/TextWorkbench';
 // @ts-ignore
@@ -53,47 +53,54 @@ const AssistantSurface: React.FC<AssistantSurfaceProps> = ({ compact, preference
     if (preference === 'visual') setShowVisual(true);
   }, [preference]);
 
-  // Shared layout: white canvas filling the surface, with a sliding editor panel
-  return (
-    <div className={`relative w-full ${compact ? 'h-[33vh] min-h-[320px]' : 'h-[calc(100vh-4rem)]'} bg-white text-gray-900`}> 
-      {/* Slim header with left-aligned toggle */}
-      <div className={`absolute top-0 left-0 right-0 ${compact ? 'h-8' : 'h-10'} border-b border-gray-200 bg-white/95 flex items-center px-2 z-10`}>
-        <button
-          onClick={() => setShowEditor((v) => !v)}
-          className={`px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50 active:scale-[0.98]`}
-          aria-label={showEditor ? 'End editing' : 'Open editor'}
-        >
-          {showEditor ? 'End' : 'Edit'}
-        </button>
-      </div>
-
-      {/* White writable canvas underneath */}
-      <div className={`absolute inset-0 ${compact ? 'pt-8' : 'pt-10'} overflow-hidden`}>
-        <div className="w-full h-full overflow-auto">
-          {/* @ts-ignore */}
-          {showVisual && <Scribbleboard mode={compact ? 'compact' : 'fullscreen'} />}
+  // Shared layout
+  if (compact) {
+    return (
+      <div className="relative w-full h-[33vh] min-h-[320px] bg-white text-gray-900">
+        {/* Canvas only; slide editor optional */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="w-full h-full overflow-auto">
+            {/* @ts-ignore */}
+            {showVisual && <Scribbleboard mode="compact" />}
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Sliding editor panel from the left */}
-      <div className="absolute inset-y-0 left-0 z-20 pointer-events-none">
-        <div className="relative h-full">
-          <div className="absolute inset-y-0 left-0 pointer-events-auto">
-            <div
-              className={`h-full ${compact ? 'w-[320px]' : 'w-[420px]'} border-r border-gray-200 bg-white shadow-xl transition-transform duration-300 ease-out ${showEditor ? 'translate-x-0' : '-translate-x-[110%]'} `}
-            >
-              <div className={`${compact ? 'h-8' : 'h-10'} border-b border-gray-200 flex items-center px-2 justify-between`}> 
-                <div className="text-xs text-gray-500">Text Editor</div>
-                {/* Duplicate close for accessibility */}
-                <button onClick={() => setShowEditor(false)} className="px-2 py-0.5 text-[11px] rounded border border-gray-300 hover:bg-gray-50">End</button>
-              </div>
-              <div className="h-[calc(100%-2.5rem)]"> 
-                {/* @ts-ignore */}
-                <TextWorkbench compact={compact} />
+  // Fullscreen: vertical split (left 66% canvas, right 33% chat provided by parent)
+  return (
+    <div className="relative w-full h-[calc(100vh-4rem)] bg-white text-gray-900">
+      <div className="grid grid-cols-[2fr_1fr] w-full h-full min-h-0">
+        {/* Left: Canvas 66% */}
+        <div className="relative min-h-0 overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="w-full h-full overflow-auto">
+              {/* @ts-ignore */}
+              {showVisual && <Scribbleboard mode="fullscreen" />}
+            </div>
+          </div>
+          {/* Sliding editor panel from the left (only affects canvas) */}
+          <div className="absolute inset-y-0 left-0 z-20 pointer-events-none">
+            <div className="relative h-full">
+              <div className="absolute inset-y-0 left-0 pointer-events-auto">
+                <div className={`h-full w-[420px] border-r border-gray-200 bg-white shadow-xl transition-transform duration-300 ease-out ${showEditor ? 'translate-x-0' : '-translate-x-[110%]'} `}>
+                  <div className="h-10 border-b border-gray-200 flex items-center px-2 justify-between">
+                    <div className="text-xs text-gray-500">Text Editor</div>
+                    <button onClick={() => setShowEditor(false)} className="px-2 py-0.5 text-[11px] rounded border border-gray-300 hover:bg-gray-50">End</button>
+                  </div>
+                  <div className="h-[calc(100%-2.5rem)]">
+                    {/* @ts-ignore */}
+                    <TextWorkbench compact={false} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Right: Chat 33% — parent renders chat pane; leave empty here for layout */}
+        <div className="min-h-0 overflow-auto" />
       </div>
     </div>
   );

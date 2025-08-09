@@ -25,14 +25,15 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
   }, [open, onClose]);
 
-  const [anchorRect, setAnchorRect] = React.useState<{ top: number; left: number; width: number; bottom: number } | null>(null);
+  const [anchorRect, setAnchorRect] = React.useState<{ top: number; left: number; width: number; right: number; bottom: number } | null>(null);
   useEffect(() => {
     if (!open || !anchorSelector || mode === 'fullscreen') { setAnchorRect(null); return; }
     const compute = () => {
       const el = document.querySelector(anchorSelector) as HTMLElement | null;
       if (!el) { setAnchorRect(null); return; }
       const rect = el.getBoundingClientRect();
-      setAnchorRect({ top: rect.top + window.scrollY, left: rect.left + window.scrollX, width: rect.width, bottom: rect.bottom + window.scrollY });
+      // Viewport-only coordinates for fixed positioning (no scroll offsets)
+      setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, right: rect.right, bottom: rect.bottom });
     };
     // compute now and on next frames to catch layout changes
     compute();
@@ -102,7 +103,7 @@ const Overlay: React.FC<OverlayProps> = ({ open, onClose, title, mode = 'default
                   anchor === 'bottom-left'
                     ? { position: 'fixed', left: anchorRect.left, bottom: Math.max(0, window.innerHeight - anchorRect.bottom), width: Math.min(anchorRect.width, 480) }
                     : anchor === 'bottom-right'
-                      ? { position: 'fixed', right: Math.max(0, window.innerWidth - (anchorRect.left + anchorRect.width)), bottom: Math.max(0, window.innerHeight - anchorRect.bottom), width: Math.min(anchorRect.width, 480) }
+                      ? { position: 'fixed', right: Math.max(0, window.innerWidth - anchorRect.right), bottom: Math.max(0, window.innerHeight - anchorRect.bottom), width: Math.min(anchorRect.width, 480) }
                       : { position: 'fixed', top: anchorRect.top, left: anchorRect.left, width: Math.min(anchorRect.width, 640) }
                 ) : {}}
                 initial={(anchor === 'bottom-left' || anchor === 'bottom-right') ? { opacity: 0, y: 16, scale: 0.98 } : panelVariants[mode].hidden}

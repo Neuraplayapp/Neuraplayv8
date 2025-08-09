@@ -11,6 +11,7 @@ import { useConversation as useGlobalConversation, type Message } from '../conte
 import { base64ToBinary } from '../utils/videoUtils';
 
 import RichMessageRenderer from './RichMessageRenderer';
+import { toolExecutorService } from '../services/ToolExecutorService';
 // Unified assistant surface (text + visual)
 import AssistantSurface from './assistant/AssistantSurface';
 import ScribbleModule from './ScribbleModule';
@@ -1997,10 +1998,16 @@ Need help with anything specific? Just ask! 🌟`;
         } catch {}
 
                         // Execute CLIENT-SIDE tool calls if any
+        const openCanvasAndResize = () => {
+            setSurfacePreference('visual');
+            setIsScribbleboardOpen(true);
+            requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+        };
+
         if (toolCalls.length > 0 && toolExecutorService) {
             console.log('🔧 DEBUG: Found CLIENT-SIDE tool calls to execute:', toolCalls);
             // Always open the unified surface and favor visual when client tools appear
-            try { setSurfacePreference('visual'); setIsScribbleboardOpen(true); } catch {}
+            try { openCanvasAndResize(); } catch {}
             for (const toolCall of toolCalls) {
                 try {
                     console.log('🔧 DEBUG: Executing CLIENT-SIDE tool call:', toolCall);
@@ -2038,6 +2045,25 @@ Need help with anything specific? Just ask! 🌟`;
         } else {
             console.log('🔧 DEBUG: No tool calls to execute. toolCalls.length:', toolCalls.length);
             console.log('🔧 DEBUG: toolExecutorService available:', !!toolExecutorService);
+            // Fallback: detect chart intent and synthesize chart create
+            const textForIntent = `${inputMessage} ${aiResponse}`.toLowerCase();
+            if (/(chart|graph|line|bar|pie|scatter)/.test(textForIntent)) {
+                try {
+                    openCanvasAndResize();
+                    const normalizeType = (t: string): 'line'|'bar'|'area'|'scatter'|'pie' => {
+                        if (t.includes('pie') || t.includes('donut')) return 'pie';
+                        if (t.includes('bar') || t.includes('histogram')) return 'bar';
+                        if (t.includes('area')) return 'area';
+                        if (t.includes('scatter')) return 'scatter';
+                        return 'line';
+                    };
+                    const type = normalizeType(textForIntent);
+                    const series = [{ name: 'Series 1', data: [
+                        { x: 'A', y: 10 }, { x: 'B', y: 22 }, { x: 'C', y: 14 }, { x: 'D', y: 28 }
+                    ] }];
+                    window.dispatchEvent(new CustomEvent('scribble_chart_create', { detail: { title: 'Chart', type, series } }));
+                } catch (e) { console.error('Fallback chart create failed:', e); }
+            }
         }
 
         return {
